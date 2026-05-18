@@ -702,6 +702,14 @@
             display: block;
         }
 
+        .toast.error {
+            background: var(--danger-color);
+        }
+
+        .toast.warning {
+            background: var(--warning-color);
+        }
+
         @keyframes slideInUp {
             from {
                 opacity: 0;
@@ -929,61 +937,123 @@ Senang berkenalan dengan anda</textarea>
         let hands = null;
         let camera = null;
         let canvasCtx = null;
+        let lastResults = null;
+
+        // Callback untuk hasil deteksi tangan
+        function onResults(results) {
+            lastResults = results;
+            
+            if (!canvasCtx) return;
+
+            const canvas = document.getElementById('recording-canvas');
+            const video = document.getElementById('recording-video');
+            
+            if (!canvas || !video) return;
+
+            // Atur ukuran canvas sesuai video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            canvasCtx.scale(-1, 1);
+            canvasCtx.translate(-canvas.width, 0);
+            canvasCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Gambar hasil deteksi tangan
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    if (typeof drawConnectors === 'function' && typeof HAND_CONNECTIONS !== 'undefined') {
+                        drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 5});
+                    }
+                    if (typeof drawLandmarks === 'function') {
+                        drawLandmarks(canvasCtx, landmarks, {color: '#00FF00', lineWidth: 2});
+                    }
+                }
+            }
+            canvasCtx.restore();
+        }
 
         // Initialize
         async function initializeMediaPipe() {
-            hands = new Hands({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.3/${file}`
-            });
+            try {
+                hands = new Hands({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.3/${file}`
+                });
 
-            hands.setOptions({
-                maxNumHands: 2,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
+                hands.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                // Pasang callback hasil deteksi
+                hands.onResults(onResults);
+                
+                console.log('✅ MediaPipe Hands berhasil diinisialisasi');
+            } catch (error) {
+                console.error('❌ Error initializing MediaPipe:', error);
+                showToast('❌ Gagal menginisialisasi MediaPipe: ' + error.message, 'error');
+                hands = null;
+            }
         }
 
         async function startRecordingCamera() {
-            const video = document.getElementById('recording-video');
-            const canvas = document.getElementById('recording-canvas');
-            canvasCtx = canvas.getContext('2d');
+            try {
+                const video = document.getElementById('recording-video');
+                const canvas = document.getElementById('recording-canvas');
+                
+                if (!video || !canvas) {
+                    throw new Error('Video atau canvas element tidak ditemukan');
+                }
 
-            if (!hands) await initializeMediaPipe();
+                canvasCtx = canvas.getContext('2d');
+                if (!canvasCtx) {
+                    throw new Error('Tidak bisa mendapatkan canvas context');
+                }
 
-            camera = new Camera(video, {
-                onFrame: async () => {
-                    const results = await hands.process(video);
-                    
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                if (!hands) {
+                    document.getElementById('recording-status').textContent = 'Initializing MediaPipe...';
+                    await initializeMediaPipe();
+                }
 
-                    canvasCtx.save();
-                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    canvasCtx.scale(-1, 1);
-                    canvasCtx.translate(-canvas.width, 0);
-                    canvasCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                    if (results.multiHandLandmarks) {
-                        for (const landmarks of results.multiHandLandmarks) {
-                            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 5});
-                            drawLandmarks(canvasCtx, landmarks, {color: '#00FF00', lineWidth: 2});
+                camera = new Camera(video, {
+                    onFrame: async () => {
+                        // Gunakan hands.send() bukan hands.process()
+                        if (typeof hands !== 'undefined' && hands.send && isRecording) {
+                            try {
+                                await hands.send({ image: video });
+                            } catch (e) {
+                                console.error('Error in hands.send:', e);
+                            }
                         }
-                    }
-                    canvasCtx.restore();
-                },
-                width: 1280,
-                height: 720
-            });
+                    },
+                    width: 1280,
+                    height: 720
+                });
 
-            camera.start();
-            isRecording = true;
+                camera.start();
+                isRecording = true;
+                document.getElementById('recording-status').textContent = 'Kamera aktif ✅';
+            } catch (error) {
+                console.error('Error starting recording camera:', error);
+                showToast('❌ Gagal memulai kamera: ' + error.message, 'error');
+                isRecording = false;
+            }
         }
 
         function stopRecordingCamera() {
             if (camera) {
-                camera.stop();
+                try {
+                    camera.stop();
+                } catch (e) {
+                    console.error('Error stopping camera:', e);
+                }
+                camera = null;
                 isRecording = false;
+                canvasCtx = null;
+                document.getElementById('recording-status').textContent = 'Kamera dimatikan ⏹️';
             }
         }
 
@@ -1296,7 +1366,7 @@ Senang berkenalan dengan anda</textarea>
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
-            toast.className = 'toast show';
+            toast.className = `toast show ${type}`;
             
             setTimeout(() => {
                 toast.classList.remove('show');
