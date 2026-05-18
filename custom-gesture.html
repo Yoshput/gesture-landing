@@ -1045,39 +1045,31 @@ Senang berkenalan dengan anda</textarea>
             });
         }
 
-        // Start kamera yang aman dari crash
+        // Start kamera dengan logika anti-stuck (active polling)
         async function startCameraWaitReady() {
             try {
                 const videoElement = document.getElementById('recording-video');
                 const statusElement = document.getElementById('recording-status');
-                
+
                 if (!videoElement) {
-                    console.error('❌ Element <video id="recording-video"> tidak ditemukan!');
+                    console.error("❌ Elemen <video id='recording-video'> tidak ditemukan!");
                     showToast('❌ Video element tidak ditemukan', 'error');
                     return;
                 }
 
-                canvasCtx = document.getElementById('recording-canvas')?.getContext('2d');
-
-                // STEP 1: Pastikan model siap terlebih dahulu
+                // 1. Pastikan model dimuat terlebih dahulu
                 if (statusElement) statusElement.textContent = '⏳ Loading AI Model...';
                 console.log('📦 Memulai load model MediaPipe...');
                 
                 await loadHandGestureModel();
-                
-                console.log('✅ Model siap! Memulai kamera...');
-                if (statusElement) statusElement.textContent = '⏳ Starting Camera...';
 
-                // Jika kamera sebelumnya sudah berjalan, matikan dulu
                 if (camera) {
-                    try { 
-                        await camera.stop(); 
-                    } catch(e) {
-                        console.warn('Kamera sebelumnya tidak bisa di-stop:', e);
-                    }
+                    try { await camera.stop(); } catch(e) {}
                 }
 
-                // STEP 2: Setup Camera dengan callbacks
+                console.log("✅ Model siap! Memulai inisialisasi kamera...");
+
+                // 2. Buat instance kamera baru
                 let sendCounter = 0;
                 let lastSendLogTime = 0;
 
@@ -1090,14 +1082,12 @@ Senang berkenalan dengan anda</textarea>
                             lastSendLogTime = Date.now();
                         }
 
-                        // Proteksi ketat: hanya kirim jika model siap
                         if (modelSiap && hands && typeof hands.send === 'function') {
                             try {
                                 sendCounter++;
                                 await hands.send({ image: videoElement });
-                            } catch (e) {
-                                // Abaikan error drop frame (normal)
-                                console.debug('Frame drop:', e.message);
+                            } catch (error) {
+                                console.debug("Frame drop:", error);
                             }
                         }
                     },
@@ -1105,38 +1095,56 @@ Senang berkenalan dengan anda</textarea>
                     height: 720
                 });
 
-                // STEP 3: Tunggu video siap
+                // 3. LOGIKA BARU: Tunggu video stream siap dengan interval aktif (Anti-Stuck)
                 if (statusElement) statusElement.textContent = '⏳ Loading Video Stream...';
-                console.log('⏳ Menunggu video stream siap...');
+                console.log("⏳ Menunggu video stream siap...");
                 
                 await new Promise((resolve) => {
-                    if (videoElement.readyState >= 2) {
+                    // Jika video kebetulan sudah siap duluan
+                    if (videoElement.readyState >= 2 && videoElement.videoWidth > 0) {
+                        console.log("✅ Video sudah siap!");
                         resolve();
-                    } else {
-                        const onCanPlay = () => {
-                            videoElement.removeEventListener('canplay', onCanPlay);
-                            resolve();
-                        };
-                        videoElement.addEventListener('canplay', onCanPlay);
+                        return;
                     }
+
+                    // Cek setiap 100ms secara aktif sampai video benar-benar siap
+                    const checkVideoInterval = setInterval(() => {
+                        if (videoElement.readyState >= 2 || videoElement.videoWidth > 0) {
+                            console.log(`✅ Video stream siap! (readyState=${videoElement.readyState}, width=${videoElement.videoWidth})`);
+                            clearInterval(checkVideoInterval);
+                            resolve();
+                        }
+                    }, 100);
+
+                    // Sebagai pengaman tambahan jika browser lambat memicu event
+                    videoElement.onloadedmetadata = () => {
+                        console.log("✅ Video metadata loaded!");
+                        clearInterval(checkVideoInterval);
+                        resolve();
+                    };
+                    videoElement.onloadeddata = () => {
+                        console.log("✅ Video data loaded!");
+                        clearInterval(checkVideoInterval);
+                        resolve();
+                    };
                 });
 
-                // STEP 4: Mulai camera
-                console.log('📷 Video siap! Memulai camera...');
+                // 4. Jalankan kamera setelah dipastikan lolos dari penantian stream
+                console.log("🚀 Menjalankan camera.start()...");
                 await camera.start();
                 
                 isRecording = true;
                 frameCounter = 0;
-                if (statusElement) statusElement.textContent = '✅ Kamera Aktif - Gerakkan Tanganmu!';
-                console.log('📷 Kamera aktif dan terhubung dengan AI!');
+                console.log("📷 Kamera aktif dan skeletal AI terhubung!");
+                if (statusElement) statusElement.textContent = "✅ Kamera Aktif - Gerakkan Tanganmu!";
                 showToast('✅ Kamera aktif! Posisikan tangan Anda di depan kamera.', 'success');
 
-            } catch (error) {
-                console.error('❌ Error starting camera:', error);
-                showToast('❌ Gagal memulai kamera: ' + error.message, 'error');
+            } catch (err) {
+                console.error("❌ Error saat starting camera:", err);
+                showToast('❌ Gagal memulai kamera: ' + err.message, 'error');
                 isRecording = false;
                 const statusElement = document.getElementById('recording-status');
-                if (statusElement) statusElement.textContent = '❌ Gagal memulai kamera';
+                if (statusElement) statusElement.textContent = "❌ Gagal memulai kamera";
             }
         }
 
