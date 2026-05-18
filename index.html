@@ -77,6 +77,12 @@
             font-weight: 500;
         }
 
+        .stats-mini {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
         /* Mode Selector Buttons */
         .mode-selector {
             display: flex;
@@ -771,6 +777,12 @@
     <header>
         <h1>Gestur Bahasa Isyarat</h1>
         <p class="subtitle">Kelompok 2 - Deteksi Gestur Tangan Realtime</p>
+        <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+            <a href="dashboard.html" style="padding: 8px 16px; background: var(--primary-color); color: white; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem;">📊 Dashboard</a>
+            <div class="stats-mini">
+                <span>📈 Deteksi: <strong id="mini-count">0</strong></span>
+            </div>
+        </div>
     </header>
 
     <!-- Mode Selector -->
@@ -962,6 +974,41 @@
         let cameraAlphabet = null;
         let detectionHistoryGesture = [];
         let detectionHistoryAlphabet = [];
+
+        // ============================================
+        // LOCALSTORAGE STATS MANAGEMENT
+        // ============================================
+        function loadStatsFromStorage() {
+            const stored = localStorage.getItem('gestureStats');
+            if (!stored) {
+                return {
+                    totalDetections: 0,
+                    successfulDetections: 0,
+                    sessionTime: 0,
+                    gestureProgress: {}
+                };
+            }
+            return JSON.parse(stored);
+        }
+
+        function saveStatsToStorage(stats) {
+            localStorage.setItem('gestureStats', JSON.stringify(stats));
+        }
+
+        function addDetectionStat(char) {
+            const stats = loadStatsFromStorage();
+            stats.totalDetections = (stats.totalDetections || 0) + 1;
+            if (char) {
+                stats.gestureProgress[char] = (stats.gestureProgress[char] || 0) + 1;
+            }
+            saveStatsToStorage(stats);
+            updateMiniStats();
+        }
+
+        function updateMiniStats() {
+            const stats = loadStatsFromStorage();
+            document.getElementById('mini-count').innerText = stats.totalDetections || 0;
+        }
 
         // ============================================
         // UTILITY FUNCTIONS
@@ -1200,6 +1247,7 @@
 
                             translationText.innerText = displayText;
                             addToHistory('gesture', displayText);
+                            addDetectionStat(gesture);
                             speakText(displayText);
                         }
                     }
@@ -1303,13 +1351,25 @@
             'E': { emoji: '🖐️', desc: 'Semua jari terbuka' },
             'F': { emoji: '🤌', desc: 'Jempol + Telunjuk terbuka' },
             'G': { emoji: '🤙', desc: 'Telunjuk + Kelingking terbuka' },
+            'H': { emoji: '🤎', desc: 'Telunjuk + Jari tengah terbuka (vertical)' },
             'I': { emoji: '🖌️', desc: 'Hanya kelingking terbuka' },
+            'J': { emoji: '⚡', desc: 'Kelingking terbuka (bentuk J)' },
+            'K': { emoji: '🖖', desc: 'Jempol + Telunjuk + Jari tengah buka (V shape)' },
             'L': { emoji: '👉', desc: 'Telunjuk + Jempol tegak lurus' },
+            'M': { emoji: '🤜', desc: 'Jempol + 3 jari dalam, kelingking terbuka' },
+            'N': { emoji: '🤞', desc: 'Telunjuk + Jari tengah terbuka (dalam tangan)' },
             'O': { emoji: '⭕', desc: 'Semua jari tertutup (lingkaran)' },
-            'P': { emoji: '✌️', desc: 'Telunjuk + Jari tengah terbuka' },
+            'P': { emoji: '👌', desc: 'Telunjuk + Jari tengah terbuka' },
+            'Q': { emoji: '🤜', desc: 'Sama seperti C + jempol' },
+            'R': { emoji: '✌️', desc: 'Telunjuk + Jari tengah terbuka (crossed)' },
+            'S': { emoji: '✊', desc: 'Tangan tertutup, gerakan diagonal' },
+            'T': { emoji: '👍', desc: 'Jempol dalam, 4 jari tertutup' },
+            'U': { emoji: '🖐️', desc: 'Telunjuk + Jari tengah terbuka, telapak depan' },
             'V': { emoji: '✌️', desc: 'Telunjuk + Jari tengah terbuka (Peace)' },
-            'W': { emoji: '👐', desc: '3 jari terbuka' },
-            'Y': { emoji: '🤘', desc: 'Jempol + Kelingking terbuka' }
+            'W': { emoji: '👐', desc: '3 jari terbuka (Telunjuk, Tengah, Manis)' },
+            'X': { emoji: '🤞', desc: 'Telunjuk + Jari tengah crossed' },
+            'Y': { emoji: '🤘', desc: 'Jempol + Kelingking terbuka' },
+            'Z': { emoji: '⚡', desc: 'Telunjuk + Jari tengah dalam zigzag' }
         };
 
         let practiceMode = false;
@@ -1451,6 +1511,7 @@
                         lastDetectionTime = Date.now();
                         translationTextAlpha.innerText = detectedChar;
                         addToHistory('alphabet', detectedChar);
+                        addDetectionStat(detectedChar);
                         speakText(detectedChar);
 
                         // Highlight
@@ -1507,6 +1568,12 @@
                 const pinkyTip = landmarks[20];
                 const pinkyMcp = landmarks[17];
 
+                const wrist = landmarks[0];
+                const handSize = Math.sqrt(
+                    Math.pow(indexMcp.x - wrist.x, 2) + 
+                    Math.pow(indexMcp.y - wrist.y, 2)
+                );
+
                 const isThumbOpen = Math.abs(thumbTip.x - thumbIp.x) > 0.04;
                 const isIndexOpen = indexTip.y < indexMcp.y - 0.05;
                 const isMiddleOpen = middleTip.y < middleMcp.y - 0.05;
@@ -1518,78 +1585,122 @@
                     Math.pow(thumbTip.y - indexTip.y, 2)
                 );
 
+                const distIndexMiddle = Math.sqrt(
+                    Math.pow(indexTip.x - middleTip.x, 2) + 
+                    Math.pow(indexTip.y - middleTip.y, 2)
+                );
+
+                const distMiddleRing = Math.sqrt(
+                    Math.pow(middleTip.x - ringTip.x, 2) + 
+                    Math.pow(middleTip.y - ringTip.y, 2)
+                );
+
                 let detectedChar = null;
                 let confidence = 0;
 
-                // A: Tangan tertutup, jempol terbuka
+                // A: Fist with thumb out
                 if (!isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen && isThumbOpen) {
-                    detectedChar = 'A';
-                    confidence = 92;
+                    detectedChar = 'A'; confidence = 92;
                 }
-                // B: Semua jari terbuka
+                // B: All fingers open, palm facing forward
                 else if (isIndexOpen && isMiddleOpen && isRingOpen && isPinkyOpen && !isThumbOpen) {
-                    detectedChar = 'B';
-                    confidence = 90;
+                    detectedChar = 'B'; confidence = 90;
                 }
-                // C: Huruf C shape
-                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && distThumbIndex > 0.1) {
-                    detectedChar = 'C';
-                    confidence = 88;
+                // C: C-shape hand
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && distThumbIndex > 0.08) {
+                    detectedChar = 'C'; confidence = 88;
                 }
-                // D: Hanya telunjuk
-                else if (isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen) {
-                    detectedChar = 'D';
-                    confidence = 85;
+                // D: Index up, others down
+                else if (isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen) {
+                    detectedChar = 'D'; confidence = 85;
                 }
-                // E: Semua jari terbuka
+                // E: All fingers spread
                 else if (isIndexOpen && isMiddleOpen && isRingOpen && isPinkyOpen && isThumbOpen) {
-                    detectedChar = 'E';
-                    confidence = 87;
+                    detectedChar = 'E'; confidence = 87;
                 }
-                // F: Jempol+Telunjuk terbuka
-                else if (isThumbOpen && isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen) {
-                    detectedChar = 'F';
-                    confidence = 84;
+                // F: Thumb + Index together, others spread
+                else if (isThumbOpen && isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && distThumbIndex < 0.08) {
+                    detectedChar = 'F'; confidence = 84;
                 }
-                // G: Telunjuk + Kelingking
+                // G: Index + Pinky up
                 else if (isIndexOpen && !isMiddleOpen && !isRingOpen && isPinkyOpen && !isThumbOpen) {
-                    detectedChar = 'G';
-                    confidence = 86;
+                    detectedChar = 'G'; confidence = 86;
                 }
-                // I: Hanya kelingking
-                else if (!isIndexOpen && !isMiddleOpen && !isRingOpen && isPinkyOpen) {
-                    detectedChar = 'I';
-                    confidence = 89;
+                // H: Index + Middle up
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && distIndexMiddle > 0.05) {
+                    detectedChar = 'H'; confidence = 85;
                 }
-                // L: Telunjuk + Jempol tegak lurus
-                else if (isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen && isThumbOpen && distThumbIndex > 0.15) {
-                    detectedChar = 'L';
-                    confidence = 88;
+                // I: Pinky only up
+                else if (!isIndexOpen && !isMiddleOpen && !isRingOpen && isPinkyOpen && !isThumbOpen) {
+                    detectedChar = 'I'; confidence = 89;
                 }
-                // O: Semua jari tertutup
+                // J: Pinky curved (J shape)
+                else if (!isIndexOpen && !isMiddleOpen && !isRingOpen && isPinkyOpen && pinkyTip.x < wrist.x) {
+                    detectedChar = 'J'; confidence = 84;
+                }
+                // K: Thumb+Index+Middle up, others down
+                else if (isThumbOpen && isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && distThumbIndex > 0.1) {
+                    detectedChar = 'K'; confidence = 83;
+                }
+                // L: Index + Thumb perpendicular
+                else if (isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen && isThumbOpen && distThumbIndex > 0.12) {
+                    detectedChar = 'L'; confidence = 88;
+                }
+                // M: Thumb + 3 fingers in, pinky up
+                else if (isIndexOpen && isMiddleOpen && isRingOpen && !isPinkyOpen && isThumbOpen) {
+                    detectedChar = 'M'; confidence = 86;
+                }
+                // N: Index + Middle in fist, crossed
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && distIndexMiddle < 0.08) {
+                    detectedChar = 'N'; confidence = 85;
+                }
+                // O: Closed fist (all fingers together)
                 else if (!isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen) {
-                    detectedChar = 'O';
-                    confidence = 91;
+                    detectedChar = 'O'; confidence = 91;
                 }
-                // P: Telunjuk + Jari tengah
-                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen) {
-                    detectedChar = 'P';
-                    confidence = 85;
+                // P: Index + Middle, thumb in
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && distIndexMiddle > 0.05) {
+                    detectedChar = 'P'; confidence = 85;
+                }
+                // Q: Like O but with gesture
+                else if (!isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && pinkyTip.y > wrist.y) {
+                    detectedChar = 'Q'; confidence = 83;
+                }
+                // R: Index + Middle crossed
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && Math.abs(indexTip.x - middleTip.x) < 0.05) {
+                    detectedChar = 'R'; confidence = 82;
+                }
+                // S: Fist with movement
+                else if (!isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && isThumbOpen) {
+                    detectedChar = 'S'; confidence = 80;
+                }
+                // T: Thumb in, 4 fingers closed
+                else if (!isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen && isThumbOpen && Math.abs(thumbTip.y - wrist.y) < 0.1) {
+                    detectedChar = 'T'; confidence = 86;
+                }
+                // U: Index + Middle open, palm forward
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && distIndexMiddle > 0.08) {
+                    detectedChar = 'U'; confidence = 84;
                 }
                 // V: Peace sign
-                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen) {
-                    detectedChar = 'V';
-                    confidence = 90;
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen) {
+                    detectedChar = 'V'; confidence = 90;
                 }
-                // W: 3 jari terbuka
+                // W: Index + Middle + Ring open
                 else if (isIndexOpen && isMiddleOpen && isRingOpen && !isPinkyOpen && !isThumbOpen) {
-                    detectedChar = 'W';
-                    confidence = 87;
+                    detectedChar = 'W'; confidence = 87;
                 }
-                // Y: Jempol + Kelingking
+                // X: Index + Middle crossed together
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && distIndexMiddle < 0.06) {
+                    detectedChar = 'X'; confidence = 81;
+                }
+                // Y: Thumb + Pinky up
                 else if (isThumbOpen && !isIndexOpen && !isMiddleOpen && !isRingOpen && isPinkyOpen) {
-                    detectedChar = 'Y';
-                    confidence = 86;
+                    detectedChar = 'Y'; confidence = 86;
+                }
+                // Z: Index + Middle zigzag
+                else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen && !isThumbOpen && distIndexMiddle > 0.12) {
+                    detectedChar = 'Z'; confidence = 79;
                 }
 
                 return { char: detectedChar, conf: confidence };
@@ -1639,6 +1750,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateBadge('gesture', false);
             updateBadge('alphabet', false);
+            updateMiniStats();
         });
     </script>
 </body>
