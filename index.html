@@ -360,6 +360,7 @@
             background: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
+            box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
         }
 
         /* Toast Notification */
@@ -675,19 +676,60 @@
             // Create grids
             const alphabetGrid = document.getElementById('alphabet-grid');
             const numberGrid = document.getElementById('number-grid');
+            const translationTextAlpha = document.getElementById('translation-text-alpha');
+            const statusTextAlpha = document.getElementById('status-text-alpha');
 
             alphabetGrid.innerHTML = alphabetList.map(letter => 
-                `<div class="alphabet-item" data-letter="${letter}">${letter}</div>`
+                `<div class="alphabet-item btn-abjad" data-letter="${letter}">${letter}</div>`
             ).join('');
 
             numberGrid.innerHTML = numberList.map(num => 
-                `<div class="alphabet-item" data-number="${num}">${num}</div>`
+                `<div class="alphabet-item btn-abjad" data-number="${num}">${num}</div>`
             ).join('');
 
-            // Note: Full ASL/alphabet detection would require a separate trained model
-            // For now, we'll show a placeholder
-            document.getElementById('status-text-alpha').innerText = '💡 Mode Huruf & Angka - Fitur Deteksi Sedang Dikembangkan';
-            document.getElementById('translation-text-alpha').innerText = 'Menunggu Model...';
+            // ============================================
+            // EVENT LISTENER UNTUK TOMBOL HURUF & ANGKA
+            // ============================================
+            const tombolAbjad = document.querySelectorAll('.btn-abjad');
+
+            function ucapkanTeks(teks) {
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(teks);
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 1;
+                    utterance.pitch = 1;
+                    utterance.volume = 1;
+                    
+                    window.speechSynthesis.speak(utterance);
+                }
+            }
+
+            tombolAbjad.forEach(tombol => {
+                tombol.addEventListener('click', () => {
+                    const nilai = tombol.dataset.letter || tombol.dataset.number;
+                    
+                    // Update display
+                    translationTextAlpha.innerText = nilai;
+                    statusTextAlpha.innerText = `✓ Huruf/Angka Terdeteksi: ${nilai}`;
+
+                    // Highlight item
+                    tombolAbjad.forEach(btn => btn.classList.remove('detected'));
+                    tombol.classList.add('detected');
+
+                    // Ucapkan teks
+                    ucapkanTeks(nilai);
+
+                    // Remove highlight after 800ms
+                    setTimeout(() => {
+                        tombol.classList.remove('detected');
+                    }, 800);
+                });
+            });
+
+            statusTextAlpha.innerText = '✓ Klik huruf atau angka untuk mengucapkannya';
+            translationTextAlpha.innerText = '-';
         }
 
         // ============================================
