@@ -334,33 +334,182 @@
             font-weight: 700;
         }
 
-        /* Alphabet Grid */
-        .alphabet-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(35px, 1fr));
-            gap: 6px;
+        /* Camera Control Buttons */
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
         }
 
-        .alphabet-item {
-            aspect-ratio: 1;
+        .btn-control {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            cursor: default;
-            transition: all 0.2s;
+            gap: 8px;
         }
 
-        .alphabet-item.detected {
-            background: var(--primary-color);
+        .btn-start {
+            background: var(--success-color);
             color: white;
+        }
+
+        .btn-start:hover {
+            background: var(--secondary-color);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-stop {
+            background: #EF4444;
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #DC2626;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-control:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Live Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-light);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .status-badge.live {
+            background: #DCFCE7;
+            color: var(--success-color);
+        }
+
+        .status-badge.offline {
+            background: #FEE2E2;
+            color: #DC2626;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-badge.live .badge-dot {
+            background: var(--success-color);
+        }
+
+        .status-badge.offline .badge-dot {
+            background: #DC2626;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Confidence Bar */
+        .confidence-section {
+            background: var(--bg-light);
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-top: 12px;
+        }
+
+        .confidence-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), var(--secondary-color));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        /* Output Card */
+        .output-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            transition: all 0.3s;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .output-card:hover {
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
             border-color: var(--primary-color);
-            box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+        }
+
+        .output-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .output-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Toast Notification */
@@ -415,25 +564,53 @@
     <div class="container">
         <!-- Camera Section -->
         <div class="camera-section mode-content active" data-mode="gesture">
+            <div class="status-badge offline" id="badge-gesture">
+                <span class="badge-dot"></span>
+                Kamera Mati
+            </div>
+            <div class="camera-controls">
+                <button class="btn-control btn-start" id="btn-start-gesture">▶ Mulai Kamera</button>
+                <button class="btn-control btn-stop" id="btn-stop-gesture" disabled>⏹ Matikan Kamera</button>
+            </div>
             <div class="camera-label">Kamera Input</div>
             <div class="video-container">
                 <video id="webcam" autoplay playsinline></video>
                 <canvas id="output_canvas"></canvas>
             </div>
-            <div class="status-display">
-                <div id="status-text">Menunggu kamera aktif...</div>
+            <div class="confidence-section">
+                <div class="confidence-label">
+                    <span>Tingkat Kepercayaan Deteksi</span>
+                    <span id="confidence-gesture">0%</span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidence-fill-gesture"></div>
+                </div>
             </div>
         </div>
 
         <!-- Camera Section Alphabet -->
         <div class="camera-section mode-content" data-mode="alphabet">
+            <div class="status-badge offline" id="badge-alphabet">
+                <span class="badge-dot"></span>
+                Kamera Mati
+            </div>
+            <div class="camera-controls">
+                <button class="btn-control btn-start" id="btn-start-alphabet">▶ Mulai Kamera</button>
+                <button class="btn-control btn-stop" id="btn-stop-alphabet" disabled>⏹ Matikan Kamera</button>
+            </div>
             <div class="camera-label">Kamera Input</div>
             <div class="video-container">
                 <video id="webcam-alpha" autoplay playsinline></video>
                 <canvas id="output_canvas_alpha"></canvas>
             </div>
-            <div class="status-display">
-                <div id="status-text-alpha">Menunggu kamera aktif...</div>
+            <div class="confidence-section">
+                <div class="confidence-label">
+                    <span>Tingkat Kepercayaan Deteksi</span>
+                    <span id="confidence-alphabet">0%</span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidence-fill-alphabet"></div>
+                </div>
             </div>
         </div>
 
@@ -450,8 +627,20 @@
 
             <!-- Translation Output -->
             <div class="translation-box">
-                <div class="label">Hasil Deteksi</div>
+                <div class="label">Hasil Deteksi Terakhir</div>
                 <div class="text" id="translation-text">-</div>
+            </div>
+
+            <!-- Detection History -->
+            <div class="panel-section">
+                <h3>Riwayat Deteksi</h3>
+                <div id="detection-history-gesture">
+                    <div class="output-card">
+                        <div>
+                            <div class="output-label">Belum ada deteksi</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Gesture Guide -->
@@ -476,6 +665,18 @@
                 <div class="text" id="translation-text-alpha">-</div>
             </div>
 
+            <!-- Detection History -->
+            <div class="panel-section">
+                <h3>Riwayat Deteksi</h3>
+                <div id="detection-history-alphabet">
+                    <div class="output-card">
+                        <div>
+                            <div class="output-label">Belum ada deteksi</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Alphabet Status -->
             <div class="panel-section">
                 <h3>Huruf A - Z</h3>
@@ -496,13 +697,85 @@
 
     <script>
         // ============================================
-        // STATE MANAGEMENT
+        // GLOBAL STATE & STREAM MANAGEMENT
         // ============================================
+        let streamGesture = null;
+        let streamAlphabet = null;
         let currentMode = 'gesture';
         let gestureHands = null;
         let alphabetHands = null;
         let cameraGesture = null;
         let cameraAlphabet = null;
+        let detectionHistoryGesture = [];
+        let detectionHistoryAlphabet = [];
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function updateBadge(mode, isLive) {
+            const badge = document.getElementById(`badge-${mode}`);
+            if (isLive) {
+                badge.classList.remove('offline');
+                badge.classList.add('live');
+                badge.innerHTML = '<span class="badge-dot"></span>Kamera Aktif';
+            } else {
+                badge.classList.remove('live');
+                badge.classList.add('offline');
+                badge.innerHTML = '<span class="badge-dot"></span>Kamera Mati';
+            }
+        }
+
+        function updateConfidenceBar(mode, confidence) {
+            const fill = document.getElementById(`confidence-fill-${mode}`);
+            const percent = document.getElementById(`confidence-${mode}`);
+            fill.style.width = `${confidence}%`;
+            percent.innerText = `${Math.round(confidence)}%`;
+        }
+
+        function addToHistory(mode, result) {
+            const history = mode === 'gesture' ? detectionHistoryGesture : detectionHistoryAlphabet;
+            const historyContainer = document.getElementById(`detection-history-${mode}`);
+            
+            if (history.length === 0) {
+                historyContainer.innerHTML = '';
+            }
+
+            history.unshift(result);
+            if (history.length > 5) history.pop();
+
+            historyContainer.innerHTML = history.map((item, idx) => `
+                <div class="output-card">
+                    <div>
+                        <div class="output-label">Deteksi ${idx + 1}</div>
+                        <div class="output-value">${item}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function speakText(text) {
+            if (!text || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            window.speechSynthesis.speak(utterance);
+            showToast(`Berbicara: "${text}"`);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
 
         // ============================================
         // MODE SWITCHING
@@ -526,14 +799,93 @@
             document.querySelectorAll('.mode-content').forEach(el => {
                 el.classList.toggle('active', el.dataset.mode === mode);
             });
-
-            // Initialize appropriate camera
-            if (mode === 'gesture') {
-                if (!cameraGesture) initGestureMode();
-            } else if (mode === 'alphabet') {
-                if (!cameraAlphabet) initAlphabetMode();
-            }
         }
+
+        // ============================================
+        // CAMERA CONTROL - GESTURE MODE
+        // ============================================
+        document.getElementById('btn-start-gesture').addEventListener('click', async () => {
+            const videoElement = document.getElementById('webcam');
+            const statusBadge = document.getElementById('badge-gesture');
+            const btnStart = document.getElementById('btn-start-gesture');
+            const btnStop = document.getElementById('btn-stop-gesture');
+
+            try {
+                streamGesture = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoElement.srcObject = streamGesture;
+                
+                updateBadge('gesture', true);
+                btnStart.disabled = true;
+                btnStop.disabled = false;
+                
+                // Initialize gesture detection
+                if (!gestureHands) initGestureMode();
+                
+                showToast('✓ Kamera Gesture Mode aktif');
+            } catch (err) {
+                console.error('Gagal membuka kamera:', err);
+                showToast('✗ Gagal membuka kamera. Pastikan tidak sedang digunakan di tab lain!');
+            }
+        });
+
+        document.getElementById('btn-stop-gesture').addEventListener('click', () => {
+            if (streamGesture) {
+                streamGesture.getTracks().forEach(track => track.stop());
+                streamGesture = null;
+                
+                const videoElement = document.getElementById('webcam');
+                videoElement.srcObject = null;
+                
+                updateBadge('gesture', false);
+                document.getElementById('btn-start-gesture').disabled = false;
+                document.getElementById('btn-stop-gesture').disabled = true;
+                updateConfidenceBar('gesture', 0);
+                
+                showToast('✓ Kamera Gesture Mode dimatikan');
+            }
+        });
+
+        // ============================================
+        // CAMERA CONTROL - ALPHABET MODE
+        // ============================================
+        document.getElementById('btn-start-alphabet').addEventListener('click', async () => {
+            const videoElement = document.getElementById('webcam-alpha');
+            const btnStart = document.getElementById('btn-start-alphabet');
+            const btnStop = document.getElementById('btn-stop-alphabet');
+
+            try {
+                streamAlphabet = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoElement.srcObject = streamAlphabet;
+                
+                updateBadge('alphabet', true);
+                btnStart.disabled = true;
+                btnStop.disabled = false;
+                
+                if (!alphabetHands) initAlphabetMode();
+                
+                showToast('✓ Kamera Alphabet Mode aktif');
+            } catch (err) {
+                console.error('Gagal membuka kamera:', err);
+                showToast('✗ Gagal membuka kamera. Pastikan tidak sedang digunakan di tab lain!');
+            }
+        });
+
+        document.getElementById('btn-stop-alphabet').addEventListener('click', () => {
+            if (streamAlphabet) {
+                streamAlphabet.getTracks().forEach(track => track.stop());
+                streamAlphabet = null;
+                
+                const videoElement = document.getElementById('webcam-alpha');
+                videoElement.srcObject = null;
+                
+                updateBadge('alphabet', false);
+                document.getElementById('btn-start-alphabet').disabled = false;
+                document.getElementById('btn-stop-alphabet').disabled = true;
+                updateConfidenceBar('alphabet', 0);
+                
+                showToast('✓ Kamera Alphabet Mode dimatikan');
+            }
+        });
 
         // ============================================
         // GESTURE MODE
@@ -547,16 +899,15 @@
             'metal': 'Senang bertemu denganmu'
         };
 
+        let lastGestureDetected = '';
+        let lastGestureTime = 0;
+
         function initGestureMode() {
             const videoElement = document.getElementById('webcam');
             const canvasElement = document.getElementById('output_canvas');
             const canvasCtx = canvasElement.getContext('2d');
-            const statusText = document.getElementById('status-text');
             const translationText = document.getElementById('translation-text');
             const usernameInput = document.getElementById('username');
-
-            let lastGesture = '';
-            let lastSpokenTime = 0;
 
             function onResults(results) {
                 canvasElement.width = videoElement.videoWidth;
@@ -565,9 +916,9 @@
                 canvasCtx.save();
                 canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                    statusText.innerText = '✓ Tangan Terdeteksi';
+                let confidence = 0;
 
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                     for (const landmarks of results.multiHandLandmarks) {
                         drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
                             color: '#2563EB',
@@ -580,25 +931,30 @@
                             radius: 4
                         });
 
-                        const gesture = detectGesture(landmarks);
-                        if (gesture && gesture !== lastGesture) {
-                            lastGesture = gesture;
+                        const { gesture, conf } = detectGestureWithConfidence(landmarks);
+                        confidence = conf;
+
+                        if (gesture && Date.now() - lastGestureTime > 500) {
+                            lastGestureDetected = gesture;
+                            lastGestureTime = Date.now();
+
                             const output = gestureTranslations[gesture] || gesture;
-                            translationText.innerText = gesture === 'ok' 
+                            const displayText = gesture === 'ok' 
                                 ? (usernameInput.value.trim() || 'Teman')
                                 : output;
-                            
-                            speakText(output);
+
+                            translationText.innerText = displayText;
+                            addToHistory('gesture', displayText);
+                            speakText(displayText);
                         }
                     }
-                } else {
-                    statusText.innerText = '⚠ Posisikan tangan Anda di depan kamera';
-                    translationText.innerText = '-';
                 }
+
+                updateConfidenceBar('gesture', confidence);
                 canvasCtx.restore();
             }
 
-            function detectGesture(landmarks) {
+            function detectGestureWithConfidence(landmarks) {
                 const thumbTip = landmarks[4];
                 const indexTip = landmarks[8];
                 const middleTip = landmarks[12];
@@ -621,24 +977,34 @@
                 );
                 const isOkPose = distThumbIndex < 0.05;
 
-                // Gesture Detection
+                let gesture = null;
+                let confidence = 0;
+
                 if (isOkPose && isMiddleOpen && isRingOpen && isPinkyOpen) {
-                    return 'ok';
+                    gesture = 'ok';
+                    confidence = 95;
                 } else if (isIndexOpen && isMiddleOpen && !isRingOpen && !isPinkyOpen) {
-                    return 'peace';
+                    gesture = 'peace';
+                    confidence = 90;
                 } else if (isIndexOpen && isPinkyOpen && !isMiddleOpen && !isRingOpen) {
-                    return 'metal';
+                    gesture = 'metal';
+                    confidence = 88;
                 } else if (isIndexOpen && !isMiddleOpen && !isRingOpen && !isPinkyOpen) {
-                    return 'pointingIndex';
+                    gesture = 'pointingIndex';
+                    confidence = 85;
                 } else if (isPinkyOpen && !isIndexOpen && !isMiddleOpen && !isRingOpen) {
-                    return 'pointingPinky';
+                    gesture = 'pointingPinky';
+                    confidence = 82;
                 } else if (isIndexOpen && isMiddleOpen && isRingOpen && isPinkyOpen) {
-                    return 'allOpen';
+                    gesture = 'allOpen';
+                    confidence = 92;
+                } else {
+                    confidence = 35;
                 }
-                return null;
+
+                return { gesture, conf: confidence };
             }
 
-            // Initialize MediaPipe Hands
             gestureHands = new Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
             });
@@ -652,18 +1018,20 @@
 
             gestureHands.onResults(onResults);
 
-            cameraGesture = new Camera(videoElement, {
-                onFrame: async () => {
-                    await gestureHands.send({image: videoElement});
-                },
-                width: 640,
-                height: 480
-            });
+            if (streamGesture) {
+                cameraGesture = new Camera(videoElement, {
+                    onFrame: async () => {
+                        await gestureHands.send({image: videoElement});
+                    },
+                    width: 640,
+                    height: 480
+                });
 
-            cameraGesture.start().catch(err => {
-                statusText.innerText = 'Gagal mengakses kamera. Periksa izin akses.';
-                console.error(err);
-            });
+                cameraGesture.start().catch(err => {
+                    console.error(err);
+                    showToast('✗ Error memulai MediaPipe Hands');
+                });
+            }
         }
 
         // ============================================
@@ -673,11 +1041,9 @@
         const numberList = '0123456789'.split('');
 
         function initAlphabetMode() {
-            // Create grids
             const alphabetGrid = document.getElementById('alphabet-grid');
             const numberGrid = document.getElementById('number-grid');
             const translationTextAlpha = document.getElementById('translation-text-alpha');
-            const statusTextAlpha = document.getElementById('status-text-alpha');
 
             alphabetGrid.innerHTML = alphabetList.map(letter => 
                 `<div class="alphabet-item btn-abjad" data-letter="${letter}">${letter}</div>`
@@ -687,9 +1053,6 @@
                 `<div class="alphabet-item btn-abjad" data-number="${num}">${num}</div>`
             ).join('');
 
-            // ============================================
-            // EVENT LISTENER UNTUK TOMBOL HURUF & ANGKA
-            // ============================================
             const tombolAbjad = document.querySelectorAll('.btn-abjad');
 
             function ucapkanTeks(teks) {
@@ -710,66 +1073,29 @@
                 tombol.addEventListener('click', () => {
                     const nilai = tombol.dataset.letter || tombol.dataset.number;
                     
-                    // Update display
                     translationTextAlpha.innerText = nilai;
-                    statusTextAlpha.innerText = `✓ Huruf/Angka Terdeteksi: ${nilai}`;
+                    addToHistory('alphabet', nilai);
 
-                    // Highlight item
                     tombolAbjad.forEach(btn => btn.classList.remove('detected'));
                     tombol.classList.add('detected');
+                    updateConfidenceBar('alphabet', 95);
 
-                    // Ucapkan teks
                     ucapkanTeks(nilai);
 
-                    // Remove highlight after 800ms
                     setTimeout(() => {
                         tombol.classList.remove('detected');
+                        updateConfidenceBar('alphabet', 0);
                     }, 800);
                 });
             });
-
-            statusTextAlpha.innerText = '✓ Klik huruf atau angka untuk mengucapkannya';
-            translationTextAlpha.innerText = '-';
-        }
-
-        // ============================================
-        // TEXT-TO-SPEECH (Bahasa Indonesia)
-        // ============================================
-        function speakText(text) {
-            if (!text || !window.speechSynthesis) return;
-
-            // Cancel any ongoing speech
-            window.speechSynthesis.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'id-ID';
-            utterance.rate = 0.9;
-            utterance.pitch = 1;
-            utterance.volume = 1;
-
-            window.speechSynthesis.speak(utterance);
-
-            showToast(`Berbicara: "${text}"`);
-        }
-
-        // ============================================
-        // TOAST NOTIFICATION
-        // ============================================
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.innerText = message;
-            toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2500);
         }
 
         // ============================================
         // INITIALIZATION
         // ============================================
         document.addEventListener('DOMContentLoaded', () => {
-            initGestureMode();
+            updateBadge('gesture', false);
+            updateBadge('alphabet', false);
         });
     </script>
 </body>
