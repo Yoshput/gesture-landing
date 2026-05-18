@@ -845,6 +845,11 @@ Senang berkenalan dengan anda</textarea>
                         </div>
 
                         <div class="button-group">
+                            <button class="btn btn-info" id="btn-start-camera" style="flex: 1;">📷 Nyalakan Kamera</button>
+                            <button class="btn btn-danger" id="btn-stop-camera" style="flex: 1;">🛑 Matikan Kamera</button>
+                        </div>
+
+                        <div class="button-group">
                             <button class="btn btn-success" id="btn-capture-gesture" style="flex: 1;">📸 Ambil Foto</button>
                             <button class="btn btn-warning" id="btn-skip-word">⏭️ Skip</button>
                         </div>
@@ -1360,6 +1365,30 @@ Senang berkenalan dengan anda</textarea>
                 switchTab('create');
                 document.getElementById('recording-interface').style.display = 'none';
                 stopRecordingCamera();
+            }
+        });
+
+        // Start camera button
+        document.getElementById('btn-start-camera').addEventListener('click', async () => {
+            console.log('🎬 User klik tombol Nyalakan Kamera');
+            try {
+                await startCameraWaitReady();
+            } catch (error) {
+                console.error('Error starting camera:', error);
+                showToast('❌ Error: ' + error.message, 'error');
+            }
+        });
+
+        // Stop camera button
+        document.getElementById('btn-stop-camera').addEventListener('click', () => {
+            console.log('🛑 User klik tombol Matikan Kamera');
+            try {
+                stopRecordingCamera();
+                document.getElementById('recording-status').textContent = 'Kamera dimatikan';
+                showToast('✅ Kamera berhasil dimatikan', 'success');
+            } catch (error) {
+                console.error('Error stopping camera:', error);
+                showToast('❌ Error: ' + error.message, 'error');
             }
         });
 
