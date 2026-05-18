@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Gesture Presentation - Gestur Bahasa Isyarat</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- MediaPipe CDNs -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --primary-color: #2563EB;
+            --primary-dark: #1E40AF;
+            --secondary-color: #10B981;
+            --bg-light: #F8FAFC;
+            --bg-white: #FFFFFF;
+            --border-color: #E2E8F0;
+            --text-primary: #1E293B;
+            --text-secondary: #64748B;
+            --success-color: #059669;
+            --warning-color: #D97706;
+            --danger-color: #DC2626;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #E0E7FF 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 0.6s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        /* Navigation */
+        .nav-bar {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-white);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .nav-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            background: var(--bg-white);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            padding: 30px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Tab Container */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Input Section */
+        .input-section {
+            background: var(--bg-light);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .input-section h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        input[type="text"],
+        textarea {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+            resize: vertical;
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Button Group */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-light);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #047857;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #991b1b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #b45309;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Words List */
+        .words-container {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .word-card {
+            background: var(--bg-light);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .word-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+
+        .word-card.has-gesture {
+            border-color: var(--success-color);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .word-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .word-index {
+            background: var(--primary-color);
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .word-details {
+            flex: 1;
+        }
+
+        .word-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .word-status {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .word-status.has-gesture {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .gesture-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .gesture-preview:hover {
+            transform: scale(1.05);
+        }
+
+        .gesture-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .word-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .gesture-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--success-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Recording Section */
+        .recording-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .recording-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .camera-box {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .camera-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 75%;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            background: #000;
+        }
+
+        video, canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+            object-fit: cover;
+        }
+
+        #recording-canvas {
+            z-index: 2;
+        }
+
+        .recording-info {
+            background: var(--bg-light);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .recording-word {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .recording-instructions {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Controls Box */
+        .controls-box {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-section {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .control-section h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .status-display {
+            background: var(--bg-white);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+
+        #recording-status {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Playback Section */
+        .playback-section {
+            background: var(--bg-light);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .playback-section h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .playback-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .playback-timeline {
+            display: grid;
+            gap: 10px;
+        }
+
+        .playback-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .playback-item.current {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+            font-weight: 600;
+        }
+
+        .playback-index {
+            background: var(--primary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .playback-word {
+            flex: 1;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .playback-gesture-icon {
+            color: var(--success-color);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--success-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            animation: slideInUp 0.3s ease;
+            display: none;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .empty-state-text {
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1>📽️ Custom Gesture Presentation</h1>
+        <p>Buat presentasi unik dengan gesture dan kalimat pilihan Anda!</p>
+    </header>
+
+    <!-- Navigation -->
+    <div class="nav-bar">
+        <a href="index.html" class="nav-btn">← Kembali ke Utama</a>
+        <a href="dashboard.html" class="nav-btn">Dashboard</a>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="create">Buat Presentasi</button>
+            <button class="tab-btn" data-tab="record">Rekam Gesture</button>
+            <button class="tab-btn" data-tab="playback">Tampilkan</button>
+            <button class="tab-btn" data-tab="library">Perpustakaan</button>
+        </div>
+
+        <!-- TAB 1: Create Presentation -->
+        <div id="create" class="tab-content active">
+            <div class="input-section">
+                <h3>📝 Buat Presentasi Baru</h3>
+                
+                <div class="input-group">
+                    <label>Nama Presentasi</label>
+                    <input type="text" id="presentation-name" placeholder="Contoh: Perkenalan Diri Saya" value="Perkenalan Diri Saya">
+                </div>
+
+                <div class="input-group">
+                    <label>Masukkan Kalimat (pisahkan dengan Enter)</label>
+                    <textarea id="text-input" placeholder="Contoh:&#10;Halo&#10;Perkenalkan&#10;Nama saya&#10;Yossika&#10;Asal&#10;Teknik Informatika&#10;Senang berkenalan dengan anda">Halo
+Perkenalkan
+Nama saya
+Yossika
+Asal
+Jurusan
+Teknik
+Informatika
+Senang berkenalan dengan anda</textarea>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary" id="btn-process-text">🔄 Proses Kalimat</button>
+                    <button class="btn btn-secondary" id="btn-clear-text">🗑️ Hapus Semua</button>
+                </div>
+            </div>
+
+            <!-- Words List -->
+            <div id="words-list-container" style="display: none;">
+                <h3 style="margin-bottom: 15px; font-size: 1rem; font-weight: 700; color: var(--text-primary);">Daftar Kata</h3>
+                <div class="words-container" id="words-list"></div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-words">0</div>
+                        <div class="stat-label">Total Kata</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="recorded-words">0</div>
+                        <div class="stat-label">Sudah Direkam</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="progress-percent">0%</div>
+                        <div class="stat-label">Progress</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Record Gesture -->
+        <div id="record" class="tab-content">
+            <div id="recording-interface" style="display: none;">
+                <div class="recording-section">
+                    <!-- Camera -->
+                    <div class="camera-box">
+                        <div class="camera-label">📹 Kamera Anda</div>
+                        <div class="video-container">
+                            <video id="recording-video"></video>
+                            <canvas id="recording-canvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="controls-box">
+                        <div class="control-section">
+                            <h4>📢 Kata Saat Ini</h4>
+                            <div class="recording-info">
+                                <div class="recording-word" id="current-recording-word">-</div>
+                                <div class="recording-instructions">
+                                    Posisikan tangan Anda di depan kamera, lalu klik tombol "Ambil Foto" saat gerakan gesture sudah sempurna.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="control-section">
+                            <h4>📊 Status</h4>
+                            <div class="status-display">
+                                <div id="recording-status">Siap merekam</div>
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn btn-success" id="btn-capture-gesture" style="flex: 1;">📸 Ambil Foto</button>
+                            <button class="btn btn-warning" id="btn-skip-word">⏭️ Skip</button>
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn btn-secondary" id="btn-back-to-create" style="flex: 1;">← Kembali</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="recording-empty-state" class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <div class="empty-state-text">Buat presentasi terlebih dahulu dari tab "Buat Presentasi"</div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Playback -->
+        <div id="playback" class="tab-content">
+            <div id="playback-interface" style="display: none;">
+                <div class="playback-section">
+                    <h3>🎬 Tampilkan Presentasi Anda</h3>
+                    <div style="margin-bottom: 20px;">
+                        <strong>Presentasi:</strong> <span id="playback-title" style="color: var(--primary-color); font-weight: 700;"></span>
+                    </div>
+
+                    <div class="playback-controls">
+                        <button class="btn btn-primary" id="btn-play">▶️ Mulai</button>
+                        <button class="btn btn-secondary" id="btn-pause" disabled>⏸️ Pause</button>
+                        <button class="btn btn-secondary" id="btn-next-playback">⏭️ Berikutnya</button>
+                        <button class="btn btn-secondary" id="btn-reset-playback">🔄 Reset</button>
+                    </div>
+
+                    <div class="playback-timeline" id="playback-timeline"></div>
+                </div>
+            </div>
+
+            <div id="playback-empty-state" class="empty-state">
+                <div class="empty-state-icon">🎬</div>
+                <div class="empty-state-text">Tidak ada presentasi untuk ditampilkan</div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Library -->
+        <div id="library" class="tab-content">
+            <div class="input-section" style="margin-bottom: 30px;">
+                <h3>📚 Perpustakaan Presentasi</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Kelola semua presentasi yang telah Anda buat</p>
+                
+                <div id="library-list" class="words-container"></div>
+                
+                <div id="library-empty" class="empty-state" style="margin-top: 30px;">
+                    <div class="empty-state-icon">📚</div>
+                    <div class="empty-state-text">Belum ada presentasi yang disimpan</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Modal Preview -->
+    <div class="modal" id="preview-modal">
+        <div class="modal-content">
+            <div class="modal-header">👁️ Pratinjau Gesture</div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <img id="preview-image" style="width: 100%; max-width: 300px; border-radius: 8px; border: 2px solid var(--border-color);">
+                </div>
+                <div style="text-align: center; color: var(--text-secondary);">
+                    <strong id="preview-word"></strong>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePreviewModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Management
+        let presentations = [];
+        let currentPresentation = null;
+        let currentRecordingIndex = 0;
+        let isRecording = false;
+        let isPlayingBack = false;
+
+        // MediaPipe Hands
+        let hands = null;
+        let camera = null;
+        let canvasCtx = null;
+
+        // Initialize
+        async function initializeMediaPipe() {
+            hands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.3/${file}`
+            });
+
+            hands.setOptions({
+                maxNumHands: 2,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+        }
+
+        async function startRecordingCamera() {
+            const video = document.getElementById('recording-video');
+            const canvas = document.getElementById('recording-canvas');
+            canvasCtx = canvas.getContext('2d');
+
+            if (!hands) await initializeMediaPipe();
+
+            camera = new Camera(video, {
+                onFrame: async () => {
+                    const results = await hands.process(video);
+                    
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+
+                    canvasCtx.save();
+                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                    canvasCtx.scale(-1, 1);
+                    canvasCtx.translate(-canvas.width, 0);
+                    canvasCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    if (results.multiHandLandmarks) {
+                        for (const landmarks of results.multiHandLandmarks) {
+                            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 5});
+                            drawLandmarks(canvasCtx, landmarks, {color: '#00FF00', lineWidth: 2});
+                        }
+                    }
+                    canvasCtx.restore();
+                },
+                width: 1280,
+                height: 720
+            });
+
+            camera.start();
+            isRecording = true;
+        }
+
+        function stopRecordingCamera() {
+            if (camera) {
+                camera.stop();
+                isRecording = false;
+            }
+        }
+
+        // Load presentations from localStorage
+        function loadPresentations() {
+            const saved = localStorage.getItem('customPresentations');
+            presentations = saved ? JSON.parse(saved) : [];
+        }
+
+        // Save presentations to localStorage
+        function savePresentations() {
+            localStorage.setItem('customPresentations', JSON.stringify(presentations));
+        }
+
+        // Process text input
+        document.getElementById('btn-process-text').addEventListener('click', () => {
+            const name = document.getElementById('presentation-name').value.trim();
+            const text = document.getElementById('text-input').value.trim();
+
+            if (!name) {
+                showToast('❌ Nama presentasi tidak boleh kosong', 'error');
+                return;
+            }
+
+            if (!text) {
+                showToast('❌ Kalimat tidak boleh kosong', 'error');
+                return;
+            }
+
+            const words = text.split('\n').map(w => w.trim()).filter(w => w.length > 0);
+
+            if (words.length === 0) {
+                showToast('❌ Tidak ada kata yang valid', 'error');
+                return;
+            }
+
+            currentPresentation = {
+                id: Date.now(),
+                name: name,
+                words: words.map(w => ({ text: w, gesture: null })),
+                createdAt: new Date().toLocaleString('id-ID')
+            };
+
+            savePresentations();
+            displayWordsList();
+            showToast('✅ Kalimat berhasil diproses!', 'success');
+        });
+
+        // Display words list
+        function displayWordsList() {
+            if (!currentPresentation) return;
+
+            const container = document.getElementById('words-list');
+            container.innerHTML = '';
+
+            currentPresentation.words.forEach((word, index) => {
+                const card = document.createElement('div');
+                card.className = `word-card ${word.gesture ? 'has-gesture' : ''}`;
+                card.innerHTML = `
+                    <div class="word-info">
+                        <div class="word-index">${index + 1}</div>
+                        <div class="word-details">
+                            <div class="word-text">${word.text}</div>
+                            <div class="word-status ${word.gesture ? 'has-gesture' : ''}">
+                                ${word.gesture ? '✅ Gesture sudah direkam' : '⏳ Menunggu gesture'}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="word-actions">
+                        ${word.gesture ? `
+                            <div class="gesture-preview" onclick="showPreview(${index})">
+                                <img src="${word.gesture}">
+                            </div>
+                        ` : ''}
+                        <button class="btn btn-small btn-primary" onclick="startRecordingWord(${index})">
+                            📸 Rekam
+                        </button>
+                        <button class="btn btn-small btn-danger" onclick="deleteWord(${index})">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // Update stats
+            const total = currentPresentation.words.length;
+            const recorded = currentPresentation.words.filter(w => w.gesture).length;
+            document.getElementById('total-words').textContent = total;
+            document.getElementById('recorded-words').textContent = recorded;
+            document.getElementById('progress-percent').textContent = Math.round((recorded / total) * 100) + '%';
+
+            document.getElementById('words-list-container').style.display = 'block';
+        }
+
+        // Start recording for specific word
+        function startRecordingWord(index) {
+            currentRecordingIndex = index;
+            
+            // Switch to record tab
+            switchTab('record');
+            
+            // Show recording interface
+            document.getElementById('recording-interface').style.display = 'block';
+            document.getElementById('recording-empty-state').style.display = 'none';
+            
+            // Update current word display
+            document.getElementById('current-recording-word').textContent = currentPresentation.words[index].text;
+            document.getElementById('recording-status').textContent = `Kata ${index + 1} dari ${currentPresentation.words.length}`;
+
+            startRecordingCamera();
+        }
+
+        // Capture gesture
+        document.getElementById('btn-capture-gesture').addEventListener('click', () => {
+            const canvas = document.getElementById('recording-canvas');
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            currentPresentation.words[currentRecordingIndex].gesture = imageData;
+            savePresentations();
+            
+            showToast('✅ Gesture berhasil disimpan!', 'success');
+            
+            // Move to next word
+            if (currentRecordingIndex < currentPresentation.words.length - 1) {
+                currentRecordingIndex++;
+                document.getElementById('current-recording-word').textContent = currentPresentation.words[currentRecordingIndex].text;
+                document.getElementById('recording-status').textContent = `Kata ${currentRecordingIndex + 1} dari ${currentPresentation.words.length}`;
+            } else {
+                showToast('🎉 Semua gesture sudah direkam!', 'success');
+                switchTab('create');
+                document.getElementById('recording-interface').style.display = 'none';
+                displayWordsList();
+                stopRecordingCamera();
+            }
+
+            displayWordsList();
+        });
+
+        // Skip word
+        document.getElementById('btn-skip-word').addEventListener('click', () => {
+            if (currentRecordingIndex < currentPresentation.words.length - 1) {
+                currentRecordingIndex++;
+                document.getElementById('current-recording-word').textContent = currentPresentation.words[currentRecordingIndex].text;
+                document.getElementById('recording-status').textContent = `Kata ${currentRecordingIndex + 1} dari ${currentPresentation.words.length}`;
+            } else {
+                switchTab('create');
+                document.getElementById('recording-interface').style.display = 'none';
+                stopRecordingCamera();
+            }
+        });
+
+        // Back button
+        document.getElementById('btn-back-to-create').addEventListener('click', () => {
+            switchTab('create');
+            document.getElementById('recording-interface').style.display = 'none';
+            stopRecordingCamera();
+        });
+
+        // Delete word
+        function deleteWord(index) {
+            if (confirm('Hapus kata ini?')) {
+                currentPresentation.words.splice(index, 1);
+                savePresentations();
+                displayWordsList();
+                showToast('✅ Kata berhasil dihapus!', 'success');
+            }
+        }
+
+        // Clear text
+        document.getElementById('btn-clear-text').addEventListener('click', () => {
+            if (confirm('Hapus semua?')) {
+                document.getElementById('text-input').value = '';
+                document.getElementById('presentation-name').value = '';
+                document.getElementById('words-list-container').style.display = 'none';
+                currentPresentation = null;
+            }
+        });
+
+        // Preview gesture
+        function showPreview(index) {
+            const word = currentPresentation.words[index];
+            document.getElementById('preview-image').src = word.gesture;
+            document.getElementById('preview-word').textContent = word.text;
+            document.getElementById('preview-modal').classList.add('active');
+        }
+
+        function closePreviewModal() {
+            document.getElementById('preview-modal').classList.remove('active');
+        }
+
+        // Playback functions
+        function displayPlayback() {
+            if (!currentPresentation || currentPresentation.words.length === 0) {
+                document.getElementById('playback-interface').style.display = 'none';
+                document.getElementById('playback-empty-state').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('playback-interface').style.display = 'block';
+            document.getElementById('playback-empty-state').style.display = 'none';
+            document.getElementById('playback-title').textContent = currentPresentation.name;
+
+            const timeline = document.getElementById('playback-timeline');
+            timeline.innerHTML = '';
+
+            currentPresentation.words.forEach((word, index) => {
+                const item = document.createElement('div');
+                item.className = 'playback-item';
+                item.innerHTML = `
+                    <div class="playback-index">${index + 1}</div>
+                    <div class="playback-word">${word.text}</div>
+                    ${word.gesture ? '<div class="playback-gesture-icon">✅</div>' : '<div style="color: var(--warning-color);">⏳</div>'}
+                `;
+                timeline.appendChild(item);
+            });
+        }
+
+        // Library functions
+        function displayLibrary() {
+            loadPresentations();
+            const container = document.getElementById('library-list');
+            const emptyState = document.getElementById('library-empty');
+
+            if (presentations.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+
+            presentations.forEach((pres, index) => {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                card.innerHTML = `
+                    <div class="word-info">
+                        <div class="word-index">${index + 1}</div>
+                        <div class="word-details">
+                            <div class="word-text">${pres.name}</div>
+                            <div class="word-status">
+                                📅 ${pres.createdAt} | 📊 ${pres.words.filter(w => w.gesture).length}/${pres.words.length} gesture
+                            </div>
+                        </div>
+                    </div>
+                    <div class="word-actions">
+                        <button class="btn btn-small btn-primary" onclick="loadPresentation(${pres.id})">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn btn-small btn-danger" onclick="deletePresentation(${pres.id})">
+                            🗑️ Hapus
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function loadPresentation(id) {
+            const pres = presentations.find(p => p.id === id);
+            if (pres) {
+                currentPresentation = pres;
+                switchTab('create');
+                document.getElementById('presentation-name').value = pres.name;
+                displayWordsList();
+                showToast('✅ Presentasi berhasil dimuat!', 'success');
+            }
+        }
+
+        function deletePresentation(id) {
+            if (confirm('Hapus presentasi ini?')) {
+                presentations = presentations.filter(p => p.id !== id);
+                savePresentations();
+                displayLibrary();
+                showToast('✅ Presentasi berhasil dihapus!', 'success');
+            }
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Special handling for playback and library
+            if (tabName === 'playback') {
+                displayPlayback();
+            } else if (tabName === 'library') {
+                displayLibrary();
+            }
+        }
+
+        // Tab button listeners
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTab(btn.dataset.tab);
+            });
+        });
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            loadPresentations();
+            initializeMediaPipe();
+        });
+
+        // Cleanup on unload
+        window.addEventListener('unload', () => {
+            stopRecordingCamera();
+        });
+    </script>
+</body>
+</html>
