@@ -789,6 +789,7 @@
     <div class="mode-selector">
         <button class="mode-btn active" data-mode="gesture">Pengenalan Gestur</button>
         <button class="mode-btn" data-mode="alphabet">Huruf & Angka</button>
+        <button class="mode-btn" data-mode="perkenalan">💬 Perkenalan</button>
         <a href="custom-gesture.html" class="mode-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">📽️ Presentasi Custom</a>
     </div>
 
@@ -953,6 +954,85 @@
                             <div class="output-label">Belum ada deteksi</div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Section - Perkenalan Mode -->
+        <div class="camera-section mode-content" data-mode="perkenalan">
+            <div class="status-badge offline" id="badge-perkenalan">
+                <span class="badge-dot"></span>
+                Kamera Mati
+            </div>
+            <div class="camera-controls">
+                <button class="btn-control btn-start" id="btn-start-perkenalan">▶ Mulai Kamera</button>
+                <button class="btn-control btn-stop" id="btn-stop-perkenalan" disabled>⏹ Matikan Kamera</button>
+            </div>
+            <div class="camera-label">Kamera Input</div>
+            <div class="video-container">
+                <video id="webcam-perkenalan" autoplay playsinline></video>
+                <canvas id="output_canvas_perkenalan"></canvas>
+            </div>
+            <div class="confidence-section">
+                <div class="confidence-label">
+                    <span>Gesture Terdeteksi</span>
+                    <span id="gesture-detected-perkenalan">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel - Perkenalan Mode -->
+        <div class="info-panel mode-content" data-mode="perkenalan">
+            <!-- User Input -->
+            <div class="panel-section">
+                <h3>📋 Data Perkenalan</h3>
+                <div class="input-group">
+                    <label for="nama-input">Nama:</label>
+                    <input type="text" id="nama-input" placeholder="Masukkan nama Anda..." value="Yossika">
+                </div>
+                <div class="input-group">
+                    <label for="status-input">Status/Jabatan:</label>
+                    <input type="text" id="status-input" placeholder="Misal: Mahasiswa, Guru, dll..." value="Mahasiswa">
+                </div>
+                <div class="input-group">
+                    <label for="institusi-input">Institusi:</label>
+                    <input type="text" id="institusi-input" placeholder="Misal: Telkom, UGM, dll..." value="Telkom">
+                </div>
+                <div class="input-group">
+                    <label for="salam-input">Salam Penutup:</label>
+                    <input type="text" id="salam-input" placeholder="Salam akhir..." value="Senang berkenalan dengan Anda">
+                </div>
+            </div>
+
+            <!-- Preview Perkenalan -->
+            <div class="translation-box">
+                <div class="label">🎤 Perkenalan Preview</div>
+                <div class="text" id="perkenalan-preview">
+                    <div style="font-size: 0.9rem; line-height: 1.6;">
+                        <div>Perkenalkan!</div>
+                        <div>Nama saya <strong id="preview-nama">Yossika</strong></div>
+                        <div>Saya adalah <strong id="preview-status">Mahasiswa</strong></div>
+                        <div>dari <strong id="preview-institusi">Telkom</strong></div>
+                        <div style="margin-top: 10px;"><em id="preview-salam">Senang berkenalan dengan Anda</em></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gesture Instruction -->
+            <div class="panel-section">
+                <h3>📢 Instruksi</h3>
+                <div style="font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary);">
+                    <p style="margin-bottom: 10px;">✋ Pegang gesture <strong>"Semua Jari Terbuka"</strong> di hadapan kamera untuk memicu perkenalan!</p>
+                    <p style="margin-bottom: 10px;">🔊 Audio akan diputar secara otomatis ketika gesture terdeteksi</p>
+                    <p>💾 Data perkenalan akan disimpan dan dapat digunakan kembali</p>
+                </div>
+            </div>
+
+            <!-- Gesture List -->
+            <div class="panel-section">
+                <h3>🎯 Gesture untuk Trigger</h3>
+                <div class="gesture-list">
+                    <div class="gesture-item" style="background: #DCF8C1; border: 2px solid #4CAF50;">✅ 🖐️ Semua Jari Terbuka</div>
                 </div>
             </div>
         </div>
@@ -1746,11 +1826,189 @@
         }
 
         // ============================================
+        // PERKENALAN MODE - SETUP & EVENT LISTENERS
+        // ============================================
+        let streamPerkenalan = null;
+        let cameraPerkenalan = null;
+        let handsPerkenalan = null;
+        let lastPerkenalTrigger = 0;
+
+        // Update preview ketika input berubah
+        document.getElementById('nama-input').addEventListener('input', (e) => {
+            document.getElementById('preview-nama').textContent = e.target.value || 'Nama Anda';
+        });
+
+        document.getElementById('status-input').addEventListener('input', (e) => {
+            document.getElementById('preview-status').textContent = e.target.value || 'Status Anda';
+        });
+
+        document.getElementById('institusi-input').addEventListener('input', (e) => {
+            document.getElementById('preview-institusi').textContent = e.target.value || 'Institusi Anda';
+        });
+
+        document.getElementById('salam-input').addEventListener('input', (e) => {
+            document.getElementById('preview-salam').textContent = e.target.value || 'Salam Anda';
+        });
+
+        // Fungsi untuk memicu perkenalan dengan text-to-speech
+        function triggerPerkenalan() {
+            const now = Date.now();
+            if (now - lastPerkenalTrigger < 3000) return; // Cooldown 3 detik
+            lastPerkenalTrigger = now;
+
+            const nama = document.getElementById('nama-input').value;
+            const status = document.getElementById('status-input').value;
+            const institusi = document.getElementById('institusi-input').value;
+            const salam = document.getElementById('salam-input').value;
+
+            const text = `Perkenalkan! Nama saya ${nama}. Saya adalah ${status} dari ${institusi}. ${salam}`;
+
+            console.log('🎤 Memicu perkenalan:', text);
+            showToast(`✅ Perkenalan: ${nama}`, 'success');
+
+            // Gunakan Web Speech API untuk text-to-speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            
+            window.speechSynthesis.cancel(); // Cancel any pending speech
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Button event listeners untuk Perkenalan
+        document.getElementById('btn-start-perkenalan')?.addEventListener('click', async () => {
+            const videoElem = document.getElementById('webcam-perkenalan');
+            if (!videoElem) return;
+
+            try {
+                streamPerkenalan = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 640 }, height: { ideal: 480 } } 
+                });
+                videoElem.srcObject = streamPerkenalan;
+                
+                if (!handsPerkenalan) {
+                    handsPerkenalan = new Hands({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`
+                    });
+                    handsPerkenalan.setOptions({
+                        maxNumHands: 1,
+                        modelComplexity: 1,
+                        minDetectionConfidence: 0.5,
+                        minTrackingConfidence: 0.5
+                    });
+                    handsPerkenalan.onResults(onResultsPerkenalan);
+                }
+
+                cameraPerkenalan = new Camera(videoElem, {
+                    onFrame: async () => {
+                        if (handsPerkenalan) {
+                            await handsPerkenalan.send({ image: videoElem });
+                        }
+                    },
+                    width: 640,
+                    height: 480
+                });
+
+                await cameraPerkenalan.start();
+                updateBadge('perkenalan', true);
+                document.getElementById('btn-start-perkenalan').disabled = true;
+                document.getElementById('btn-stop-perkenalan').disabled = false;
+                showToast('✓ Kamera Perkenalan Aktif', 'success');
+
+            } catch (err) {
+                console.error('Error starting perkenalan camera:', err);
+                showToast('✗ Error: ' + err.message);
+            }
+        });
+
+        document.getElementById('btn-stop-perkenalan')?.addEventListener('click', () => {
+            if (cameraPerkenalan) {
+                cameraPerkenalan.stop();
+                cameraPerkenalan = null;
+            }
+            if (streamPerkenalan) {
+                streamPerkenalan.getTracks().forEach(track => track.stop());
+                streamPerkenalan = null;
+            }
+            updateBadge('perkenalan', false);
+            document.getElementById('btn-start-perkenalan').disabled = false;
+            document.getElementById('btn-stop-perkenalan').disabled = true;
+            showToast('⏹ Kamera Perkenalan Dimatikan');
+        });
+
+        // Callback untuk detection perkenalan
+        function onResultsPerkenalan(results) {
+            const canvas = document.getElementById('output_canvas_perkenalan');
+            const videoElem = document.getElementById('webcam-perkenalan');
+            const statusElem = document.getElementById('gesture-detected-perkenalan');
+
+            if (!canvas || !videoElem) return;
+
+            canvas.width = videoElem.videoWidth;
+            canvas.height = videoElem.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.scale(-1, 1);
+            ctx.translate(-canvas.width, 0);
+            ctx.drawImage(videoElem, 0, 0, canvas.width, canvas.height);
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // Cek jika semua jari terbuka (hand open gesture)
+                const isHandOpen = checkHandOpen(landmarks);
+                
+                if (isHandOpen) {
+                    statusElem.textContent = '✋ Tangan Terbuka (Trigger!)';
+                    statusElem.style.color = '#059669';
+                    triggerPerkenalan();
+                } else {
+                    statusElem.textContent = '👆 Tangan Terdeteksi';
+                    statusElem.style.color = '#64748B';
+                }
+
+                // Draw hand skeleton
+                if (typeof drawConnectors === 'function' && typeof HAND_CONNECTIONS !== 'undefined') {
+                    drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
+                }
+                if (typeof drawLandmarks === 'function') {
+                    drawLandmarks(ctx, landmarks, { color: '#00FF00', lineWidth: 2 });
+                }
+            } else {
+                statusElem.textContent = '-';
+                statusElem.style.color = '#64748B';
+            }
+            ctx.restore();
+        }
+
+        // Helper function untuk deteksi hand open (semua jari terbuka)
+        function checkHandOpen(landmarks) {
+            if (!landmarks || landmarks.length < 21) return false;
+            
+            // Simple check: if all fingertips are raised (y < palm area)
+            const palmBottom = landmarks[0].y; // Wrist
+            const fingertips = [
+                landmarks[4].y,  // Thumb
+                landmarks[8].y,  // Index
+                landmarks[12].y, // Middle
+                landmarks[16].y, // Ring
+                landmarks[20].y  // Pinky
+            ];
+            
+            // All fingertips should be above (lower y value) the wrist
+            return fingertips.every(y => y < palmBottom - 0.1);
+        }
+
+        // ============================================
         // INITIALIZATION
         // ============================================
         document.addEventListener('DOMContentLoaded', () => {
             updateBadge('gesture', false);
             updateBadge('alphabet', false);
+            updateBadge('perkenalan', false);
             updateMiniStats();
         });
     </script>
