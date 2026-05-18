@@ -1541,7 +1541,8 @@ Senang berkenalan dengan anda</textarea>
         // Initialize on load
         window.addEventListener('load', () => {
             loadPresentations();
-            initializeMediaPipe();
+            // Camera akan di-start saat user klik tombol "Rekam" (di startRecordingWord)
+            // Jangan start di sini karena akan request permission tanpa perlu
         });
 
         // Cleanup on unload
