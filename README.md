@@ -56,7 +56,7 @@ Tracking progress pembelajaran dengan:
 ## 🚀 Quick Start
 
 ### 1. **Online** (GitHub Pages)
-Buka langsung di browser: [https://github.com/[username]/gesture-recognition-kelompok-2](https://github.com)
+Buka langsung di browser: [https://tokiooferius.github.io/gesture-landing/](https://tokiooferius.github.io/gesture-landing/)
 
 ### 2. **Lokal** (Development)
 
