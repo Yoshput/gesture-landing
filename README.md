@@ -299,7 +299,7 @@ git push -u origin main
 - Save
 
 ### Step 4: Akses
-- URL: `https://[username].github.io/gesture-recognition-kelompok-2/`
+- URL: `[https://[tokiooferius].github.io/gesture-recognition-kelompok-2/`](https://tokiooferius.github.io/gesture-landing/)
 
 ---
 
