@@ -210,6 +210,14 @@ Senang berkenalan dengan anda</textarea>
     </div>
 
     <script>
+        /* ========================================================
+           CUSTOM GESTURE APPLICATION - TERSTRUKTUR & PROFESIONAL
+           ======================================================== */
+
+        /* ========================================================
+           1. GLOBAL VARIABLES
+           ======================================================== */
+
         // Data Management
         let presentations = [];
         let currentPresentation = null;
@@ -217,17 +225,22 @@ Senang berkenalan dengan anda</textarea>
         let isRecording = false;
         let isPlayingBack = false;
 
-        // MediaPipe Hands
+        // MediaPipe Hands & Camera
         let hands = null;
         let camera = null;
         let canvasCtx = null;
         let lastResults = null;
-
-        // Callback untuk hasil deteksi tangan
+        let modelSiap = false;
         let frameCounter = 0;
-        let lastLogTime = 0;
 
-        // Fungsi callback untuk menerima hasil deteksi dari MediaPipe
+        /* ========================================================
+           2. MEDIAPIPE CORE FUNCTIONS
+           ======================================================== */
+
+        /**
+         * Callback untuk menerima hasil deteksi tangan dari MediaPipe
+         * Menggambar skeletal hijau dan merah pada canvas
+         */
         function onResults(results) {
             const videoElement = document.getElementById('recording-video') || document.querySelector('video');
             const canvasElement = document.getElementById('recording-canvas') || document.querySelector('canvas');
@@ -243,7 +256,7 @@ Senang berkenalan dengan anda</textarea>
                 return;
             }
 
-            // 1. Ambil ukuran resolusi video asli agar gambar canvas tidak melar/geser
+            // 1. Sinkronkan ukuran canvas dengan resolusi video asli
             if (videoElement && (canvasElement.width !== videoElement.videoWidth)) {
                 canvasElement.width = videoElement.videoWidth || 640;
                 canvasElement.height = videoElement.videoHeight || 480;
@@ -253,7 +266,7 @@ Senang berkenalan dengan anda</textarea>
             ctx.save();
             ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-            // 3. Mirror canvas untuk output yang natural
+            // 3. Mirror canvas untuk output yang natural (left-right flip)
             ctx.scale(-1, 1);
             ctx.translate(-canvasElement.width, 0);
 
@@ -262,19 +275,20 @@ Senang berkenalan dengan anda</textarea>
                 ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
             }
 
-            // 5. Jika data tangan terdeteksi oleh MediaPipe
+            // 5. Gambar skeletal tangan jika terdeteksi (GARIS HIJAU + TITIK MERAH)
             if (results && results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 for (const landmarks of results.multiHandLandmarks) {
-                    // Gambar titik sendi (Landmarks)
+                    // Gambar garis penghubung (Connectors) - HIJAU NEON
                     if (typeof drawConnectors === 'function' && typeof HAND_CONNECTIONS !== 'undefined') {
                         drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
-                            color: '#00FF00', // Warna garis hijau neon agar kontras
+                            color: '#00FF00',     // Hijau neon untuk visibility tinggi
                             lineWidth: 5
                         });
                     }
+                    // Gambar titik sendi (Landmarks) - MERAH SOLID
                     if (typeof drawLandmarks === 'function') {
                         drawLandmarks(ctx, landmarks, {
-                            color: '#FF0000', // Warna titik sendi merah
+                            color: '#FF0000',     // Merah untuk kontras dengan hijau
                             lineWidth: 2,
                             radius: 4
                         });
@@ -285,36 +299,38 @@ Senang berkenalan dengan anda</textarea>
             
             ctx.restore();
             
-            // Simpan hasil untuk keperluan lain
+            // 6. Simpan hasil untuk keperluan lain (capture, logging, dll)
             lastResults = results;
             frameCounter++;
         }
 
-        // Load Hand Gesture Model (Versi Sederhana & Andal)
-        let modelSiap = false; // Flag penanda apakah model siap
-        
+        /**
+         * Inisialisasi Model MediaPipe Hands v0.4
+         * Menggunakan Promise untuk wait hingga model siap
+         */
         function loadHandGestureModel() {
             return new Promise((resolve) => {
                 try {
-                    // Jika sudah dimuat, langsung resolve
+                    // Jika sudah dimuat, gunakan instance yang cached
                     if (hands && modelSiap) {
                         console.log('🌸 Model MediaPipe sudah siap (cached)');
                         resolve(hands);
                         return;
                     }
 
-                    // Buat instance baru
-                    console.log('⏳ Sedang memuat model MediaPipe...');
+                    // Buat instance baru dari MediaPipe Hands
+                    console.log('⏳ Sedang memuat model MediaPipe v0.4...');
                     
                     hands = new Hands({
                         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`
                     });
 
+                    // Konfigurasi opsi deteksi
                     hands.setOptions({
-                        maxNumHands: 1,
-                        modelComplexity: 1,
-                        minDetectionConfidence: 0.5,
-                        minTrackingConfidence: 0.5
+                        maxNumHands: 1,              // Hanya track 1 tangan
+                        modelComplexity: 1,          // Full model (0 = lite, 1 = full)
+                        minDetectionConfidence: 0.5, // Minimum confidence untuk deteksi awal
+                        minTrackingConfidence: 0.5   // Minimum confidence untuk tracking
                     });
 
                     // Pasang callback hasil deteksi
@@ -322,20 +338,23 @@ Senang berkenalan dengan anda</textarea>
                         hands.onResults(onResults);
                     }
 
-                    // Trik industri: tandai model siap setelah instance berhasil dibuat
+                    // Tandai model siap setelah instance berhasil dibuat
                     modelSiap = true;
-                    console.log('🌸 Model MediaPipe berhasil diinisialisasi!');
+                    console.log('🌸 Model MediaPipe v0.4 berhasil diinisialisasi!');
                     resolve(hands);
 
                 } catch (error) {
                     console.error('❌ Error loading model:', error);
-                    // Tetap resolve agar tidak freeze
-                    resolve(null);
+                    resolve(null); // Tetap resolve agar tidak freeze aplikasi
                 }
             });
         }
 
-        // Start kamera menggunakan Native Browser API (Lebih Stabil)
+        /**
+         * Inisialisasi dan Mulai Kamera
+         * Menggunakan Native Browser API (navigator.mediaDevices.getUserMedia)
+         * + requestAnimationFrame untuk deteksi loop yang stabil
+         */
         async function startCameraWaitReady() {
             try {
                 const videoElement = document.getElementById('recording-video');
@@ -347,7 +366,7 @@ Senang berkenalan dengan anda</textarea>
                     return;
                 }
 
-                // 1. Muat model MediaPipe terlebih dahulu
+                // STEP 1: Muat model MediaPipe terlebih dahulu
                 if (statusElement) statusElement.textContent = '⏳ Loading AI Model...';
                 console.log('📦 Memulai load model MediaPipe...');
                 
@@ -355,53 +374,61 @@ Senang berkenalan dengan anda</textarea>
                 
                 console.log("✅ Model siap! Memulai inisialisasi kamera native...");
 
-                // 2. Request akses kamera langsung menggunakan API native Browser
+                // STEP 2: Request akses kamera menggunakan Native Browser API
                 if (statusElement) statusElement.textContent = '⏳ Requesting Camera Access...';
                 console.log('📹 Meminta akses kamera dari browser...');
                 
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+                    video: { 
+                        width: { ideal: 1280 }, 
+                        height: { ideal: 720 } 
+                    }
                 });
                 
                 console.log('✅ Akses kamera diberikan! Setting up video element...');
 
-                // Pasang stream kamera ke elemen <video>
+                // Pasang MediaStream dari kamera ke elemen <video>
                 videoElement.srcObject = stream;
                 
-                // Paksa video langsung play tanpa memedulikan event listener yang rawan race condition
+                // Set attributes untuk autoplay tanpa race condition
                 videoElement.setAttribute('autoplay', '');
                 videoElement.setAttribute('playsinline', '');
                 videoElement.setAttribute('muted', '');
                 
-                // Tunggu video benar-benar siap sebelum mulai deteksi
+                // Pastikan video element dalam kondisi "playing" sebelum mulai deteksi
                 if (videoElement.paused) {
                     await videoElement.play();
                 }
                 
-                console.log("🎥 Stream kamera native berhasil tersambung ke elemen video!");
+                console.log("🎥 Stream kamera native berhasil tersambung!");
                 if (statusElement) statusElement.textContent = '⏳ Starting Detection Loop...';
 
-                // 3. Jalankan loop pengiriman frame menggunakan requestAnimationFrame (Sangat Stabil)
+                // STEP 3: Jalankan Detection Loop menggunakan requestAnimationFrame
                 let frameCount = 0;
                 let lastLogTime = Date.now();
                 
                 function deteksiLoop() {
-                    if (isRecording && modelSiap && hands && typeof hands.send === 'function' && videoElement.readyState >= 2) {
-                        hands.send({ image: videoElement }).catch(err => console.debug("Frame drop:", err));
+                    // Kirim frame ke MediaPipe hands untuk deteksi
+                    if (isRecording && modelSiap && hands && 
+                        typeof hands.send === 'function' && 
+                        videoElement.readyState >= 2) {
+                        
+                        hands.send({ image: videoElement })
+                            .catch(err => console.debug("Frame drop:", err));
                         frameCount++;
                         
-                        // Log setiap 2 detik
+                        // Log progress setiap 2 detik
                         if (Date.now() - lastLogTime > 2000) {
                             console.log(`📤 Frames sent: ${frameCount}, ready=${videoElement.readyState}`);
                             frameCount = 0;
                             lastLogTime = Date.now();
                         }
                     }
-                    // Minta browser menjalankan fungsi ini terus-menerus setiap ada frame baru
+                    // Terus minta browser render frame berikutnya
                     requestAnimationFrame(deteksiLoop);
                 }
                 
-                // Mulai loop deteksi AI
+                // Mulai detection loop
                 isRecording = true;
                 deteksiLoop();
                 console.log("📷 Kamera aktif dan skeletal AI berjalan lancar!");
@@ -410,7 +437,7 @@ Senang berkenalan dengan anda</textarea>
                 showToast('✅ Kamera aktif! Posisikan tangan Anda di depan kamera.', 'success');
 
             } catch (err) {
-                console.error("❌ Error mendasar pada kamera:", err);
+                console.error("❌ Error memulai kamera:", err);
                 showToast('❌ Gagal memulai kamera: ' + err.message, 'error');
                 isRecording = false;
                 const statusElement = document.getElementById('recording-status');
@@ -418,10 +445,14 @@ Senang berkenalan dengan anda</textarea>
             }
         }
 
+        /**
+         * Hentikan dan Matikan Kamera
+         * Bersihkan semua track stream dan resources
+         */
         function stopRecordingCamera() {
             isRecording = false;
             
-            // Stop semua tracks dari stream (cara native yang benar)
+            // Hentikan semua media tracks (cara yang benar)
             const videoElement = document.getElementById('recording-video');
             if (videoElement && videoElement.srcObject) {
                 const stream = videoElement.srcObject;
@@ -449,19 +480,29 @@ Senang berkenalan dengan anda</textarea>
             if (statusElement) statusElement.textContent = 'Kamera dimatikan ⏹️';
         }
 
-        // Load presentations from localStorage
+        /* ========================================================
+           3. DATA MANAGEMENT FUNCTIONS
+           ======================================================== */
+
+        /**
+         * Load presentations dari localStorage
+         */
         function loadPresentations() {
             const saved = localStorage.getItem('customPresentations');
             presentations = saved ? JSON.parse(saved) : [];
         }
 
-        // Save presentations to localStorage
+        /**
+         * Save presentations ke localStorage
+         */
         function savePresentations() {
             localStorage.setItem('customPresentations', JSON.stringify(presentations));
         }
 
-        // Process text input
-        document.getElementById('btn-process-text').addEventListener('click', () => {
+        /**
+         * Process text input dan buat presentation baru
+         */
+        function processTextInput() {
             const name = document.getElementById('presentation-name').value.trim();
             const text = document.getElementById('text-input').value.trim();
 
@@ -492,9 +533,53 @@ Senang berkenalan dengan anda</textarea>
             savePresentations();
             displayWordsList();
             showToast('✅ Kalimat berhasil diproses!', 'success');
-        });
+        }
 
-        // Display words list
+        /**
+         * Hapus kata dari presentation
+         */
+        function deleteWord(index) {
+            if (confirm('Hapus kata ini?')) {
+                currentPresentation.words.splice(index, 1);
+                savePresentations();
+                displayWordsList();
+                showToast('✅ Kata berhasil dihapus!', 'success');
+            }
+        }
+
+        /**
+         * Load presentation dari library
+         */
+        function loadPresentation(id) {
+            const pres = presentations.find(p => p.id === id);
+            if (pres) {
+                currentPresentation = pres;
+                switchTab('create');
+                document.getElementById('presentation-name').value = pres.name;
+                displayWordsList();
+                showToast('✅ Presentasi berhasil dimuat!', 'success');
+            }
+        }
+
+        /**
+         * Hapus presentation dari library
+         */
+        function deletePresentation(id) {
+            if (confirm('Hapus presentasi ini?')) {
+                presentations = presentations.filter(p => p.id !== id);
+                savePresentations();
+                displayLibrary();
+                showToast('✅ Presentasi berhasil dihapus!', 'success');
+            }
+        }
+
+        /* ========================================================
+           4. UI MANAGEMENT FUNCTIONS
+           ======================================================== */
+
+        /**
+         * Tampilkan daftar kata yang akan direkam
+         */
         function displayWordsList() {
             if (!currentPresentation) return;
 
@@ -531,7 +616,7 @@ Senang berkenalan dengan anda</textarea>
                 container.appendChild(card);
             });
 
-            // Update stats
+            // Update statistik
             const total = currentPresentation.words.length;
             const recorded = currentPresentation.words.filter(w => w.gesture).length;
             document.getElementById('total-words').textContent = total;
@@ -541,23 +626,20 @@ Senang berkenalan dengan anda</textarea>
             document.getElementById('words-list-container').style.display = 'block';
         }
 
-        // Start recording for specific word
+        /**
+         * Mulai recording untuk kata tertentu
+         */
         async function startRecordingWord(index) {
             try {
                 currentRecordingIndex = index;
-                
-                // Switch to record tab
                 switchTab('record');
                 
-                // Show recording interface
                 document.getElementById('recording-interface').style.display = 'block';
                 document.getElementById('recording-empty-state').style.display = 'none';
                 
-                // Update current word display
                 document.getElementById('current-recording-word').textContent = currentPresentation.words[index].text;
                 document.getElementById('recording-status').textContent = `Kata ${index + 1} dari ${currentPresentation.words.length}`;
 
-                // Gunakan startCameraWaitReady yang menunggu model siap
                 await startCameraWaitReady();
             } catch (error) {
                 console.error('Error starting recording:', error);
@@ -565,25 +647,26 @@ Senang berkenalan dengan anda</textarea>
             }
         }
 
-        // Capture gesture
-        document.getElementById('btn-capture-gesture').addEventListener('click', () => {
+        /**
+         * Capture gesture dari canvas MediaPipe
+         */
+        function captureGesture() {
             try {
                 const video = document.getElementById('recording-video');
                 const canvas = document.getElementById('recording-canvas');
 
-                // Validasi video element
                 if (!video || !video.readyState) {
                     showToast('❌ Video belum siap. Tunggu sebentar...', 'error');
                     console.error('Video not ready. readyState:', video?.readyState);
                     return;
                 }
 
-                // Jika canvas sudah memiliki ukuran dan konten dari onResults
+                // Jika canvas sudah memiliki konten dari MediaPipe
                 if (canvas.width > 0 && canvas.height > 0) {
                     console.log('📸 Capturing from MediaPipe canvas:', canvas.width, 'x', canvas.height);
                     const imageData = canvas.toDataURL('image/jpeg', 0.8);
                     
-                    if (!imageData || imageData === 'data:image/jpeg;base64,' || imageData.length < 100) {
+                    if (!imageData || imageData.length < 100) {
                         throw new Error('Canvas data kosong');
                     }
                     
@@ -597,7 +680,7 @@ Senang berkenalan dengan anda</textarea>
                     captureCanvas.width = video.videoWidth || 1280;
                     captureCanvas.height = video.videoHeight || 720;
                     
-                    if (captureCanvas.width === 0 || captureCanvas.height === 0) {
+                    if (captureCanvas.width === 0) {
                         throw new Error('Video resolution tidak tersedia');
                     }
                     
@@ -608,7 +691,7 @@ Senang berkenalan dengan anda</textarea>
                     
                     const imageData = captureCanvas.toDataURL('image/jpeg', 0.8);
                     
-                    if (!imageData || imageData.length < 100) {
+                    if (imageData.length < 100) {
                         throw new Error('Capture result kosong');
                     }
                     
@@ -617,7 +700,7 @@ Senang berkenalan dengan anda</textarea>
                     showToast('✅ Gesture berhasil disimpan!', 'success');
                 }
                 
-                // Move to next word
+                // Lanjut ke kata berikutnya
                 if (currentRecordingIndex < currentPresentation.words.length - 1) {
                     currentRecordingIndex++;
                     document.getElementById('current-recording-word').textContent = currentPresentation.words[currentRecordingIndex].text;
@@ -635,10 +718,12 @@ Senang berkenalan dengan anda</textarea>
                 console.error('Error capturing gesture:', error);
                 showToast('❌ Gagal mengambil foto: ' + error.message, 'error');
             }
-        });
+        }
 
-        // Skip word
-        document.getElementById('btn-skip-word').addEventListener('click', () => {
+        /**
+         * Skip kata saat recording
+         */
+        function skipWord() {
             if (currentRecordingIndex < currentPresentation.words.length - 1) {
                 currentRecordingIndex++;
                 document.getElementById('current-recording-word').textContent = currentPresentation.words[currentRecordingIndex].text;
@@ -648,60 +733,11 @@ Senang berkenalan dengan anda</textarea>
                 document.getElementById('recording-interface').style.display = 'none';
                 stopRecordingCamera();
             }
-        });
-
-        // Start camera button
-        document.getElementById('btn-start-camera').addEventListener('click', async () => {
-            console.log('🎬 User klik tombol Nyalakan Kamera');
-            try {
-                await startCameraWaitReady();
-            } catch (error) {
-                console.error('Error starting camera:', error);
-                showToast('❌ Error: ' + error.message, 'error');
-            }
-        });
-
-        // Stop camera button
-        document.getElementById('btn-stop-camera').addEventListener('click', () => {
-            console.log('🛑 User klik tombol Matikan Kamera');
-            try {
-                stopRecordingCamera();
-                document.getElementById('recording-status').textContent = 'Kamera dimatikan';
-                showToast('✅ Kamera berhasil dimatikan', 'success');
-            } catch (error) {
-                console.error('Error stopping camera:', error);
-                showToast('❌ Error: ' + error.message, 'error');
-            }
-        });
-
-        // Back button
-        document.getElementById('btn-back-to-create').addEventListener('click', () => {
-            switchTab('create');
-            document.getElementById('recording-interface').style.display = 'none';
-            stopRecordingCamera();
-        });
-
-        // Delete word
-        function deleteWord(index) {
-            if (confirm('Hapus kata ini?')) {
-                currentPresentation.words.splice(index, 1);
-                savePresentations();
-                displayWordsList();
-                showToast('✅ Kata berhasil dihapus!', 'success');
-            }
         }
 
-        // Clear text
-        document.getElementById('btn-clear-text').addEventListener('click', () => {
-            if (confirm('Hapus semua?')) {
-                document.getElementById('text-input').value = '';
-                document.getElementById('presentation-name').value = '';
-                document.getElementById('words-list-container').style.display = 'none';
-                currentPresentation = null;
-            }
-        });
-
-        // Preview gesture
+        /**
+         * Tampilkan preview gesture
+         */
         function showPreview(index) {
             try {
                 const word = currentPresentation.words[index];
@@ -725,11 +761,16 @@ Senang berkenalan dengan anda</textarea>
             }
         }
 
+        /**
+         * Tutup preview modal
+         */
         function closePreviewModal() {
             document.getElementById('preview-modal').classList.remove('active');
         }
 
-        // Playback functions
+        /**
+         * Tampilkan playback timeline
+         */
         function displayPlayback() {
             if (!currentPresentation || currentPresentation.words.length === 0) {
                 document.getElementById('playback-interface').style.display = 'none';
@@ -756,7 +797,9 @@ Senang berkenalan dengan anda</textarea>
             });
         }
 
-        // Library functions
+        /**
+         * Tampilkan library presentations
+         */
         function displayLibrary() {
             loadPresentations();
             const container = document.getElementById('library-list');
@@ -797,29 +840,10 @@ Senang berkenalan dengan anda</textarea>
             });
         }
 
-        function loadPresentation(id) {
-            const pres = presentations.find(p => p.id === id);
-            if (pres) {
-                currentPresentation = pres;
-                switchTab('create');
-                document.getElementById('presentation-name').value = pres.name;
-                displayWordsList();
-                showToast('✅ Presentasi berhasil dimuat!', 'success');
-            }
-        }
-
-        function deletePresentation(id) {
-            if (confirm('Hapus presentasi ini?')) {
-                presentations = presentations.filter(p => p.id !== id);
-                savePresentations();
-                displayLibrary();
-                showToast('✅ Presentasi berhasil dihapus!', 'success');
-            }
-        }
-
-        // Tab switching
+        /**
+         * Switch antara tab (create, record, playback, library)
+         */
         function switchTab(tabName) {
-            // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
             });
@@ -827,11 +851,9 @@ Senang berkenalan dengan anda</textarea>
                 btn.classList.remove('active');
             });
 
-            // Show selected tab
             document.getElementById(tabName).classList.add('active');
             document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 
-            // Special handling for playback and library
             if (tabName === 'playback') {
                 displayPlayback();
             } else if (tabName === 'library') {
@@ -839,14 +861,9 @@ Senang berkenalan dengan anda</textarea>
             }
         }
 
-        // Tab button listeners
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                switchTab(btn.dataset.tab);
-            });
-        });
-
-        // Toast notification
+        /**
+         * Toast notification helper
+         */
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -857,14 +874,76 @@ Senang berkenalan dengan anda</textarea>
             }, 3000);
         }
 
-        // Initialize on load
-        window.addEventListener('load', () => {
-            loadPresentations();
-            // Camera akan di-start saat user klik tombol "Rekam" (di startRecordingWord)
-            // Jangan start di sini karena akan request permission tanpa perlu
+        /* ========================================================
+           5. EVENT LISTENERS
+           ======================================================== */
+
+        // Tab button listeners
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTab(btn.dataset.tab);
+            });
         });
 
-        // Cleanup on unload
+        // Process text input
+        document.getElementById('btn-process-text').addEventListener('click', processTextInput);
+
+        // Clear text
+        document.getElementById('btn-clear-text').addEventListener('click', () => {
+            if (confirm('Hapus semua?')) {
+                document.getElementById('text-input').value = '';
+                document.getElementById('presentation-name').value = '';
+                document.getElementById('words-list-container').style.display = 'none';
+                currentPresentation = null;
+            }
+        });
+
+        // Capture gesture
+        document.getElementById('btn-capture-gesture').addEventListener('click', captureGesture);
+
+        // Skip word
+        document.getElementById('btn-skip-word').addEventListener('click', skipWord);
+
+        // Start camera button
+        document.getElementById('btn-start-camera').addEventListener('click', async () => {
+            console.log('🎬 User klik tombol Nyalakan Kamera');
+            try {
+                await startCameraWaitReady();
+            } catch (error) {
+                console.error('Error starting camera:', error);
+                showToast('❌ Error: ' + error.message, 'error');
+            }
+        });
+
+        // Stop camera button
+        document.getElementById('btn-stop-camera').addEventListener('click', () => {
+            console.log('🛑 User klik tombol Matikan Kamera');
+            try {
+                stopRecordingCamera();
+                document.getElementById('recording-status').textContent = 'Kamera dimatikan';
+                showToast('✅ Kamera berhasil dimatikan', 'success');
+            } catch (error) {
+                console.error('Error stopping camera:', error);
+                showToast('❌ Error: ' + error.message, 'error');
+            }
+        });
+
+        // Back button
+        document.getElementById('btn-back-to-create').addEventListener('click', () => {
+            switchTab('create');
+            document.getElementById('recording-interface').style.display = 'none';
+            stopRecordingCamera();
+        });
+
+        /* ========================================================
+           6. INITIALIZATION
+           ======================================================== */
+
+        window.addEventListener('load', () => {
+            console.log('🚀 Custom Gesture Application Initialized');
+            loadPresentations();
+        });
+
         window.addEventListener('unload', () => {
             stopRecordingCamera();
         });
