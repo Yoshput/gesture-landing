@@ -3,161 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestureFlow - Aplikasi Gesture Recognition Bahasa Isyarat</title>
+    <title>GestureFlow - Platform Pembelajaran Bahasa Isyarat Indonesia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a0f2e 50%, #2d0f47 100%);
+            color: #e0e0e0;
+            overflow-x: hidden;
+            line-height: 1.6;
         }
-        
-        /* Animated background */
-        body::before {
-            content: '';
+
+        /* ============================================ */
+        /* PARTICLES ANIMATION BACKGROUND */
+        /* ============================================ */
+        .particles {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%);
             pointer-events: none;
-            animation: floatBg 15s ease-in-out infinite;
+            z-index: 1;
         }
-        
-        @keyframes floatBg {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(30px, -30px); }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
         }
-        
-        .container {
-            position: relative;
-            z-index: 10;
-            max-width: 900px;
-            width: 90%;
+
+        @keyframes float {
+            0% { transform: translateY(100vh) translateX(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(100px) rotate(360deg); opacity: 0; }
         }
-        
-        /* Welcome Modal */
-        .welcome-modal {
-            background: rgba(255, 255, 255, 0.95);
+
+        /* ============================================ */
+        /* NAVIGATION */
+        /* ============================================ */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 40px;
+            background: rgba(15, 15, 30, 0.7);
             backdrop-filter: blur(10px);
-            border-radius: 25px;
-            padding: 50px 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            text-align: center;
-            animation: slideInDown 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        
-        @keyframes slideInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .logo-container {
-            font-size: 4em;
-            margin-bottom: 20px;
-            animation: bounce 2s ease-in-out infinite;
-        }
-        
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-        
-        h1 {
-            color: #333;
-            font-size: 3em;
+
+        .nav-logo {
+            font-size: 1.8em;
             font-weight: 800;
-            margin-bottom: 10px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
-        
-        .subtitle {
-            color: #666;
-            font-size: 1.1em;
-            margin-bottom: 30px;
-            font-weight: 500;
-        }
-        
-        /* Status Badge */
-        .status-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #ffa500 0%, #ff6b6b 100%);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-size: 0.9em;
-            font-weight: 600;
-            margin-bottom: 25px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
-        }
-        
-        .description {
-            color: #555;
-            font-size: 1.05em;
-            line-height: 1.8;
-            margin-bottom: 30px;
-            text-align: left;
-            background: rgba(102, 126, 234, 0.05);
-            padding: 20px;
-            border-left: 4px solid #667eea;
-            border-radius: 10px;
-        }
-        
-        /* Warning Box */
-        .warning-box {
-            background: rgba(255, 193, 7, 0.1);
-            border: 2px solid #ffc107;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 30px;
-            color: #cc8800;
-            font-size: 0.95em;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
-        
-        .warning-box::before {
-            content: '⚠️';
-            font-size: 1.5em;
-            flex-shrink: 0;
-        }
-        
-        /* Button Container */
-        .button-container {
+
+        .nav-links {
             display: flex;
-            gap: 15px;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: color 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #667eea;
+        }
+
+        .nav-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            nav { padding: 15px 20px; }
+            .nav-links { display: none; }
+        }
+
+        /* ============================================ */
+        /* CONTENT WRAPPER */
+        /* ============================================ */
+        .content {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ============================================ */
+        /* HERO SECTION */
+        /* ============================================ */
+        .hero {
+            min-height: 100vh;
+            padding-top: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero-emoji {
+            font-size: 6em;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .hero h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 4em;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.2;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .hero p {
+            font-size: 1.3em;
+            color: #b0b0c0;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 30px;
+            animation: fadeInUp 1s ease-out 0.6s both;
         }
-        
+
         .btn {
             padding: 16px 40px;
             border: none;
@@ -169,289 +198,477 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            flex: 1;
-            min-width: 200px;
             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
         }
-        
+
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.6);
         }
-        
-        .btn-primary:active {
-            transform: translateY(-1px);
-        }
-        
+
         .btn-secondary {
-            background: white;
+            background: rgba(102, 126, 234, 0.1);
             color: #667eea;
             border: 2px solid #667eea;
         }
-        
+
         .btn-secondary:hover {
-            background: #f5f5f5;
-            transform: translateY(-2px);
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateY(-3px);
         }
-        
-        /* Loading state */
-        .btn.loading {
-            pointer-events: none;
-            opacity: 0.7;
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
-        .btn.loading::after {
-            content: '';
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: translateY(-50%) rotate(0deg); }
-            100% { transform: translateY(-50%) rotate(360deg); }
-        }
-        
-        /* Features Grid */
+
+        /* ============================================ */
+        /* FEATURES SECTION */
+        /* ============================================ */
         .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
+            padding: 100px 40px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
-        
-        .feature {
-            background: rgba(102, 126, 234, 0.1);
-            padding: 15px;
-            border-radius: 10px;
+
+        .section-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3em;
             text-align: center;
-            font-size: 0.9em;
-            color: #555;
-        }
-        
-        .feature-icon {
-            font-size: 2em;
-            margin-bottom: 8px;
-        }
-        
-        /* Credits & Footer */
-        .footer {
-            color: white;
-            text-align: center;
-            margin-top: 30px;
-            font-size: 0.95em;
-        }
-        
-        .credits {
-            background: rgba(0,0,0,0.2);
-            padding: 15px 30px;
-            border-radius: 12px;
-            margin-top: 15px;
-            backdrop-filter: blur(5px);
-        }
-        
-        .credits strong {
-            color: #ffd700;
-        }
-        
-        /* Loading screen overlay */
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            margin-bottom: 60px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        
-        .loading-overlay.active {
-            display: flex;
-            animation: fadeIn 0.3s ease-in;
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
         }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+
+        .feature-card {
+            background: rgba(102, 126, 234, 0.05);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 40px 30px;
+            border-radius: 16px;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
         }
-        
-        .loading-spinner {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            margin-bottom: 30px;
+
+        .feature-card:hover {
+            transform: translateY(-15px);
+            border-color: rgba(102, 126, 234, 0.6);
+            background: rgba(102, 126, 234, 0.1);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
         }
-        
-        .loading-spinner::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 4px solid rgba(255,255,255,0.2);
-            border-radius: 50%;
-            animation: spin 2s linear infinite;
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            display: inline-block;
+            transition: transform 0.3s;
         }
-        
-        .loading-spinner::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 4px solid transparent;
-            border-top: 4px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.2) rotateY(360deg);
         }
-        
-        .loading-text {
-            color: white;
+
+        .feature-title {
             font-size: 1.3em;
             font-weight: 600;
+            margin-bottom: 15px;
         }
-        
-        .loading-dots {
+
+        .feature-desc {
+            color: #b0b0c0;
+            font-size: 0.95em;
+        }
+
+        /* ============================================ */
+        /* STATS SECTION */
+        /* ============================================ */
+        .stats {
+            padding: 80px 40px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-top: 1px solid rgba(102, 126, 234, 0.2);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2.5em;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .stat-item p {
+            color: #b0b0c0;
+            font-size: 0.95em;
+        }
+
+        /* ============================================ */
+        /* TEAM SECTION */
+        /* ============================================ */
+        .team {
+            padding: 100px 40px;
+            text-align: center;
+        }
+
+        .team-content {
+            background: rgba(102, 126, 234, 0.05);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 60px 40px;
+            border-radius: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .team-emoji {
+            font-size: 4em;
+            margin-bottom: 20px;
             display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
         }
-        
-        .loading-dots span {
-            animation: dotPulse 1.4s infinite;
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
-        
-        .loading-dots span:nth-child(2) {
-            animation-delay: 0.2s;
+
+        .team-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2em;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        
-        .loading-dots span:nth-child(3) {
-            animation-delay: 0.4s;
+
+        .team-desc {
+            color: #b0b0c0;
+            margin-bottom: 20px;
+            line-height: 1.8;
         }
-        
-        @keyframes dotPulse {
-            0%, 60%, 100% { opacity: 0.3; }
-            30% { opacity: 1; }
+
+        .team-members {
+            font-size: 0.9em;
+            color: #90909a;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(102, 126, 234, 0.2);
         }
-        
+
+        /* ============================================ */
+        /* WARNING BANNER */
+        /* ============================================ */
+        .warning-banner {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 107, 107, 0.1) 100%);
+            border: 2px solid rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 40px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: slideInDown 0.6s ease-out;
+        }
+
+        .warning-banner::before {
+            content: '⚠️';
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+
+        .warning-text {
+            color: #ffc107;
+            font-size: 0.95em;
+        }
+
+        /* ============================================ */
+        /* FOOTER */
+        /* ============================================ */
+        footer {
+            padding: 60px 40px;
+            text-align: center;
+            border-top: 1px solid rgba(102, 126, 234, 0.2);
+            background: rgba(15, 15, 30, 0.5);
+        }
+
+        .footer-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .social-links a {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 1.3em;
+            transition: all 0.3s;
+            color: #667eea;
+        }
+
+        .social-links a:hover {
+            background: rgba(102, 126, 234, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .footer-text {
+            color: #b0b0c0;
+            margin-bottom: 20px;
+        }
+
+        .footer-highlight {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ============================================ */
+        /* RESPONSIVE */
+        /* ============================================ */
         @media (max-width: 768px) {
-            .welcome-modal {
-                padding: 30px 20px;
-            }
-            
-            h1 {
-                font-size: 2em;
-            }
-            
-            .logo-container {
-                font-size: 3em;
-            }
-            
-            .btn {
-                width: 100%;
-                padding: 14px 30px;
-            }
-            
-            .button-container {
-                flex-direction: column;
-            }
+            .hero h1 { font-size: 2.5em; }
+            .hero p { font-size: 1em; }
+            .section-title { font-size: 2em; }
+            .team-title { font-size: 1.5em; }
+            .cta-buttons { flex-direction: column; }
+            .btn { width: 100%; }
+            .features { padding: 60px 20px; }
+            .team { padding: 60px 20px; }
+            .stats { padding: 60px 20px; }
+            footer { padding: 40px 20px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="welcome-modal">
-            <!-- Logo & Title -->
-            <div class="logo-container">🤟</div>
-            <h1>GestureFlow</h1>
-            <p class="subtitle">Aplikasi Gesture Recognition Bahasa Isyarat Indonesia</p>
-            
-            <!-- Status Badge -->
-            <div class="status-badge">⚡ Beta - Dalam Pengembangan</div>
-            
-            <!-- Description -->
-            <div class="description">
-                🎯 <strong>Selamat datang!</strong> di platform pembelajaran bahasa isyarat interaktif yang gratis dan terbuka untuk semua. Gunakan kamera untuk mengenali dan mempelajari gesture bahasa isyarat Indonesia dengan mudah.
+    <!-- Particles Background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-logo">
+            🤟 GestureFlow
+        </div>
+        <div class="nav-links">
+            <a href="#features">Fitur</a>
+            <a href="#stats">Statistik</a>
+            <a href="#team">Tim</a>
+            <button class="nav-btn" onclick="scrollToApp()">Mulai Sekarang</button>
+        </div>
+    </nav>
+
+    <div class="content">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-emoji">🤟</div>
+                <h1>Pelajari Bahasa Isyarat Dengan Mudah</h1>
+                <p>Platform pembelajaran interaktif yang menggunakan teknologi AI untuk pengenalan gesture bahasa isyarat Indonesia secara real-time</p>
+                
+                <div class="warning-banner">
+                    <span class="warning-text">Website ini sedang dalam tahap pengembangan. Beberapa fitur mungkin belum optimal.</span>
+                </div>
+
+                <div class="cta-buttons">
+                    <button class="btn btn-primary" onclick="scrollToApp()">🚀 Buka Aplikasi</button>
+                    <button class="btn btn-secondary" onclick="window.open('https://github.com/tokiooferius/gesture-landing', '_blank')">📖 Dokumentasi</button>
+                </div>
             </div>
-            
-            <!-- Warning -->
-            <div class="warning-box">
-                Fitur-fitur tertentu masih dalam pengembangan dan belum optimal. Kami terus melakukan perbaikan untuk memberikan pengalaman terbaik.
-            </div>
-            
-            <!-- Features -->
-            <div class="features">
-                <div class="feature">
+        </section>
+
+        <!-- Features Section -->
+        <section class="features" id="features">
+            <h2 class="section-title">🎯 Fitur Unggulan</h2>
+            <div class="features-grid">
+                <div class="feature-card">
                     <div class="feature-icon">🎥</div>
-                    <div>Real-time Detection</div>
+                    <div class="feature-title">Deteksi Real-time</div>
+                    <div class="feature-desc">Pengenalan gesture secara langsung menggunakan kamera dengan akurasi tinggi</div>
                 </div>
-                <div class="feature">
+                <div class="feature-card">
                     <div class="feature-icon">🧠</div>
-                    <div>AI Powered</div>
+                    <div class="feature-title">AI Terdepan</div>
+                    <div class="feature-desc">Menggunakan MediaPipe dan teknologi machine learning untuk hasil terbaik</div>
                 </div>
-                <div class="feature">
+                <div class="feature-card">
                     <div class="feature-icon">📚</div>
-                    <div>Pembelajaran</div>
+                    <div class="feature-title">Pembelajaran Interaktif</div>
+                    <div class="feature-desc">Mode pelatihan dengan sistem streak dan achievement badges</div>
                 </div>
-                <div class="feature">
-                    <div class="feature-icon">🎓</div>
-                    <div>Sertifikat</div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <div class="feature-title">Desain Modern</div>
+                    <div class="feature-desc">Interface yang intuitif dan responsif di semua perangkat</div>
                 </div>
-            </div>
-            
-            <!-- Buttons -->
-            <div class="button-container">
-                <button class="btn btn-primary" onclick="startApplication()">🚀 Mulai Sekarang</button>
-                <button class="btn btn-secondary" onclick="window.open('https://github.com/tokiooferius/gesture-landing', '_blank')">📖 Dokumentasi</button>
-            </div>
-            
-            <!-- Footer -->
-            <div class="footer">
-                <div class="credits">
-                    👥 Dibuat dengan ❤️ oleh <strong>Kelompok 8 - Nyeni</strong><br>
-                    <small>© 2026 GestureFlow Project. All Rights Reserved.</small>
+                <div class="feature-card">
+                    <div class="feature-icon">🗣️</div>
+                    <div class="feature-title">Text-to-Speech</div>
+                    <div class="feature-desc">Dukungan audio dalam bahasa Indonesia untuk pembelajaran yang lebih baik</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-title">Performa Cepat</div>
+                    <div class="feature-desc">Optimisasi tinggi untuk pengalaman pengguna yang smooth</div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats" id="stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>36+</h3>
+                    <p>Gesture yang Didukung</p>
+                </div>
+                <div class="stat-item">
+                    <h3>100%</h3>
+                    <p>Gratis & Open Source</p>
+                </div>
+                <div class="stat-item">
+                    <h3>∞</h3>
+                    <p>Users Unlimited</p>
+                </div>
+                <div class="stat-item">
+                    <h3>🌍</h3>
+                    <p>Akses Global</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Team Section -->
+        <section class="team" id="team">
+            <div class="team-content">
+                <div class="team-emoji">👥</div>
+                <h2 class="team-title">Dikembangkan oleh Kelompok 8</h2>
+                <p class="team-desc">
+                    <strong>👥 Nyeni - Universitas/Institusi XYZ</strong><br>
+                    Tim yang berdedikasi untuk membuat platform pembelajaran bahasa isyarat yang mudah diakses oleh semua kalangan
+                </p>
+                <div class="team-members">
+                    💡 Inovasi | 🎯 Fokus | 🤝 Kolaborasi | ✨ Kualitas
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section style="text-align: center; padding: 100px 40px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(240, 147, 251, 0.05) 100%);">
+            <h2 class="section-title" style="margin-bottom: 40px;">Siap Belajar Bahasa Isyarat?</h2>
+            <button class="btn btn-primary" onclick="launchApp()" style="padding: 18px 50px; font-size: 1.1em;">
+                🚀 Mulai Aplikasi Sekarang
+            </button>
+        </section>
     </div>
-    
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">
-            Mempersiapkan aplikasi
-            <span class="loading-dots">
-                <span>.</span><span>.</span><span>.</span>
-            </span>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="social-links">
+                <a href="https://github.com/tokiooferius/gesture-landing" title="GitHub" target="_blank">💻</a>
+                <a href="#" title="Documentation">📖</a>
+                <a href="#" title="Support">💬</a>
+            </div>
+            <p class="footer-text">
+                © 2026 <span class="footer-highlight">GestureFlow</span> - Kelompok 8 Nyeni. Semua Hak Dilindungi.
+            </p>
+            <p class="footer-text" style="font-size: 0.85em; color: #90909a;">
+                Dibuat dengan ❤️ untuk mempermudah pembelajaran bahasa isyarat Indonesia
+            </p>
         </div>
-    </div>
-    
+    </footer>
+
     <script>
-        function startApplication() {
-            const btn = event.target;
-            btn.classList.add('loading');
-            btn.disabled = true;
-            
-            // Show loading overlay
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.add('active');
-            
-            // Simulate loading time (2-3 seconds for effect)
+        // Generate Particles
+        function generateParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.bottom = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particle.style.opacity = Math.random() * 0.5 + 0.2;
+                container.appendChild(particle);
+            }
+        }
+
+        // Scroll to App
+        function scrollToApp() {
+            document.querySelector('.hero').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Launch App with smooth transition
+        function launchApp() {
+            document.body.style.transition = 'opacity 0.5s ease-out';
+            document.body.style.opacity = '0';
             setTimeout(() => {
                 window.location.href = 'pages/index.html';
-            }, 2500);
+            }, 500);
         }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            generateParticles();
+        });
+
+        // Smooth scroll animation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
     </script>
 </body>
 </html>
