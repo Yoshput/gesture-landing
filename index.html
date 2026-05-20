@@ -600,7 +600,7 @@
                 </div>
 
                 <div class="cta-buttons">
-                    <button class="btn btn-primary" onclick="scrollToApp()">🚀 Buka Aplikasi</button>
+                    <button class="btn btn-primary" onclick="launchApp()">🚀 Buka Aplikasi</button>
                     <button class="btn btn-secondary" onclick="window.open('https://github.com/tokiooferius/gesture-landing', '_blank')">📖 Dokumentasi</button>
                 </div>
             </div>
@@ -792,11 +792,6 @@
                 particle.style.opacity = Math.random() * 0.5 + 0.2;
                 container.appendChild(particle);
             }
-        }
-
-        // Scroll to App
-        function scrollToApp() {
-            document.querySelector('.hero').scrollIntoView({ behavior: 'smooth' });
         }
 
         // Launch App with smooth transition
