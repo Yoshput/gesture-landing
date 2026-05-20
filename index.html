@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0; url=pages/index.html">
-    <title>GestureFlow - Aplikasi Gesture Recognition</title>
+    <title>GestureFlow - Aplikasi Gesture Recognition Bahasa Isyarat</title>
     <style>
         * {
             margin: 0;
@@ -14,74 +13,445 @@
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%);
+            pointer-events: none;
+            animation: floatBg 15s ease-in-out infinite;
+        }
+        
+        @keyframes floatBg {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(30px, -30px); }
         }
         
         .container {
+            position: relative;
+            z-index: 10;
+            max-width: 900px;
+            width: 90%;
+        }
+        
+        /* Welcome Modal */
+        .welcome-modal {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             text-align: center;
-            color: white;
+            animation: slideInDown 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .logo-container {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
         }
         
         h1 {
-            font-size: 2.5em;
+            color: #333;
+            font-size: 3em;
+            font-weight: 800;
             margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
-        p {
-            font-size: 1.2em;
-            margin-bottom: 20px;
-            opacity: 0.9;
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            font-weight: 500;
         }
         
-        a {
+        /* Status Badge */
+        .status-badge {
             display: inline-block;
-            padding: 12px 30px;
+            background: linear-gradient(135deg, #ffa500 0%, #ff6b6b 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 25px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        
+        .description {
+            color: #555;
+            font-size: 1.05em;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            text-align: left;
+            background: rgba(102, 126, 234, 0.05);
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            border-radius: 10px;
+        }
+        
+        /* Warning Box */
+        .warning-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 30px;
+            color: #cc8800;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .warning-box::before {
+            content: '⚠️';
+            font-size: 1.5em;
+            flex-shrink: 0;
+        }
+        
+        /* Button Container */
+        .button-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+            min-width: 200px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
             background: white;
             color: #667eea;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s;
+            border: 2px solid #667eea;
         }
         
-        a:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        .btn-secondary:hover {
+            background: #f5f5f5;
+            transform: translateY(-2px);
+        }
+        
+        /* Loading state */
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+        
+        /* Features Grid */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .feature {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #555;
+        }
+        
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+        
+        /* Credits & Footer */
+        .footer {
+            color: white;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.95em;
+        }
+        
+        .credits {
+            background: rgba(0,0,0,0.2);
+            padding: 15px 30px;
+            border-radius: 12px;
+            margin-top: 15px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .credits strong {
+            color: #ffd700;
+        }
+        
+        /* Loading screen overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .loading-spinner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 30px;
+        }
+        
+        .loading-spinner::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+        }
+        
+        .loading-spinner::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .loading-dots {
+            display: inline-block;
+        }
+        
+        .loading-dots span {
+            animation: dotPulse 1.4s infinite;
+        }
+        
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes dotPulse {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .welcome-modal {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .logo-container {
+                font-size: 3em;
+            }
+            
+            .btn {
+                width: 100%;
+                padding: 14px 30px;
+            }
+            
+            .button-container {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="spinner"></div>
-        <h1>🤟 GestureFlow</h1>
-        <p>Loading aplikasi gesture recognition...</p>
-        <p style="font-size: 0.9em; margin-top: 30px;">Jika tidak otomatis redirect dalam 3 detik:</p>
-        <a href="pages/index.html">👉 Klik di sini untuk membuka aplikasi</a>
+        <div class="welcome-modal">
+            <!-- Logo & Title -->
+            <div class="logo-container">🤟</div>
+            <h1>GestureFlow</h1>
+            <p class="subtitle">Aplikasi Gesture Recognition Bahasa Isyarat Indonesia</p>
+            
+            <!-- Status Badge -->
+            <div class="status-badge">⚡ Beta - Dalam Pengembangan</div>
+            
+            <!-- Description -->
+            <div class="description">
+                🎯 <strong>Selamat datang!</strong> di platform pembelajaran bahasa isyarat interaktif yang gratis dan terbuka untuk semua. Gunakan kamera untuk mengenali dan mempelajari gesture bahasa isyarat Indonesia dengan mudah.
+            </div>
+            
+            <!-- Warning -->
+            <div class="warning-box">
+                Fitur-fitur tertentu masih dalam pengembangan dan belum optimal. Kami terus melakukan perbaikan untuk memberikan pengalaman terbaik.
+            </div>
+            
+            <!-- Features -->
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🎥</div>
+                    <div>Real-time Detection</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🧠</div>
+                    <div>AI Powered</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📚</div>
+                    <div>Pembelajaran</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🎓</div>
+                    <div>Sertifikat</div>
+                </div>
+            </div>
+            
+            <!-- Buttons -->
+            <div class="button-container">
+                <button class="btn btn-primary" onclick="startApplication()">🚀 Mulai Sekarang</button>
+                <button class="btn btn-secondary" onclick="window.open('https://github.com/tokiooferius/gesture-landing', '_blank')">📖 Dokumentasi</button>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <div class="credits">
+                    👥 Dibuat dengan ❤️ oleh <strong>Kelompok 8 - Nyeni</strong><br>
+                    <small>© 2026 GestureFlow Project. All Rights Reserved.</small>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Fallback: JavaScript redirect jika meta refresh tidak berfungsi -->
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">
+            Mempersiapkan aplikasi
+            <span class="loading-dots">
+                <span>.</span><span>.</span><span>.</span>
+            </span>
+        </div>
+    </div>
+    
     <script>
-        // Redirect ke halaman aplikasi utama
-        window.location.href = 'pages/index.html';
+        function startApplication() {
+            const btn = event.target;
+            btn.classList.add('loading');
+            btn.disabled = true;
+            
+            // Show loading overlay
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('active');
+            
+            // Simulate loading time (2-3 seconds for effect)
+            setTimeout(() => {
+                window.location.href = 'pages/index.html';
+            }, 2500);
+        }
     </script>
 </body>
 </html>
