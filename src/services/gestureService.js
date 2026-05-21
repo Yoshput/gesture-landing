@@ -4,117 +4,283 @@
  */
 
 import { GestureUtils, MathUtils } from '../utils/helpers.js';
+import { GESTURE_DATA, getGestureByName } from '../data/gestureLibrary.js';
 
 export class GestureDetectionService {
     constructor() {
         this.hands = null;
-        this.camera = null;
+        this.videoElement = null;
         this.canvasElement = null;
         this.canvasCtx = null;
         this.isInitialized = false;
         this.isDetecting = false;
         this.detectionCallback = null;
         this.landmarkCallback = null;
-        
-        this.gestureBuffer = [];
-        this.bufferSize = 10;
-        this.detectionThreshold = 0.7;
+        this.modelReady = false;
+        this.lastDetection = null;
     }
 
     /**
-     * Initialize MediaPipe
+     * Initialize MediaPipe Hands v0.4
      */
     async initialize(videoElement, canvasElement) {
         try {
-            const results = await Promise.all([
-                fetch('/models/gesture-model.json'),
-                fetch('/models/gesture-landmarks.json')
-            ]);
-            
+            console.log('⏳ Initializing MediaPipe Hands...');
+            this.videoElement = videoElement;
+            this.canvasElement = canvasElement;
+            this.canvasCtx = canvasElement.getContext('2d');
+
+            // Initialize Hands (already loaded from CDN)
+            if (typeof Hands === 'undefined') {
+                throw new Error('MediaPipe Hands not loaded from CDN');
+            }
+
             this.hands = new Hands({
-                locateFile: (file) => {
-                    return `/models/mediapipe/${file}`;
-                }
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`
             });
 
             this.hands.setOptions({
-                maxNumHands: 2,
+                maxNumHands: 1,
                 modelComplexity: 1,
                 minDetectionConfidence: 0.5,
                 minTrackingConfidence: 0.5
             });
 
+            // Set results handler
             this.hands.onResults(this.onResults.bind(this));
 
-            this.canvasElement = canvasElement;
-            this.canvasCtx = canvasElement.getContext('2d');
-
-            const camera = new Camera(videoElement, {
-                onFrame: async () => {
-                    if (this.isDetecting) {
-                        await this.hands.send({image: videoElement});
-                    }
-                },
-                width: 1280,
-                height: 720
-            });
-
-            this.camera = camera;
+            this.modelReady = true;
             this.isInitialized = true;
+            
+            console.log('✅ MediaPipe Hands initialized successfully');
             return true;
+            
         } catch (error) {
-            console.error('Failed to initialize MediaPipe:', error);
+            console.error('❌ Failed to initialize MediaPipe:', error);
             return false;
         }
+    }
+
+    /**
+     * Start detection
+     */
+    async startDetection() {
+        try {
+            if (!this.isInitialized) {
+                console.error('Service not initialized');
+                return false;
+            }
+
+            console.log('▶ Starting gesture detection...');
+            this.isDetecting = true;
+            
+            // Start video element
+            if (this.videoElement && this.videoElement.paused) {
+                await this.videoElement.play();
+            }
+
+            // Start detection loop
+            this.detectionLoop();
+            
+            console.log('✅ Gesture detection started');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Failed to start detection:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Detection loop - send frames to MediaPipe
+     */
+    detectionLoop() {
+        if (!this.isDetecting) return;
+
+        if (this.modelReady && this.hands && 
+            this.videoElement && 
+            this.videoElement.readyState >= 2 &&
+            typeof this.hands.send === 'function') {
+            
+            this.hands.send({ image: this.videoElement })
+                .catch(err => console.debug('Frame drop:', err));
+        }
+
+        requestAnimationFrame(() => this.detectionLoop());
     }
 
     /**
      * Handle MediaPipe results
      */
     onResults(results) {
+        // Draw canvas
         this.drawCanvas(results);
-        
+
+        // Process hand landmarks
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            results.multiHandLandmarks.forEach((landmarks, index) => {
-                const gesture = this.classifyGesture(landmarks);
-                const confidence = gesture.confidence || 0;
-
-                // Add to buffer
-                this.gestureBuffer.push({
+            const landmarks = results.multiHandLandmarks[0];
+            const handedness = results.multiHandedness[0]?.label || 'Right';
+            
+            // Classify gesture from landmarks
+            const gesture = this.classifyGesture(landmarks);
+            
+            if (gesture && gesture.name !== 'Unknown') {
+                this.lastDetection = {
                     gesture: gesture.name,
-                    confidence: confidence,
+                    emoji: gesture.emoji,
+                    translation: gesture.translation,
+                    confidence: gesture.confidence,
                     landmarks: landmarks,
-                    handedness: results.multiHandedness[index].label
-                });
+                    handedness: handedness
+                };
 
-                if (this.gestureBuffer.length > this.bufferSize) {
-                    this.gestureBuffer.shift();
+                // Trigger callback
+                if (this.detectionCallback) {
+                    this.detectionCallback(this.lastDetection);
                 }
+            }
 
-                // Get most common gesture from buffer
-                const smoothedGesture = this.getSmoothGesture();
-                
-                if (this.landmarkCallback) {
-                    this.landmarkCallback({
-                        landmarks: landmarks,
-                        gesture: smoothedGesture,
-                        handedness: results.multiHandedness[index].label,
-                        rawGesture: gesture
-                    });
-                }
-
-                if (this.detectionCallback && smoothedGesture.confidence > this.detectionThreshold) {
-                    this.detectionCallback({
-                        gesture: smoothedGesture.name,
-                        confidence: smoothedGesture.confidence,
-                        handedness: results.multiHandedness[index].label,
-                        timestamp: Date.now()
-                    });
-                }
-            });
-        } else {
-            // No hand detected
+            // Trigger landmark callback
             if (this.landmarkCallback) {
+                this.landmarkCallback({
+                    landmarks: landmarks,
+                    gesture: gesture,
+                    handedness: handedness
+                });
+            }
+        }
+    }
+
+    /**
+     * Draw canvas with hand skeleton
+     */
+    drawCanvas(results) {
+        if (!this.canvasElement || !this.canvasCtx) return;
+
+        // Sync canvas size with video
+        if (this.videoElement) {
+            this.canvasElement.width = this.videoElement.videoWidth || 640;
+            this.canvasElement.height = this.videoElement.videoHeight || 480;
+        }
+
+        this.canvasCtx.save();
+        this.canvasCtx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+
+        // Draw hand skeleton if landmarks exist
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            for (const landmarks of results.multiHandLandmarks) {
+                // Draw connectors (green lines)
+                if (typeof drawConnectors === 'function' && typeof HAND_CONNECTIONS !== 'undefined') {
+                    drawConnectors(this.canvasCtx, landmarks, HAND_CONNECTIONS, {
+                        color: '#00FF00',
+                        lineWidth: 3
+                    });
+                }
+                // Draw landmarks (red dots)
+                if (typeof drawLandmarks === 'function') {
+                    drawLandmarks(this.canvasCtx, landmarks, {
+                        color: '#FF0000',
+                        lineWidth: 1,
+                        radius: 3
+                    });
+                }
+            }
+        }
+
+        this.canvasCtx.restore();
+    }
+
+    /**
+     * Classify gesture from landmarks
+     */
+    classifyGesture(landmarks) {
+        try {
+            // Extract key points
+            const thumbTip = landmarks[4];
+            const indexTip = landmarks[8];
+            const middleTip = landmarks[12];
+            const ringTip = landmarks[16];
+            const pinkyTip = landmarks[20];
+            const palmBase = landmarks[0];
+
+            // Calculate distances
+            const indexOpen = this.distance(palmBase, indexTip) > 0.3;
+            const middleOpen = this.distance(palmBase, middleTip) > 0.3;
+            const ringOpen = this.distance(palmBase, ringTip) > 0.3;
+            const pinkyOpen = this.distance(palmBase, pinkyTip) > 0.3;
+            const thumbOpen = this.distance(landmarks[2], thumbTip) > 0.1;
+
+            // Basic gesture classification
+            let gestureName = 'Unknown';
+            let confidence = 0.7;
+
+            if (!indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+                if (thumbOpen) {
+                    gestureName = 'Thumb Up';
+                } else {
+                    gestureName = 'Fist';
+                }
+            } else if (indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+                gestureName = 'Index Finger';
+            } else if (indexOpen && middleOpen && !ringOpen && !pinkyOpen) {
+                gestureName = 'Victory';
+            } else if (indexOpen && middleOpen && ringOpen && pinkyOpen) {
+                gestureName = 'All Open';
+            }
+
+            // Get gesture data from library
+            const gestureData = getGestureByName(gestureName) || {
+                name: gestureName,
+                emoji: '👆',
+                translation: gestureName,
+                description: 'Custom gesture'
+            };
+
+            return {
+                name: gestureName,
+                emoji: gestureData.emoji,
+                translation: gestureData.translation,
+                description: gestureData.description,
+                confidence: confidence
+            };
+
+        } catch (error) {
+            console.error('Error classifying gesture:', error);
+            return { name: 'Unknown', confidence: 0 };
+        }
+    }
+
+    /**
+     * Calculate distance between two points
+     */
+    distance(p1, p2) {
+        const dx = p1.x - p2.x;
+        const dy = p1.y - p2.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    /**
+     * Stop detection
+     */
+    stopDetection() {
+        this.isDetecting = false;
+        console.log('⏹ Gesture detection stopped');
+    }
+
+    /**
+     * Set detection callback
+     */
+    onDetection(callback) {
+        this.detectionCallback = callback;
+    }
+
+    /**
+     * Set landmark callback
+     */
+    onLandmark(callback) {
+        this.landmarkCallback = callback;
+    }
+}
                 this.landmarkCallback(null);
             }
         }

@@ -423,6 +423,14 @@ export function getGestureCountByCategory() {
     };
 }
 
+/**
+ * Get gesture by name
+ */
+export function getGestureByName(name) {
+    const gesture = Object.values(GESTURE_DATA).find(g => g.name === name || g.indonesian === name);
+    return gesture || null;
+}
+
 export default {
     GESTURE_DATA,
     getGesture,
@@ -432,5 +440,6 @@ export default {
     getNumberGestures,
     getGesturesByDifficulty,
     getAllGestures,
-    getGestureCountByCategory
+    getGestureCountByCategory,
+    getGestureByName
 };

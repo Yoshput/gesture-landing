@@ -211,743 +211,319 @@ Senang berkenalan dengan anda</textarea>
     </div>
 
     <script>
-        /* ========================================================
-           CUSTOM GESTURE APPLICATION - TERSTRUKTUR & PROFESIONAL
-           ======================================================== */
+// 1. Variabel Global
+let hands = null;
+let camera = null;
+let modelSiap = false;
+let isRecording = false;
+let presentations = [];
+let currentPresentation = null;
+let lastResults = null;
 
-        /* ========================================================
-           1. GLOBAL VARIABLES
-           ======================================================== */
-
-        // Data Management
-        let presentations = [];
-        let currentPresentation = null;
-        let currentRecordingIndex = 0;
-        let isRecording = false;
-        let isPlayingBack = false;
-
-        // MediaPipe Hands & Camera
-        let hands = null;
-        let camera = null;
-        let canvasCtx = null;
-        let lastResults = null;
-        let modelSiap = false;
-        let frameCounter = 0;
-
-        /* ========================================================
-           2. MEDIAPIPE CORE FUNCTIONS
-           ======================================================== */
-
-        /**
-         * Callback untuk menerima hasil deteksi tangan dari MediaPipe
-         * Menggambar skeletal hijau dan merah pada canvas
-         */
-        function onResults(results) {
-            const videoElement = document.getElementById('recording-video') || document.querySelector('video');
-            const canvasElement = document.getElementById('recording-canvas') || document.querySelector('canvas');
-            
-            if (!canvasElement) {
-                console.error("❌ Elemen <canvas> untuk menggambar skeletal tidak ditemukan!");
-                return;
-            }
-            
-            const ctx = canvasElement.getContext('2d');
-            if (!ctx) {
-                console.error("❌ Tidak dapat mendapatkan canvas context!");
-                return;
-            }
-
-            // 1. Sinkronkan ukuran canvas dengan resolusi video asli
-            if (videoElement && (canvasElement.width !== videoElement.videoWidth)) {
-                canvasElement.width = videoElement.videoWidth || 640;
-                canvasElement.height = videoElement.videoHeight || 480;
-            }
-
-            // 2. Bersihkan canvas sebelum menggambar frame baru
-            ctx.save();
-            ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
-            // 3. Mirror canvas untuk output yang natural (left-right flip)
-            ctx.scale(-1, 1);
-            ctx.translate(-canvasElement.width, 0);
-
-            // 4. Gambar video background jika tersedia
-            if (videoElement && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-                ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-            }
-
-            // 5. Gambar skeletal tangan jika terdeteksi (GARIS HIJAU + TITIK MERAH)
-            if (results && results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                for (const landmarks of results.multiHandLandmarks) {
-                    // Gambar garis penghubung (Connectors) - HIJAU NEON
-                    if (typeof drawConnectors === 'function' && typeof HAND_CONNECTIONS !== 'undefined') {
-                        drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {
-                            color: '#00FF00',     // Hijau neon untuk visibility tinggi
-                            lineWidth: 5
-                        });
-                    }
-                    // Gambar titik sendi (Landmarks) - MERAH SOLID
-                    if (typeof drawLandmarks === 'function') {
-                        drawLandmarks(ctx, landmarks, {
-                            color: '#FF0000',     // Merah untuk kontras dengan hijau
-                            lineWidth: 2,
-                            radius: 4
-                        });
-                    }
-                }
-                console.log(`✅ Tangan terdeteksi: ${results.multiHandLandmarks.length} tangan`);
-            }
-            
-            ctx.restore();
-            
-            // 6. Simpan hasil untuk keperluan lain (capture, logging, dll)
-            lastResults = results;
-            frameCounter++;
+// 2. Fungsi Memuat Model MediaPipe v0.4
+function loadHandGestureModel() {
+    return new Promise((resolve) => {
+        if (hands && modelSiap) {
+            resolve(hands);
+            return;
         }
-
-        /**
-         * Inisialisasi Model MediaPipe Hands v0.4
-         * Menggunakan Promise untuk wait hingga model siap
-         */
-        function loadHandGestureModel() {
-            return new Promise((resolve) => {
-                try {
-                    // Jika sudah dimuat, gunakan instance yang cached
-                    if (hands && modelSiap) {
-                        console.log('🌸 Model MediaPipe sudah siap (cached)');
-                        resolve(hands);
-                        return;
-                    }
-
-                    // Buat instance baru dari MediaPipe Hands
-                    console.log('⏳ Sedang memuat model MediaPipe v0.4...');
-                    
-                    hands = new Hands({
-                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`
-                    });
-
-                    // Konfigurasi opsi deteksi
-                    hands.setOptions({
-                        maxNumHands: 1,              // Hanya track 1 tangan
-                        modelComplexity: 1,          // Full model (0 = lite, 1 = full)
-                        minDetectionConfidence: 0.5, // Minimum confidence untuk deteksi awal
-                        minTrackingConfidence: 0.5   // Minimum confidence untuk tracking
-                    });
-
-                    // Pasang callback hasil deteksi
-                    if (typeof onResults === 'function') {
-                        hands.onResults(onResults);
-                    }
-
-                    // Tandai model siap setelah instance berhasil dibuat
-                    modelSiap = true;
-                    console.log('🌸 Model MediaPipe v0.4 berhasil diinisialisasi!');
-                    resolve(hands);
-
-                } catch (error) {
-                    console.error('❌ Error loading model:', error);
-                    resolve(null); // Tetap resolve agar tidak freeze aplikasi
-                }
-            });
-        }
-
-        /**
-         * Inisialisasi dan Mulai Kamera
-         * Menggunakan Native Browser API (navigator.mediaDevices.getUserMedia)
-         * + requestAnimationFrame untuk deteksi loop yang stabil
-         */
-        async function startCameraWaitReady() {
-            try {
-                const videoElement = document.getElementById('recording-video');
-                const statusElement = document.getElementById('recording-status');
-
-                if (!videoElement) {
-                    console.error("❌ Elemen <video id='recording-video'> tidak ditemukan di HTML!");
-                    showToast('❌ Video element tidak ditemukan', 'error');
-                    return;
-                }
-
-                // STEP 1: Muat model MediaPipe terlebih dahulu
-                if (statusElement) statusElement.textContent = '⏳ Loading AI Model...';
-                console.log('📦 Memulai load model MediaPipe...');
-                
-                await loadHandGestureModel();
-                
-                console.log("✅ Model siap! Memulai inisialisasi kamera native...");
-
-                // STEP 2: Request akses kamera menggunakan Native Browser API
-                if (statusElement) statusElement.textContent = '⏳ Requesting Camera Access...';
-                console.log('📹 Meminta akses kamera dari browser...');
-                
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        width: { ideal: 1280 }, 
-                        height: { ideal: 720 } 
-                    }
-                });
-                
-                console.log('✅ Akses kamera diberikan! Setting up video element...');
-
-                // Pasang MediaStream dari kamera ke elemen <video>
-                videoElement.srcObject = stream;
-                
-                // Set attributes untuk autoplay tanpa race condition
-                videoElement.setAttribute('autoplay', '');
-                videoElement.setAttribute('playsinline', '');
-                videoElement.setAttribute('muted', '');
-                
-                // Pastikan video element dalam kondisi "playing" sebelum mulai deteksi
-                if (videoElement.paused) {
-                    await videoElement.play();
-                }
-                
-                console.log("🎥 Stream kamera native berhasil tersambung!");
-                if (statusElement) statusElement.textContent = '⏳ Starting Detection Loop...';
-
-                // STEP 3: Jalankan Detection Loop menggunakan requestAnimationFrame
-                let frameCount = 0;
-                let lastLogTime = Date.now();
-                
-                function deteksiLoop() {
-                    // Kirim frame ke MediaPipe hands untuk deteksi
-                    if (isRecording && modelSiap && hands && 
-                        typeof hands.send === 'function' && 
-                        videoElement.readyState >= 2) {
-                        
-                        hands.send({ image: videoElement })
-                            .catch(err => console.debug("Frame drop:", err));
-                        frameCount++;
-                        
-                        // Log progress setiap 2 detik
-                        if (Date.now() - lastLogTime > 2000) {
-                            console.log(`📤 Frames sent: ${frameCount}, ready=${videoElement.readyState}`);
-                            frameCount = 0;
-                            lastLogTime = Date.now();
-                        }
-                    }
-                    // Terus minta browser render frame berikutnya
-                    requestAnimationFrame(deteksiLoop);
-                }
-                
-                // Mulai detection loop
-                isRecording = true;
-                deteksiLoop();
-                console.log("📷 Kamera aktif dan skeletal AI berjalan lancar!");
-                
-                if (statusElement) statusElement.textContent = "✅ Kamera Aktif - Gerakkan Tanganmu!";
-                showToast('✅ Kamera aktif! Posisikan tangan Anda di depan kamera.', 'success');
-
-            } catch (err) {
-                console.error("❌ Error memulai kamera:", err);
-                showToast('❌ Gagal memulai kamera: ' + err.message, 'error');
-                isRecording = false;
-                const statusElement = document.getElementById('recording-status');
-                if (statusElement) statusElement.textContent = "❌ Gagal memulai kamera";
-            }
-        }
-
-        /**
-         * Hentikan dan Matikan Kamera
-         * Bersihkan semua track stream dan resources
-         */
-        function stopRecordingCamera() {
-            isRecording = false;
-            
-            // Hentikan semua media tracks (cara yang benar)
-            const videoElement = document.getElementById('recording-video');
-            if (videoElement && videoElement.srcObject) {
-                const stream = videoElement.srcObject;
-                const tracks = stream.getTracks();
-                tracks.forEach(track => {
-                    track.stop();
-                    console.log(`🛑 Track ${track.kind} dihentikan`);
-                });
-                videoElement.srcObject = null;
-            }
-            
-            // Cleanup legacy camera object jika masih ada
-            if (camera) {
-                try {
-                    camera.stop();
-                } catch (e) {
-                    console.warn('Legacy camera cleanup:', e);
-                }
-                camera = null;
-            }
-            
-            canvasCtx = null;
-            console.log('📹 Kamera berhasil dimatikan');
-            const statusElement = document.getElementById('recording-status');
-            if (statusElement) statusElement.textContent = 'Kamera dimatikan ⏹️';
-        }
-
-        /* ========================================================
-           3. DATA MANAGEMENT FUNCTIONS
-           ======================================================== */
-
-        /**
-         * Load presentations dari localStorage
-         */
-        function loadPresentations() {
-            const saved = localStorage.getItem('customPresentations');
-            presentations = saved ? JSON.parse(saved) : [];
-        }
-
-        /**
-         * Save presentations ke localStorage
-         */
-        function savePresentations() {
-            localStorage.setItem('customPresentations', JSON.stringify(presentations));
-        }
-
-        /**
-         * Process text input dan buat presentation baru
-         */
-        function processTextInput() {
-            const name = document.getElementById('presentation-name').value.trim();
-            const text = document.getElementById('text-input').value.trim();
-
-            if (!name) {
-                showToast('❌ Nama presentasi tidak boleh kosong', 'error');
-                return;
-            }
-
-            if (!text) {
-                showToast('❌ Kalimat tidak boleh kosong', 'error');
-                return;
-            }
-
-            const words = text.split('\n').map(w => w.trim()).filter(w => w.length > 0);
-
-            if (words.length === 0) {
-                showToast('❌ Tidak ada kata yang valid', 'error');
-                return;
-            }
-
-            currentPresentation = {
-                id: Date.now(),
-                name: name,
-                words: words.map(w => ({ text: w, gesture: null })),
-                createdAt: new Date().toLocaleString('id-ID')
-            };
-
-            savePresentations();
-            displayWordsList();
-            showToast('✅ Kalimat berhasil diproses!', 'success');
-        }
-
-        /**
-         * Hapus kata dari presentation
-         */
-        function deleteWord(index) {
-            if (confirm('Hapus kata ini?')) {
-                currentPresentation.words.splice(index, 1);
-                savePresentations();
-                displayWordsList();
-                showToast('✅ Kata berhasil dihapus!', 'success');
-            }
-        }
-
-        /**
-         * Load presentation dari library
-         */
-        function loadPresentation(id) {
-            const pres = presentations.find(p => p.id === id);
-            if (pres) {
-                currentPresentation = pres;
-                switchTab('create');
-                document.getElementById('presentation-name').value = pres.name;
-                displayWordsList();
-                showToast('✅ Presentasi berhasil dimuat!', 'success');
-            }
-        }
-
-        /**
-         * Hapus presentation dari library
-         */
-        function deletePresentation(id) {
-            if (confirm('Hapus presentasi ini?')) {
-                presentations = presentations.filter(p => p.id !== id);
-                savePresentations();
-                displayLibrary();
-                showToast('✅ Presentasi berhasil dihapus!', 'success');
-            }
-        }
-
-        /* ========================================================
-           4. UI MANAGEMENT FUNCTIONS
-           ======================================================== */
-
-        /**
-         * Tampilkan daftar kata yang akan direkam
-         */
-        function displayWordsList() {
-            if (!currentPresentation) return;
-
-            const container = document.getElementById('words-list');
-            container.innerHTML = '';
-
-            currentPresentation.words.forEach((word, index) => {
-                const card = document.createElement('div');
-                card.className = `word-card ${word.gesture ? 'has-gesture' : ''}`;
-                card.innerHTML = `
-                    <div class="word-info">
-                        <div class="word-index">${index + 1}</div>
-                        <div class="word-details">
-                            <div class="word-text">${word.text}</div>
-                            <div class="word-status ${word.gesture ? 'has-gesture' : ''}">
-                                ${word.gesture ? '✅ Gesture sudah direkam' : '⏳ Menunggu gesture'}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="word-actions">
-                        ${word.gesture ? `
-                            <div class="gesture-preview" onclick="showPreview(${index})">
-                                <img src="${word.gesture}">
-                            </div>
-                        ` : ''}
-                        <button class="btn btn-small btn-primary" onclick="startRecordingWord(${index})">
-                            📸 Rekam
-                        </button>
-                        <button class="btn btn-small btn-danger" onclick="deleteWord(${index})">
-                            🗑️
-                        </button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-
-            // Update statistik
-            const total = currentPresentation.words.length;
-            const recorded = currentPresentation.words.filter(w => w.gesture).length;
-            document.getElementById('total-words').textContent = total;
-            document.getElementById('recorded-words').textContent = recorded;
-            document.getElementById('progress-percent').textContent = Math.round((recorded / total) * 100) + '%';
-
-            document.getElementById('words-list-container').style.display = 'block';
-        }
-
-        /**
-         * Mulai recording untuk kata tertentu
-         */
-        async function startRecordingWord(index) {
-            try {
-                currentRecordingIndex = index;
-                switchTab('record');
-                
-                document.getElementById('recording-interface').style.display = 'block';
-                document.getElementById('recording-empty-state').style.display = 'none';
-                
-                document.getElementById('current-recording-word').textContent = currentPresentation.words[index].text;
-                document.getElementById('recording-status').textContent = `Kata ${index + 1} dari ${currentPresentation.words.length}`;
-
-                await startCameraWaitReady();
-            } catch (error) {
-                console.error('Error starting recording:', error);
-                showToast('❌ Gagal memulai recording: ' + error.message, 'error');
-            }
-        }
-
-        /**
-         * Capture gesture dari canvas MediaPipe
-         */
-        function captureGesture() {
-            try {
-                const video = document.getElementById('recording-video');
-                const canvas = document.getElementById('recording-canvas');
-
-                if (!video || !video.readyState) {
-                    showToast('❌ Video belum siap. Tunggu sebentar...', 'error');
-                    console.error('Video not ready. readyState:', video?.readyState);
-                    return;
-                }
-
-                // Jika canvas sudah memiliki konten dari MediaPipe
-                if (canvas.width > 0 && canvas.height > 0) {
-                    console.log('📸 Capturing from MediaPipe canvas:', canvas.width, 'x', canvas.height);
-                    const imageData = canvas.toDataURL('image/jpeg', 0.8);
-                    
-                    if (!imageData || imageData.length < 100) {
-                        throw new Error('Canvas data kosong');
-                    }
-                    
-                    currentPresentation.words[currentRecordingIndex].gesture = imageData;
-                    savePresentations();
-                    showToast('✅ Gesture berhasil disimpan!', 'success');
-                } else {
-                    // Fallback: ambil langsung dari video element
-                    console.log('📸 Canvas kosong, capturing langsung dari video');
-                    const captureCanvas = document.createElement('canvas');
-                    captureCanvas.width = video.videoWidth || 1280;
-                    captureCanvas.height = video.videoHeight || 720;
-                    
-                    if (captureCanvas.width === 0) {
-                        throw new Error('Video resolution tidak tersedia');
-                    }
-                    
-                    const ctx = captureCanvas.getContext('2d');
-                    ctx.scale(-1, 1);
-                    ctx.translate(-captureCanvas.width, 0);
-                    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-                    
-                    const imageData = captureCanvas.toDataURL('image/jpeg', 0.8);
-                    
-                    if (imageData.length < 100) {
-                        throw new Error('Capture result kosong');
-                    }
-                    
-                    currentPresentation.words[currentRecordingIndex].gesture = imageData;
-                    savePresentations();
-                    showToast('✅ Gesture berhasil disimpan!', 'success');
-                }
-                
-                // Lanjut ke kata berikutnya
-                if (currentRecordingIndex < currentPresentation.words.length - 1) {
-                    currentRecordingIndex++;
-                    document.getElementById('current-recording-word').textContent = currentPresentation.words[currentRecordingIndex].text;
-                    document.getElementById('recording-status').textContent = `Kata ${currentRecordingIndex + 1} dari ${currentPresentation.words.length}`;
-                } else {
-                    showToast('🎉 Semua gesture sudah direkam!', 'success');
-                    switchTab('create');
-                    document.getElementById('recording-interface').style.display = 'none';
-                    displayWordsList();
-                    stopRecordingCamera();
-                }
-
-                displayWordsList();
-            } catch (error) {
-                console.error('Error capturing gesture:', error);
-                showToast('❌ Gagal mengambil foto: ' + error.message, 'error');
-            }
-        }
-
-        /**
-         * Skip kata saat recording
-         */
-        function skipWord() {
-            if (currentRecordingIndex < currentPresentation.words.length - 1) {
-                currentRecordingIndex++;
-                document.getElementById('current-recording-word').textContent = currentPresentation.words[currentRecordingIndex].text;
-                document.getElementById('recording-status').textContent = `Kata ${currentRecordingIndex + 1} dari ${currentPresentation.words.length}`;
-            } else {
-                switchTab('create');
-                document.getElementById('recording-interface').style.display = 'none';
-                stopRecordingCamera();
-            }
-        }
-
-        /**
-         * Tampilkan preview gesture
-         */
-        function showPreview(index) {
-            try {
-                const word = currentPresentation.words[index];
-                if (!word || !word.gesture) {
-                    showToast('❌ Gesture tidak tersedia', 'error');
-                    return;
-                }
-                
-                const img = document.getElementById('preview-image');
-                img.src = word.gesture;
-                img.onerror = () => {
-                    console.error('Failed to load gesture image for word:', word.text);
-                    showToast('❌ Gagal memuat gambar gesture', 'error');
-                };
-                
-                document.getElementById('preview-word').textContent = word.text;
-                document.getElementById('preview-modal').classList.add('active');
-            } catch (error) {
-                console.error('Error showing preview:', error);
-                showToast('❌ Gagal menampilkan preview', 'error');
-            }
-        }
-
-        /**
-         * Tutup preview modal
-         */
-        function closePreviewModal() {
-            document.getElementById('preview-modal').classList.remove('active');
-        }
-
-        /**
-         * Tampilkan playback timeline
-         */
-        function displayPlayback() {
-            if (!currentPresentation || currentPresentation.words.length === 0) {
-                document.getElementById('playback-interface').style.display = 'none';
-                document.getElementById('playback-empty-state').style.display = 'block';
-                return;
-            }
-
-            document.getElementById('playback-interface').style.display = 'block';
-            document.getElementById('playback-empty-state').style.display = 'none';
-            document.getElementById('playback-title').textContent = currentPresentation.name;
-
-            const timeline = document.getElementById('playback-timeline');
-            timeline.innerHTML = '';
-
-            currentPresentation.words.forEach((word, index) => {
-                const item = document.createElement('div');
-                item.className = 'playback-item';
-                item.innerHTML = `
-                    <div class="playback-index">${index + 1}</div>
-                    <div class="playback-word">${word.text}</div>
-                    ${word.gesture ? '<div class="playback-gesture-icon">✅</div>' : '<div style="color: var(--warning-color);">⏳</div>'}
-                `;
-                timeline.appendChild(item);
-            });
-        }
-
-        /**
-         * Tampilkan library presentations
-         */
-        function displayLibrary() {
-            loadPresentations();
-            const container = document.getElementById('library-list');
-            const emptyState = document.getElementById('library-empty');
-
-            if (presentations.length === 0) {
-                container.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
-            }
-
-            emptyState.style.display = 'none';
-            container.innerHTML = '';
-
-            presentations.forEach((pres, index) => {
-                const card = document.createElement('div');
-                card.className = 'word-card';
-                card.innerHTML = `
-                    <div class="word-info">
-                        <div class="word-index">${index + 1}</div>
-                        <div class="word-details">
-                            <div class="word-text">${pres.name}</div>
-                            <div class="word-status">
-                                📅 ${pres.createdAt} | 📊 ${pres.words.filter(w => w.gesture).length}/${pres.words.length} gesture
-                            </div>
-                        </div>
-                    </div>
-                    <div class="word-actions">
-                        <button class="btn btn-small btn-primary" onclick="loadPresentation(${pres.id})">
-                            ✏️ Edit
-                        </button>
-                        <button class="btn btn-small btn-danger" onclick="deletePresentation(${pres.id})">
-                            🗑️ Hapus
-                        </button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        /**
-         * Switch antara tab (create, record, playback, library)
-         */
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            document.getElementById(tabName).classList.add('active');
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-            if (tabName === 'playback') {
-                displayPlayback();
-            } else if (tabName === 'library') {
-                displayLibrary();
-            }
-        }
-
-        /**
-         * Toast notification helper
-         */
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-
-        /* ========================================================
-           5. EVENT LISTENERS
-           ======================================================== */
-
-        // Tab button listeners
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                switchTab(btn.dataset.tab);
-            });
+        console.log("⏳ Sedang memuat model MediaPipe...");
+        hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`
         });
 
-        // Process text input
-        document.getElementById('btn-process-text').addEventListener('click', processTextInput);
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
 
-        // Clear text
-        document.getElementById('btn-clear-text').addEventListener('click', () => {
-            if (confirm('Hapus semua?')) {
-                document.getElementById('text-input').value = '';
-                document.getElementById('presentation-name').value = '';
-                document.getElementById('words-list-container').style.display = 'none';
-                currentPresentation = null;
+        hands.onResults(onResults);
+        modelSiap = true;
+        console.log("🌸 Model MediaPipe berhasil diinisialisasi!");
+        resolve(hands);
+    });
+}
+
+// 3. Fungsi Gambar Koordinat ke Canvas (onResults)
+function onResults(results) {
+    const videoElement = document.getElementById('recording-video') || document.querySelector('video');
+    const canvasElement = document.getElementById('recording-canvas') || document.querySelector('canvas');
+    if (!canvasElement) return;
+    
+    const canvasCtx = canvasElement.getContext('2d');
+
+    if (videoElement && (canvasElement.width !== videoElement.videoWidth)) {
+        canvasElement.width = videoElement.videoWidth || 640;
+        canvasElement.height = videoElement.videoHeight || 480;
+    }
+
+    canvasCtx.save();
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+    if (results && results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        for (const landmarks of results.multiHandLandmarks) {
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 5 });
+            drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 2, radius: 4 });
+        }
+    }
+    canvasCtx.restore();
+    lastResults = results;
+}
+
+// 4. Fungsi Mengaktifkan Kamera Native (startCameraWaitReady)
+async function startCameraWaitReady() {
+    try {
+        const videoElement = document.getElementById('recording-video') || document.querySelector('video');
+        const statusText = document.getElementById('recording-status') || document.querySelector('.status-container');
+
+        if (!videoElement) {
+            console.error("Elemen <video> tidak ditemukan!");
+            return;
+        }
+
+        await loadHandGestureModel();
+        console.log("✅ Model siap! Memulai inisialisasi kamera native...");
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480 }
+        });
+        
+        videoElement.srcObject = stream;
+        videoElement.setAttribute('autoplay', '');
+        videoElement.setAttribute('playsinline', '');
+        await videoElement.play();
+        
+        console.log("🎥 Stream kamera native berhasil tersambung!");
+
+        function deteksiLoop() {
+            if (isRecording && modelSiap && hands && typeof hands.send === 'function' && videoElement.readyState >= 2) {
+                hands.send({ image: videoElement }).catch(err => console.debug("Frame drop:", err));
             }
-        });
+            requestAnimationFrame(deteksiLoop);
+        }
+        
+        isRecording = true;
+        deteksiLoop();
+        console.log("📷 Kamera aktif dan skeletal AI berjalan lancar!");
+        if (statusText) statusText.innerText = "Kamera Aktif & Model Siap! 🎯";
 
-        // Capture gesture
-        document.getElementById('btn-capture-gesture').addEventListener('click', captureGesture);
+    } catch (err) {
+        console.error("Error pada kamera native:", err);
+    }
+}
 
-        // Skip word
-        document.getElementById('btn-skip-word').addEventListener('click', skipWord);
+// 5. Fungsi Hentikan Kamera
+function stopRecordingCamera() {
+    isRecording = false;
+    const videoElement = document.getElementById('recording-video');
+    if (videoElement && videoElement.srcObject) {
+        const stream = videoElement.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+        videoElement.srcObject = null;
+    }
+    console.log("📹 Kamera dimatikan");
+}
 
-        // Start camera button
-        document.getElementById('btn-start-camera').addEventListener('click', async () => {
-            console.log('🎬 User klik tombol Nyalakan Kamera');
-            try {
-                await startCameraWaitReady();
-            } catch (error) {
-                console.error('Error starting camera:', error);
-                showToast('❌ Error: ' + error.message, 'error');
-            }
-        });
+// 6. Data Management
+function loadPresentations() {
+    const saved = localStorage.getItem('customPresentations');
+    presentations = saved ? JSON.parse(saved) : [];
+}
 
-        // Stop camera button
-        document.getElementById('btn-stop-camera').addEventListener('click', () => {
-            console.log('🛑 User klik tombol Matikan Kamera');
-            try {
-                stopRecordingCamera();
-                document.getElementById('recording-status').textContent = 'Kamera dimatikan';
-                showToast('✅ Kamera berhasil dimatikan', 'success');
-            } catch (error) {
-                console.error('Error stopping camera:', error);
-                showToast('❌ Error: ' + error.message, 'error');
-            }
-        });
+function savePresentations() {
+    localStorage.setItem('customPresentations', JSON.stringify(presentations));
+        }
 
-        // Back button
-        document.getElementById('btn-back-to-create').addEventListener('click', () => {
-            switchTab('create');
-            document.getElementById('recording-interface').style.display = 'none';
-            stopRecordingCamera();
-        });
+// 7. Helper Functions
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast') || document.createElement('div');
+    toast.textContent = message;
+    toast.className = `toast show ${type}`;
+    if (!document.getElementById('toast')) {
+        document.body.appendChild(toast);
+        toast.id = 'toast';
+    }
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
 
-        /* ========================================================
-           6. INITIALIZATION
-           ======================================================== */
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    const tab = document.getElementById(tabName);
+    if (tab) tab.classList.add('active');
+    const btn = document.querySelector(`[data-tab="${tabName}"]`);
+    if (btn) btn.classList.add('active');
+}
 
-        window.addEventListener('load', () => {
-            console.log('🚀 Custom Gesture Application Initialized');
-            loadPresentations();
-        });
+function displayWordsList() {
+    if (!currentPresentation) return;
+    const container = document.getElementById('words-list');
+    if (!container) return;
+    container.innerHTML = '';
+    currentPresentation.words.forEach((word, index) => {
+        const card = document.createElement('div');
+        card.className = `word-card ${word.gesture ? 'has-gesture' : ''}`;
+        card.innerHTML = `
+            <div class="word-info">
+                <div class="word-index">${index + 1}</div>
+                <div class="word-details">
+                    <div class="word-text">${word.text}</div>
+                    <div class="word-status">${word.gesture ? '✅ Recorded' : '⏳ Pending'}</div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
 
-        window.addEventListener('unload', () => {
-            stopRecordingCamera();
-        });
-    </script>
+function processTextInput() {
+    const name = document.getElementById('presentation-name')?.value.trim() || '';
+    const text = document.getElementById('text-input')?.value.trim() || '';
+    
+    if (!name) {
+        showToast('❌ Nama presentasi tidak boleh kosong', 'error');
+        return;
+    }
+    if (!text) {
+        showToast('❌ Kalimat tidak boleh kosong', 'error');
+        return;
+    }
+    
+    const words = text.split('\n').map(w => w.trim()).filter(w => w.length > 0);
+    if (words.length === 0) {
+        showToast('❌ Tidak ada kata yang valid', 'error');
+        return;
+    }
+    
+    currentPresentation = {
+        id: Date.now(),
+        name: name,
+        words: words.map(w => ({ text: w, gesture: null })),
+        createdAt: new Date().toLocaleString('id-ID')
+    };
+    
+    presentations.push(currentPresentation);
+    savePresentations();
+    displayWordsList();
+    showToast('✅ Kalimat berhasil diproses!', 'success');
+}
+
+function deleteWord(index) {
+    if (confirm('Hapus kata ini?')) {
+        currentPresentation.words.splice(index, 1);
+        savePresentations();
+        displayWordsList();
+        showToast('✅ Kata berhasil dihapus!', 'success');
+    }
+}
+
+function loadPresentation(id) {
+    const pres = presentations.find(p => p.id === id);
+    if (pres) {
+        currentPresentation = JSON.parse(JSON.stringify(pres));
+        switchTab('create');
+        const nameInput = document.getElementById('presentation-name');
+        if (nameInput) nameInput.value = pres.name;
+        displayWordsList();
+        showToast('✅ Presentasi berhasil dimuat!', 'success');
+    }
+}
+
+function deletePresentation(id) {
+    if (confirm('Hapus presentasi ini?')) {
+        presentations = presentations.filter(p => p.id !== id);
+        savePresentations();
+        showToast('✅ Presentasi berhasil dihapus!', 'success');
+    }
+}
+
+async function startRecordingWord(index) {
+    currentRecordingIndex = index;
+    switchTab('record');
+    const wordEl = document.getElementById('current-recording-word');
+    if (wordEl) wordEl.textContent = currentPresentation.words[index].text;
+    showToast('✅ Mulai rekam gesture!', 'success');
+}
+
+function captureGesture() {
+    if (!lastResults || !lastResults.multiHandLandmarks || lastResults.multiHandLandmarks.length === 0) {
+        showToast('❌ Tangan tidak terdeteksi! Posisikan tangan di depan kamera.', 'error');
+        return;
+    }
+    
+    currentPresentation.words[currentRecordingIndex].gesture = 'captured_' + Date.now();
+    savePresentations();
+    showToast('✅ Gesture berhasil disimpan!', 'success');
+    
+    if (currentRecordingIndex < currentPresentation.words.length - 1) {
+        currentRecordingIndex++;
+        const wordEl = document.getElementById('current-recording-word');
+        if (wordEl) wordEl.textContent = currentPresentation.words[currentRecordingIndex].text;
+    } else {
+        showToast('🎉 Semua gesture sudah direkam!', 'success');
+        switchTab('create');
+        stopRecordingCamera();
+    }
+}
+
+function skipWord() {
+    if (currentRecordingIndex < currentPresentation.words.length - 1) {
+        currentRecordingIndex++;
+        const wordEl = document.getElementById('current-recording-word');
+        if (wordEl) wordEl.textContent = currentPresentation.words[currentRecordingIndex].text;
+    } else {
+        switchTab('create');
+        stopRecordingCamera();
+    }
+}
+
+// 8. Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    loadPresentations();
+    
+    const processBtn = document.getElementById('btn-process-text');
+    if (processBtn) processBtn.addEventListener('click', processTextInput);
+    
+    const clearBtn = document.getElementById('btn-clear-text');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+        if (confirm('Hapus semua?')) {
+            const nameInput = document.getElementById('presentation-name');
+            const textInput = document.getElementById('text-input');
+            if (nameInput) nameInput.value = '';
+            if (textInput) textInput.value = '';
+            currentPresentation = null;
+        }
+    });
+    
+    const captureBtn = document.getElementById('btn-capture-gesture');
+    if (captureBtn) captureBtn.addEventListener('click', captureGesture);
+    
+    const skipBtn = document.getElementById('btn-skip-word');
+    if (skipBtn) skipBtn.addEventListener('click', skipWord);
+    
+    const startBtn = document.getElementById('btn-start-camera');
+    if (startBtn) startBtn.addEventListener('click', () => startCameraWaitReady());
+    
+    const stopBtn = document.getElementById('btn-stop-camera');
+    if (stopBtn) stopBtn.addEventListener('click', () => {
+        stopRecordingCamera();
+        showToast('✅ Kamera dimatikan', 'success');
+    });
+    
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+});
+
+window.addEventListener('beforeunload', () => {
+    stopRecordingCamera();
+    savePresentations();
+});
+</script>
+
 </body>
 </html>
