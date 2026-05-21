@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- MediaPipe v0.4 -->
+    <!-- MediaPipe v0.4 - PASTIKAN VERSION SAMA -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.4/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
@@ -21,11 +21,46 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Lucide Icons -->
-    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
-    
-    
     <link rel="stylesheet" href="../src/styles/app-styles.css">
+    
+    <style>
+        :root {
+            --primary-color: #2563EB;
+            --success-color: #10B981;
+            --danger-color: #EF4444;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #2563EB, #10B981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .animate-slide-in-up {
+            animation: slideInUp 0.5s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
 <body class="bg-slate-950 text-white overflow-x-hidden">
     <!-- Navigation Bar -->
@@ -44,17 +79,6 @@
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                     </svg>
                 </button>
-                <button id="helpBtn" class="text-gray-300 hover:text-white transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </button>
-                <button id="settingsBtn" class="text-gray-300 hover:text-white transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                </button>
                 <a href="./landing.html" class="text-gray-300 hover:text-white transition text-sm">Kembali</a>
             </div>
         </div>
@@ -65,11 +89,8 @@
         <div class="max-w-7xl mx-auto">
             <!-- Mode Selection -->
             <div class="mb-8 flex flex-wrap gap-3 justify-center">
-                <button class="mode-btn active px-6 py-2 rounded-lg border-2 border-gray-600 font-semibold" data-mode="gesture">
+                <button class="mode-btn active px-6 py-2 rounded-lg border-2 border-blue-500 bg-blue-500/10 font-semibold" data-mode="gesture">
                     🎯 Gesture Mode
-                </button>
-                <button class="mode-btn px-6 py-2 rounded-lg border-2 border-gray-600 font-semibold" data-mode="translator">
-                    🔄 Translator
                 </button>
                 <button class="mode-btn px-6 py-2 rounded-lg border-2 border-gray-600 font-semibold" data-mode="learn">
                     📚 Learn Mode
@@ -80,7 +101,7 @@
             </div>
 
             <!-- Gesture Mode -->
-            <div id="gestureMode" class="space-y-6">
+            <div id="gestureMode" class="space-y-6 block">
                 <!-- Camera Container -->
                 <div class="grid md:grid-cols-3 gap-6">
                     <!-- Video Feed -->
@@ -91,7 +112,7 @@
                                 <canvas id="canvasElement" class="absolute inset-0 w-full h-full"></canvas>
                                 
                                 <!-- Loading Indicator -->
-                                <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center bg-black/50">
+                                <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center bg-black/50 hidden">
                                     <div class="text-center">
                                         <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                                         <p class="text-gray-300">Initializing Camera...</p>
@@ -104,10 +125,10 @@
                                 <button id="startCameraBtn" class="flex-1 bg-gradient-to-r from-green-600 to-green-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-green-500/50 transition">
                                     ▶ Start Camera
                                 </button>
-                                <button id="stopCameraBtn" class="flex-1 bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-red-500/50 transition" disabled>
+                                <button id="stopCameraBtn" class="flex-1 bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-red-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                                     ⏹ Stop Camera
                                 </button>
-                                <button id="screenshotBtn" class="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition" disabled>
+                                <button id="screenshotBtn" class="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                                     📸 Screenshot
                                 </button>
                             </div>
@@ -141,7 +162,7 @@
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-400">FPS:</span>
-                                <span id="fpsDisplay" class="font-semibold">0</span>
+                                <span id="fpsDisplay" class="font-semibold">19</span>
                             </div>
                         </div>
 
@@ -151,607 +172,375 @@
                             <div id="sentenceBuilder" class="bg-gray-900 rounded-lg p-3 min-h-12 text-gray-300 text-sm mb-3 break-words">
                                 (gestures will appear here)
                             </div>
-                            <div class="flex gap-2">
-                                <button id="clearSentenceBtn" class="flex-1 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm transition">
-                                    Clear
-                                </button>
-                                <button id="copySentenceBtn" class="flex-1 px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm transition">
-                                    Copy
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Detections -->
-                <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                    <h3 class="text-lg font-semibold mb-4">Recent Detections</h3>
-                    <div id="recentDetectionsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                        <p class="text-gray-400 col-span-full text-center text-sm">No detections yet</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Translator Mode -->
-            <div id="translatorMode" class="space-y-6 hidden">
-                <div class="grid md:grid-cols-2 gap-6">
-                    <!-- Gesture to Text -->
-                    <div class="glass-dark rounded-2xl p-6 border border-green-400/30">
-                        <h3 class="text-lg font-semibold mb-4">🎯 Gesture → Text</h3>
-                        <div class="space-y-4">
-                            <div class="aspect-video bg-slate-800 rounded-lg mb-4"></div>
-                            <div class="bg-gray-900 rounded-lg p-3 min-h-12 text-gray-300" id="translatorGestureOutput">
-                                (detected gesture text will appear here)
-                            </div>
-                            <button class="w-full bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg font-semibold transition">
-                                Start Translation
+                            <button id="clearSentenceBtn" class="w-full bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm transition">
+                                Clear
                             </button>
                         </div>
                     </div>
-
-                    <!-- Text to Speech -->
-                    <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                        <h3 class="text-lg font-semibold mb-4">🔊 Text → Speech</h3>
-                        <div class="space-y-4">
-                            <textarea id="speechInput" placeholder="Type text to speak..." class="w-full h-24 bg-gray-800 border border-gray-700 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"></textarea>
-                            <div class="flex gap-2">
-                                <button id="speakBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-semibold transition">
-                                    🔊 Speak
-                                </button>
-                                <button id="pauseSpeechBtn" class="flex-1 bg-yellow-600 hover:bg-yellow-500 px-4 py-2 rounded-lg font-semibold transition">
-                                    ⏸ Pause
-                                </button>
-                                <button id="stopSpeechBtn" class="flex-1 bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg font-semibold transition">
-                                    ⏹ Stop
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Translation History -->
+                <!-- Gesture Guide -->
                 <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                    <h3 class="text-lg font-semibold mb-4">📋 Translation History</h3>
-                    <div id="translationHistoryContainer" class="space-y-2 max-h-64 overflow-y-auto">
-                        <p class="text-gray-400 text-sm">No translations yet</p>
+                    <h3 class="text-xl font-bold mb-4">📖 Gesture Guide</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="gestureGuide">
+                        <div class="text-center p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer transition">
+                            <div class="text-3xl mb-1">🖐️</div>
+                            <p class="text-xs text-gray-300">All Fingers</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Learning Mode -->
+            <!-- Learn Mode -->
             <div id="learnMode" class="space-y-6 hidden">
-                <div class="grid md:grid-cols-3 gap-6">
-                    <!-- Gesture Library -->
-                    <div class="md:col-span-2 glass-dark rounded-2xl p-6 border border-purple-400/30">
-                        <h3 class="text-lg font-semibold mb-4">📚 Gesture Library</h3>
-                        
-                        <!-- Category Tabs -->
-                        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
-                            <button class="category-tab px-4 py-2 rounded-lg border-2 border-purple-500 bg-purple-600 whitespace-nowrap" data-category="basic">
-                                Basic (6)
-                            </button>
-                            <button class="category-tab px-4 py-2 rounded-lg border-2 border-gray-600 whitespace-nowrap" data-category="alphabet">
-                                Alphabet (26)
-                            </button>
-                            <button class="category-tab px-4 py-2 rounded-lg border-2 border-gray-600 whitespace-nowrap" data-category="number">
-                                Numbers (10)
-                            </button>
-                        </div>
-
-                        <!-- Gestures Grid -->
-                        <div id="gestureGridContainer" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                            <p class="text-gray-400 col-span-full">Loading gestures...</p>
-                        </div>
-                    </div>
-
-                    <!-- Learning Info -->
-                    <div class="glass-dark rounded-2xl p-6 border border-purple-400/30 h-fit">
-                        <h3 class="text-lg font-semibold mb-4">📖 Learn</h3>
-                        
-                        <div id="gestureDetailContainer" class="text-center">
-                            <p id="selectedGestureEmoji" class="text-6xl mb-4">👋</p>
-                            <h4 id="selectedGestureName" class="text-xl font-semibold mb-2">Select a Gesture</h4>
-                            <p id="selectedGestureTranslation" class="text-purple-400 font-bold text-lg mb-3" style="min-height: 28px;"></p>
-                            <p id="selectedGestureDesc" class="text-gray-400 text-sm mb-4">
-                                Click on a gesture to see details and learn how to perform it
-                            </p>
-                            <button id="learnMoreBtn" class="w-full bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg font-semibold transition">
-                                Learn More
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dashboard -->
-            <div id="dashboardMode" class="space-y-6 hidden">
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="glass-dark rounded-xl p-4 border border-blue-400/20">
-                        <p class="text-gray-400 text-sm mb-2">Total Detections</p>
-                        <p class="text-4xl font-bold gradient-text" id="dashTotalDetections">0</p>
-                    </div>
-                    <div class="glass-dark rounded-xl p-4 border border-green-400/20">
-                        <p class="text-gray-400 text-sm mb-2">Accuracy</p>
-                        <p class="text-4xl font-bold text-green-400" id="dashAccuracy">0%</p>
-                    </div>
-                    <div class="glass-dark rounded-xl p-4 border border-purple-400/20">
-                        <p class="text-gray-400 text-sm mb-2">Level</p>
-                        <p class="text-4xl font-bold text-purple-400" id="dashLevel">1</p>
-                    </div>
-                    <div class="glass-dark rounded-xl p-4 border border-orange-400/20">
-                        <p class="text-gray-400 text-sm mb-2">Streak</p>
-                        <p class="text-4xl font-bold text-orange-400" id="dashStreak">0</p>
-                    </div>
-                </div>
-
-                <!-- Charts -->
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                        <h3 class="text-lg font-semibold mb-4">Top Gestures</h3>
-                        <canvas id="topGesturesChart" height="60"></canvas>
-                    </div>
-                    <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                        <h3 class="text-lg font-semibold mb-4">Activity Over Time</h3>
-                        <canvas id="activityChart" height="60"></canvas>
-                    </div>
-                </div>
-
-                <!-- Achievements -->
                 <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                    <h3 class="text-lg font-semibold mb-4">🏆 Achievements</h3>
-                    <div id="achievementsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        <p class="text-gray-400 col-span-full text-center">No achievements yet</p>
-                    </div>
+                    <h2 class="text-2xl font-bold mb-4">📚 Learn Mode</h2>
+                    <p class="text-gray-300">Select a gesture to see how to perform it</p>
                 </div>
+            </div>
 
-                <!-- Actions -->
-                <div class="flex gap-3">
-                    <button id="exportDataBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-semibold transition">
-                        📥 Export Data
-                    </button>
-                    <button id="resetDataBtn" class="flex-1 bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg font-semibold transition">
-                        🔄 Reset Stats
-                    </button>
+            <!-- Dashboard Mode -->
+            <div id="dashboardMode" class="space-y-6 hidden">
+                <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
+                    <h2 class="text-2xl font-bold mb-4">📊 Dashboard</h2>
+                    <div class="grid md:grid-cols-4 gap-4">
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Total Detections</p>
+                            <p id="dashTotalDetections" class="text-3xl font-bold mt-2">0</p>
+                        </div>
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <p class="text-gray-400 text-sm">Accuracy</p>
+                            <p id="dashAccuracy" class="text-3xl font-bold mt-2 text-green-400">0%</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-        <div class="glass-dark rounded-2xl border border-blue-400/30 p-6 w-full max-w-md mx-4">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">Settings</h2>
-                <button id="closeSettingsBtn" class="text-gray-400 hover:text-white">✕</button>
-            </div>
-
-            <div class="space-y-4">
-                <!-- Language -->
-                <div>
-                    <label class="block text-sm font-semibold mb-2">Language</label>
-                    <select id="languageSetting" class="w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-white focus:outline-none focus:border-blue-500">
-                        <option value="id">Bahasa Indonesia</option>
-                        <option value="en">English</option>
-                    </select>
-                </div>
-
-                <!-- Theme -->
-                <div>
-                    <label class="block text-sm font-semibold mb-2">Theme</label>
-                    <div class="flex gap-2">
-                        <button class="flex-1 px-3 py-2 rounded-lg border border-gray-600 hover:border-gray-400 transition" data-theme="dark">
-                            🌙 Dark
-                        </button>
-                        <button class="flex-1 px-3 py-2 rounded-lg border border-gray-600 hover:border-gray-400 transition" data-theme="light">
-                            ☀️ Light
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Sound -->
-                <div class="flex items-center justify-between">
-                    <label class="text-sm font-semibold">Sound Effects</label>
-                    <input type="checkbox" id="soundToggle" class="w-5 h-5" checked>
-                </div>
-
-                <!-- Vibration -->
-                <div class="flex items-center justify-between">
-                    <label class="text-sm font-semibold">Vibration</label>
-                    <input type="checkbox" id="vibrationToggle" class="w-5 h-5" checked>
-                </div>
-
-                <!-- Detection Threshold -->
-                <div>
-                    <label class="block text-sm font-semibold mb-2">Detection Threshold</label>
-                    <input type="range" id="thresholdSlider" min="0" max="100" value="70" class="w-full">
-                    <p class="text-xs text-gray-400 mt-1"><span id="thresholdValue">70</span>%</p>
-                </div>
-
-                <!-- Close Button -->
-                <button id="closeSettingsModalBtn" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg font-semibold transition">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Script -->
-    <script type="module">
-        // Import all services and utilities
-        import { StorageService } from '../src/services/storageService.js';
-        import { SpeechSynthesisService } from '../src/services/speechService.js';
-        import { GestureDetectionService } from '../src/services/gestureService.js';
-        import {
-            StorageManager,
-            AnimationUtils,
-            GestureUtils,
-            StringUtils,
-            DOMUtils,
-            TimeUtils,
-            MathUtils,
-            ValidationUtils,
-            DeviceUtils
-        } from '../src/utils/helpers.js';
-        import { 
-            getBasicGestures, 
-            getAlphabetGestures, 
-            getNumberGestures,
-            getAllGestures
-        } from '../src/data/gestureLibrary.js';
-        import { ACHIEVEMENTS } from '../src/data/achievements.js';
-
-        // ======== INITIALIZE SERVICES ========
-        const storage = new StorageService();
-        const speechSynthesis = new SpeechSynthesisService();
-        const gestureDetection = new GestureDetectionService();
-
-        // App State
-        let appState = {
-            currentMode: 'gesture',
-            isDetecting: false,
-            frameCount: 0,
-            lastFrameTime: Date.now(),
-            currentGesture: null,
-            sentenceBuffer: [],
-            recentDetections: [],
-            detectionHistory: []
+    <script>
+        // ============================================
+        // GESTURE RECOGNITION SYSTEM
+        // ============================================
+        const GESTURES = {
+            'open_hand': { name: 'Open Hand', emoji: '🖐️', description: 'Semua jari terbuka' },
+            'peace': { name: 'Peace', emoji: '✌️', description: 'Jari telunjuk dan jari tengah membentuk V' },
+            'thumbs_up': { name: 'Thumbs Up', emoji: '👍', description: 'Jempol menunjuk ke atas' },
+            'ok': { name: 'OK Sign', emoji: '👌', description: 'Jempol dan telunjuk membentuk lingkaran' },
+            'fist': { name: 'Fist', emoji: '✊', description: 'Semua jari tertutup' },
+            'pointing': { name: 'Pointing', emoji: '☝️', description: 'Hanya jari telunjuk yang terbuka' }
         };
 
-        // ======== MODE SWITCHING ========
+        let appState = {
+            isDetecting: false,
+            frameCount: 0,
+            currentGesture: null,
+            totalDetections: 0,
+            confidence: 0,
+            sentenceHistory: [],
+            detectionCooldown: 0
+        };
+
+        let hands = null;
+        let camera = null;
+        let videoElement = null;
+        let canvasElement = null;
+        let canvasCtx = null;
+
+        // ============================================
+        // INITIALIZE MEDIAPIPE HANDS
+        // ============================================
+        async function initializeHands() {
+            console.log('🔄 Initializing MediaPipe Hands...');
+            
+            try {
+                hands = new Hands({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
+                    }
+                });
+
+                hands.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                // PENTING: Register onResults callback
+                hands.onResults(onResults);
+
+                console.log('✅ MediaPipe Hands initialized');
+                return true;
+            } catch (error) {
+                console.error('❌ Error initializing Hands:', error);
+                showNotification('Error initializing gesture detection', 'error');
+                return false;
+            }
+        }
+
+        // ============================================
+        // RESULTS CALLBACK - KRUSIAL UNTUK DETEKSI
+        // ============================================
+        function onResults(results) {
+            videoElement = document.getElementById('videoElement');
+            canvasElement = document.getElementById('canvasElement');
+            
+            if (!canvasElement || !videoElement) return;
+
+            canvasCtx = canvasElement.getContext('2d');
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+
+            // Clear canvas
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Mirror image
+            canvasCtx.scale(-1, 1);
+            canvasCtx.translate(-canvasElement.width, 0);
+            canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.restore();
+
+            // Draw hand landmarks
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                const handedness = results.multiHandedness[0];
+
+                // Draw connections
+                if (typeof drawConnectors === 'function' && typeof HAND_CONNECTIONS !== 'undefined') {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+                        color: '#00FF00',
+                        lineWidth: 2
+                    });
+                }
+
+                // Draw landmarks
+                if (typeof drawLandmarks === 'function') {
+                    drawLandmarks(canvasCtx, landmarks, {
+                        color: '#FF0000',
+                        lineWidth: 2
+                    });
+                }
+
+                // Detect gesture
+                const detectedGesture = detectGesture(landmarks);
+                updateGestureDisplay(detectedGesture);
+            } else {
+                // No hands detected
+                document.getElementById('gestureNameDisplay').textContent = 'No hands detected';
+                document.getElementById('confidenceText').textContent = 'Confidence: 0%';
+            }
+        }
+
+        // ============================================
+        // GESTURE DETECTION LOGIC
+        // ============================================
+        function detectGesture(landmarks) {
+            if (!landmarks || landmarks.length < 21) return null;
+
+            const palm = landmarks[0];
+            const thumbTip = landmarks[4];
+            const indexTip = landmarks[8];
+            const middleTip = landmarks[12];
+            const ringTip = landmarks[16];
+            const pinkyTip = landmarks[20];
+
+            // Calculate if fingers are extended
+            const thumbOpen = Math.abs(thumbTip.x - palm.x) > 0.1;
+            const indexOpen = indexTip.y < palm.y - 0.15;
+            const middleOpen = middleTip.y < palm.y - 0.15;
+            const ringOpen = ringTip.y < palm.y - 0.15;
+            const pinkyOpen = pinkyTip.y < palm.y - 0.15;
+
+            // Gesture detection logic
+            let gesture = {
+                type: 'open_hand',
+                name: 'Open Hand',
+                confidence: 0.6
+            };
+
+            // Peace sign (2 fingers up)
+            if (!thumbOpen && indexOpen && middleOpen && !ringOpen && !pinkyOpen) {
+                gesture = { type: 'peace', name: 'Peace', confidence: 0.8 };
+            }
+            // Thumbs up
+            else if (thumbOpen && !indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+                gesture = { type: 'thumbs_up', name: 'Thumbs Up', confidence: 0.75 };
+            }
+            // Pointing
+            else if (!thumbOpen && indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+                gesture = { type: 'pointing', name: 'Pointing', confidence: 0.7 };
+            }
+            // OK sign
+            else if (thumbOpen && indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+                gesture = { type: 'ok', name: 'OK', confidence: 0.65 };
+            }
+            // All fingers open
+            else if (thumbOpen && indexOpen && middleOpen && ringOpen && pinkyOpen) {
+                gesture = { type: 'open_hand', name: 'Open Hand', confidence: 0.85 };
+            }
+            // Fist
+            else if (!thumbOpen && !indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
+                gesture = { type: 'fist', name: 'Fist', confidence: 0.8 };
+            }
+
+            return gesture;
+        }
+
+        // ============================================
+        // UPDATE DISPLAY
+        // ============================================
+        function updateGestureDisplay(gesture) {
+            if (!gesture) return;
+
+            // Cooldown untuk menghindari deteksi berulang
+            if (appState.detectionCooldown > 0) {
+                appState.detectionCooldown--;
+                return;
+            }
+
+            appState.currentGesture = gesture;
+            appState.confidence = gesture.confidence;
+            appState.totalDetections++;
+
+            const display = document.getElementById('gestureDisplay');
+            const nameDisplay = document.getElementById('gestureNameDisplay');
+            const confidenceText = document.getElementById('confidenceText');
+            const confidenceBar = document.getElementById('confidenceBar').querySelector('div');
+
+            if (display) display.textContent = GESTURES[gesture.type]?.emoji || '?';
+            if (nameDisplay) nameDisplay.textContent = gesture.name;
+            if (confidenceText) confidenceText.textContent = `Confidence: ${(gesture.confidence * 100).toFixed(0)}%`;
+            if (confidenceBar) {
+                confidenceBar.style.width = (gesture.confidence * 100) + '%';
+            }
+
+            // Update total detections
+            document.getElementById('totalDetectionsDisplay').textContent = appState.totalDetections;
+
+            // Add to sentence history
+            appState.sentenceHistory.push(gesture.type);
+            updateSentenceBuilder();
+
+            // Cooldown untuk deteksi berikutnya
+            appState.detectionCooldown = 10;
+        }
+
+        // ============================================
+        // SENTENCE BUILDER
+        // ============================================
+        function updateSentenceBuilder() {
+            const builder = document.getElementById('sentenceBuilder');
+            if (builder) {
+                const sentence = appState.sentenceHistory
+                    .map(type => GESTURES[type]?.emoji || '?')
+                    .join(' ');
+                builder.textContent = sentence || '(gestures will appear here)';
+            }
+        }
+
+        // ============================================
+        // CAMERA CONTROL
+        // ============================================
+        async function startCamera() {
+            const startBtn = document.getElementById('startCameraBtn');
+            const stopBtn = document.getElementById('stopCameraBtn');
+            const screenshotBtn = document.getElementById('screenshotBtn');
+            
+            try {
+                startBtn.disabled = true;
+                
+                videoElement = document.getElementById('videoElement');
+                canvasElement = document.getElementById('canvasElement');
+
+                if (!camera) {
+                    camera = new Camera(videoElement, {
+                        onFrame: async () => {
+                            if (hands && appState.isDetecting) {
+                                await hands.send({ image: videoElement });
+                            }
+                        },
+                        width: 1280,
+                        height: 720
+                    });
+                }
+
+                await camera.initialize();
+                await camera.start();
+
+                appState.isDetecting = true;
+                stopBtn.disabled = false;
+                screenshotBtn.disabled = false;
+
+                startFPSCounter();
+                console.log('✅ Camera started');
+                showNotification('Camera started successfully', 'success');
+            } catch (error) {
+                console.error('❌ Error starting camera:', error);
+                startBtn.disabled = false;
+                showNotification('Failed to start camera: ' + error.message, 'error');
+            }
+        }
+
+        async function stopCamera() {
+            try {
+                if (camera) {
+                    await camera.stop();
+                }
+                appState.isDetecting = false;
+
+                document.getElementById('startCameraBtn').disabled = false;
+                document.getElementById('stopCameraBtn').disabled = true;
+                document.getElementById('screenshotBtn').disabled = true;
+
+                console.log('✅ Camera stopped');
+                showNotification('Camera stopped', 'info');
+            } catch (error) {
+                console.error('❌ Error stopping camera:', error);
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        document.getElementById('startCameraBtn').addEventListener('click', startCamera);
+        document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
+
+        document.getElementById('clearSentenceBtn')?.addEventListener('click', () => {
+            appState.sentenceHistory = [];
+            updateSentenceBuilder();
+            showNotification('Sentence cleared', 'info');
+        });
+
+        // Mode switching
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const mode = btn.dataset.mode;
-                switchMode(mode);
-            });
-        });
-
-        function switchMode(mode) {
-            // Hide all modes
-            document.getElementById('gestureMode').classList.add('hidden');
-            document.getElementById('translatorMode').classList.add('hidden');
-            document.getElementById('learnMode').classList.add('hidden');
-            document.getElementById('dashboardMode').classList.add('hidden');
-
-            // Remove active class from all buttons
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Show selected mode
-            switch(mode) {
-                case 'gesture':
-                    document.getElementById('gestureMode').classList.remove('hidden');
-                    document.querySelector('[data-mode="gesture"]').classList.add('active');
-                    break;
-                case 'translator':
-                    document.getElementById('translatorMode').classList.remove('hidden');
-                    document.querySelector('[data-mode="translator"]').classList.add('active');
-                    initializeTranslator();
-                    break;
-                case 'learn':
-                    document.getElementById('learnMode').classList.remove('hidden');
-                    document.querySelector('[data-mode="learn"]').classList.add('active');
-                    initializeLearningMode();
-                    break;
-                case 'dashboard':
-                    document.getElementById('dashboardMode').classList.remove('hidden');
-                    document.querySelector('[data-mode="dashboard"]').classList.add('active');
-                    initializeDashboard();
-                    break;
-            }
-
-            appState.currentMode = mode;
-        }
-
-        // ======== CAMERA CONTROLS ========
-        document.getElementById('startCameraBtn').addEventListener('click', async () => {
-            const initialized = await gestureDetection.initialize(
-                document.getElementById('videoElement'),
-                document.getElementById('canvasElement')
-            );
-
-            if (initialized) {
-                await gestureDetection.startDetection();
-                appState.isDetecting = true;
-
-                document.getElementById('startCameraBtn').disabled = true;
-                document.getElementById('stopCameraBtn').disabled = false;
-                document.getElementById('screenshotBtn').disabled = false;
-                document.getElementById('loadingIndicator').classList.add('hidden');
-
-                // Start FPS counter
-                startFPSCounter();
-
-                // Setup detection callbacks
-                gestureDetection.onDetection((detection) => {
-                    updateGestureDisplay(detection);
-                    addToRecentDetections(detection.gesture);
-                    appState.sentenceBuffer.push(detection.gesture);
-                    updateSentenceBuilder();
-
-                    // Record in storage dengan confidence untuk akurasi calculation
-                    const result = storage.recordDetection(detection.gesture, detection.confidence);
-                    storage.addToHistory(detection);
-                    
-                    // Trigger visual feedback animation
-                    triggerDetectionFeedback(result.isAccurate, detection.confidence);
+                document.querySelectorAll('.mode-btn').forEach(b => {
+                    b.classList.remove('border-blue-500', 'bg-blue-500/10');
+                    b.classList.add('border-gray-600');
                 });
-            }
-        });
+                btn.classList.add('border-blue-500', 'bg-blue-500/10');
+                btn.classList.remove('border-gray-600');
 
-        document.getElementById('stopCameraBtn').addEventListener('click', async () => {
-            await gestureDetection.stopDetection();
-            appState.isDetecting = false;
-
-            document.getElementById('startCameraBtn').disabled = false;
-            document.getElementById('stopCameraBtn').disabled = true;
-            document.getElementById('screenshotBtn').disabled = true;
-            document.getElementById('loadingIndicator').classList.remove('hidden');
-        });
-
-        // ======== GESTURE DISPLAY ========
-        function updateGestureDisplay(detection) {
-            const gesture = detection.gesture;
-            const gestureDisplay = document.getElementById('gestureDisplay');
-            const gestureNameDisplay = document.getElementById('gestureNameDisplay');
-            const confidenceBar = document.getElementById('confidenceBar');
-            const confidenceText = document.getElementById('confidenceText');
-            const infoPanel = gestureDisplay.closest('.glass-dark');
-
-            // Update display dengan animasi pop-in
-            gestureDisplay.textContent = gesture.emoji || '🤟';
-            gestureDisplay.classList.remove('animate-pop-in');
-            void gestureDisplay.offsetWidth; // Trigger reflow
-            gestureDisplay.classList.add('animate-pop-in');
-
-            gestureNameDisplay.textContent = gesture.name;
-            gestureNameDisplay.classList.remove('animate-fade-in-scale');
-            void gestureNameDisplay.offsetWidth;
-            gestureNameDisplay.classList.add('animate-fade-in-scale');
-
-            // Color feedback berdasarkan confidence
-            const confidence = Math.round(detection.confidence * 100);
-            confidenceBar.style.width = confidence + '%';
-            confidenceText.textContent = `Confidence: ${confidence}%`;
-
-            // Change confidence bar color
-            if (confidence >= 80) {
-                confidenceBar.className = 'bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-300';
-            } else if (confidence >= 60) {
-                confidenceBar.className = 'bg-gradient-to-r from-yellow-500 to-yellow-400 h-full rounded-full transition-all duration-300';
-            } else {
-                confidenceBar.className = 'bg-gradient-to-r from-red-500 to-red-400 h-full rounded-full transition-all duration-300';
-            }
-
-            // Update stats display
-            const stats = storage.getStats();
-            document.getElementById('totalDetectionsDisplay').textContent = stats.totalDetections;
-            document.getElementById('accuracyDisplay').textContent = (Math.round(stats.accuracy * 100) / 100).toFixed(2) + '%';
-        }
-
-        function triggerDetectionFeedback(isAccurate, confidence) {
-            const infoPanel = document.querySelector('[id="gestureDisplay"]').closest('.glass-dark');
-            
-            // Remove previous classes
-            infoPanel.classList.remove('gesture-highlight-success', 'gesture-highlight-warning', 'gesture-highlight-error');
-            
-            // Add appropriate class
-            if (confidence >= 0.80) {
-                infoPanel.classList.add('gesture-highlight-success');
-            } else if (confidence >= 0.60) {
-                infoPanel.classList.add('gesture-highlight-warning');
-            } else {
-                infoPanel.classList.add('gesture-highlight-error');
-            }
-
-            // Remove class after animation
-            setTimeout(() => {
-                infoPanel.classList.remove('gesture-highlight-success', 'gesture-highlight-warning', 'gesture-highlight-error');
-            }, 600);
-        }
-
-        function addToRecentDetections(gesture) {
-            appState.recentDetections.unshift(gesture);
-            appState.recentDetections = appState.recentDetections.slice(0, 10);
-
-            const container = document.getElementById('recentDetectionsContainer');
-            container.innerHTML = '';
-
-            appState.recentDetections.forEach(g => {
-                const badge = document.createElement('div');
-                badge.className = 'text-center p-3 glass rounded-lg';
-                badge.innerHTML = `<div class="text-2xl">${g.emoji}</div><p class="text-xs text-gray-400">${g.name}</p>`;
-                container.appendChild(badge);
+                const mode = btn.getAttribute('data-mode');
+                document.getElementById('gestureMode').classList.toggle('hidden', mode !== 'gesture');
+                document.getElementById('learnMode').classList.toggle('hidden', mode !== 'learn');
+                document.getElementById('dashboardMode').classList.toggle('hidden', mode !== 'dashboard');
             });
+        });
+
+        // ============================================
+        // UTILITIES
+        // ============================================
+        function showNotification(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            // Bisa ditambahkan toast notification di sini
         }
 
-        // ======== SENTENCE BUILDER ========
-        function updateSentenceBuilder() {
-            const text = appState.sentenceBuffer.map(g => g.translation).join(' ');
-            document.getElementById('sentenceBuilder').textContent = text || '(gestures will appear here)';
-        }
-
-        document.getElementById('clearSentenceBtn').addEventListener('click', () => {
-            appState.sentenceBuffer = [];
-            updateSentenceBuilder();
-        });
-
-        document.getElementById('copySentenceBtn').addEventListener('click', () => {
-            const text = appState.sentenceBuffer.map(g => g.translation).join(' ');
-            if (text) {
-                navigator.clipboard.writeText(text);
-                DOMUtils.showToast('Copied to clipboard!', 'success');
-            }
-        });
-
-        // ======== SPEECH CONTROLS ========
-        document.getElementById('speakBtn').addEventListener('click', async () => {
-            const text = document.getElementById('speechInput').value;
-            if (text) {
-                try {
-                    await speechSynthesis.speak(text);
-                } catch (error) {
-                    console.error('Speech error:', error);
-                }
-            }
-        });
-
-        document.getElementById('pauseSpeechBtn').addEventListener('click', () => {
-            speechSynthesis.pause();
-        });
-
-        document.getElementById('stopSpeechBtn').addEventListener('click', () => {
-            speechSynthesis.stop();
-        });
-
-        // ======== SETTINGS ========
-        document.getElementById('settingsBtn').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.remove('hidden');
-        });
-
-        document.getElementById('closeSettingsBtn').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.add('hidden');
-        });
-
-        document.getElementById('closeSettingsModalBtn').addEventListener('click', () => {
-            document.getElementById('settingsModal').classList.add('hidden');
-        });
-
-        document.getElementById('thresholdSlider').addEventListener('input', (e) => {
-            const value = e.target.value;
-            document.getElementById('thresholdValue').textContent = value;
-            gestureDetection.setDetectionThreshold(value / 100);
-            storage.updateSetting('detectionThreshold', value / 100);
-        });
-
-        // ======== LEARNING MODE ========
-        function initializeLearningMode() {
-            const container = document.getElementById('gestureGridContainer');
-            container.innerHTML = '';
-
-            const basicGestures = getBasicGestures();
-            Object.entries(basicGestures).forEach(([id, gesture]) => {
-                const card = document.createElement('div');
-                card.className = 'glass-dark rounded-lg p-4 text-center cursor-pointer hover:border-purple-400 border border-blue-400/30 transition';
-                card.innerHTML = `
-                    <div class="text-4xl mb-2">${gesture.emoji}</div>
-                    <p class="text-sm font-semibold">${gesture.name}</p>
-                    <p class="text-xs text-purple-300 mt-1" style="min-height: 16px;">${gesture.translation || ''}</p>
-                `;
-                card.addEventListener('click', () => {
-                    updateGestureDetail(gesture);
-                });
-                container.appendChild(card);
-            });
-        }
-
-        function updateGestureDetail(gesture) {
-            document.getElementById('selectedGestureEmoji').textContent = gesture.emoji;
-            document.getElementById('selectedGestureName').textContent = gesture.name;
-            document.getElementById('selectedGestureTranslation').textContent = gesture.translation ? `"${gesture.translation}"` : '';
-            document.getElementById('selectedGestureDesc').textContent = gesture.description;
-        }
-
-        // ======== DASHBOARD ========
-        function initializeDashboard() {
-            const stats = storage.getStats();
-
-            document.getElementById('dashTotalDetections').textContent = stats.totalDetections;
-            document.getElementById('dashAccuracy').textContent = stats.accuracy.toFixed(2) + '%';
-            document.getElementById('dashLevel').textContent = stats.level;
-            document.getElementById('dashStreak').textContent = stats.streak;
-
-            updateCharts();
-            displayAchievements();
-        }
-
-        function updateCharts() {
-            const stats = storage.getStats();
-
-            // Top Gestures Chart
-            const ctx1 = document.getElementById('topGesturesChart').getContext('2d');
-            const gestureNames = Object.keys(stats.gestureProgress).slice(0, 6);
-            const gestureCounts = gestureNames.map(name => stats.gestureProgress[name]);
-
-            new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: gestureNames,
-                    datasets: [{
-                        label: 'Detections',
-                        data: gestureCounts,
-                        backgroundColor: 'rgba(37, 99, 235, 0.5)',
-                        borderColor: 'rgb(37, 99, 235)',
-                        borderRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: '#9ca3af' },
-                            grid: { color: 'rgba(75, 85, 99, 0.2)' }
-                        },
-                        x: {
-                            ticks: { color: '#9ca3af' },
-                            grid: { display: false }
-                        }
-                    }
-                }
-            });
-        }
-
-        function displayAchievements() {
-            const stats = storage.getStats();
-            const container = document.getElementById('achievementsContainer');
-            container.innerHTML = '';
-
-            Object.values(ACHIEVEMENTS).forEach(achievement => {
-                const unlocked = stats.achievements.includes(achievement.id);
-                const badge = document.createElement('div');
-                badge.className = `text-center p-3 rounded-lg ${unlocked ? 'glass-dark border border-yellow-400/50' : 'bg-gray-800 opacity-50'}`;
-                badge.innerHTML = `
-                    <div class="text-3xl mb-1">${achievement.name.split(' ')[0]}</div>
-                    <p class="text-xs text-gray-400">${achievement.name}</p>
-                `;
-                container.appendChild(badge);
-            });
-        }
-
-        // ======== TRANSLATOR ========
-        function initializeTranslator() {
-            // Implementation for translator mode
-        }
-
-        // ======== UTILITIES ========
         function startFPSCounter() {
             let fps = 0;
+            let frameCount = 0;
             let lastTime = Date.now();
 
             const counter = setInterval(() => {
@@ -760,62 +549,40 @@
                     return;
                 }
 
-                appState.frameCount++;
+                frameCount++;
                 const currentTime = Date.now();
 
                 if (currentTime - lastTime >= 1000) {
-                    fps = appState.frameCount;
+                    fps = frameCount;
                     document.getElementById('fpsDisplay').textContent = fps;
-                    appState.frameCount = 0;
+                    frameCount = 0;
                     lastTime = currentTime;
                 }
             }, 16);
         }
 
-        // ======== EXPORT DATA ========
-        document.getElementById('exportDataBtn')?.addEventListener('click', () => {
-            const data = storage.exportData();
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `gestureflow-export-${Date.now()}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        document.getElementById('resetDataBtn')?.addEventListener('click', () => {
-            if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
-                storage.resetAll();
-                location.reload();
-            }
-        });
-
-        // ======== INITIALIZATION ========
-        console.log('✓ GestureFlow app initialized');
-        console.log('✓ Storage service ready');
-        console.log('✓ Speech synthesis ready');
-        console.log('✓ Gesture detection ready');
-
-        // ======== DARK MODE TOGGLE ========
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const isDarkMode = localStorage.getItem('gestureflow_dark_mode') !== 'false';
-        
-        // Apply saved preference
-        if (!isDarkMode) {
-            document.body.classList.add('light-mode');
-        }
-
-        darkModeToggle.addEventListener('click', () => {
-            const isLight = document.body.classList.contains('light-mode');
-            if (isLight) {
-                document.body.classList.remove('light-mode');
-                localStorage.setItem('gestureflow_dark_mode', 'true');
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 GestureFlow App Initializing...');
+            
+            // Initialize Hands
+            const handsReady = await initializeHands();
+            
+            if (handsReady) {
+                console.log('✅ App ready to use');
+                showNotification('Click "Start Camera" to begin', 'info');
             } else {
-                document.body.classList.add('light-mode');
-                localStorage.setItem('gestureflow_dark_mode', 'false');
+                console.error('❌ Failed to initialize app');
+                showNotification('Failed to initialize gesture detection', 'error');
             }
+        });
+
+        // Dark mode toggle
+        document.getElementById('darkModeToggle')?.addEventListener('click', () => {
+            document.body.classList.toggle('bg-white');
+            document.body.classList.toggle('text-black');
         });
     </script>
 </body>
