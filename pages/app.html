@@ -213,6 +213,11 @@
           </div>
           <!-- hand badge -->
           <div id="azHandBadge" class="absolute top-3 left-3 hidden bg-green-500/90 text-white text-xs font-bold px-2.5 py-1 rounded-full">✋ Tangan Terdeteksi</div>
+          <!-- live detected letter debug -->
+          <div class="absolute bottom-3 left-3 bg-black/65 backdrop-blur rounded-xl px-3 py-1.5 flex items-center gap-2">
+            <span class="text-xs text-gray-400">Terbaca:</span>
+            <span id="azDetectedLive" class="text-2xl font-black text-cyan-300">–</span>
+          </div>
         </div>
 
         <!-- AZ stability bar -->
@@ -425,118 +430,201 @@ async function initHands(onResultsFn) {
 }
 
 // ══════════════════════════════════════════════
-// GESTURE DETECTION — accurate finger extension
-// Using PIP joints as reference for each finger
+// CORE DETECTION ENGINE — distance + curl based
 // ══════════════════════════════════════════════
-function fingerStates(lm) {
-  // Returns {thumb, index, middle, ring, pinky} booleans
-  const wrist = lm[0];
-  // Thumb: compare tip.x to MCP.x relative to handedness heuristic
-  // Use tip vs IP joint horizontal distance
-  const thumbExt = Math.abs(lm[4].x - lm[3].x) > 0.03 || Math.abs(lm[4].x - lm[2].x) > 0.06;
-  // 4 fingers: tip.y < PIP.y means extended (smaller y = higher on screen in MediaPipe norm coords)
-  const idxExt  = lm[8].y  < lm[6].y  - 0.01;
-  const midExt  = lm[12].y < lm[10].y - 0.01;
-  const rngExt  = lm[16].y < lm[14].y - 0.01;
-  const pnkExt  = lm[20].y < lm[18].y - 0.01;
-  return { thumb: thumbExt, index: idxExt, middle: midExt, ring: rngExt, pinky: pnkExt };
+
+// Euclidean distance between two landmarks
+function dist(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y, (a.z||0) - (b.z||0));
 }
 
+// Hand size normalizer: wrist to middle MCP
+function handSize(lm) {
+  return Math.max(dist(lm[0], lm[9]), 0.01);
+}
+
+// Normalized distance (relative to hand size)
+function ndist(lm, a, b) {
+  return dist(lm[a], lm[b]) / handSize(lm);
+}
+
+// Curl score for a finger (0=fully open, 1=fully curled)
+// Uses angle: tip vs MCP relative to wrist
+// A finger is "extended" if its tip is farther from wrist than its base (MCP)
+function isCurled(lm, tip, pip, mcp) {
+  // tip must be clearly above PIP (smaller y) AND above MCP to count as extended
+  // We use distance from wrist: extended = tip far from wrist
+  const tipDist = dist(lm[0], lm[tip]);
+  const mcpDist = dist(lm[0], lm[mcp]);
+  // If tip is less than 1.1x the MCP distance, finger is curled
+  return tipDist < mcpDist * 1.15;
+}
+
+// More strict: clearly extended means tip is well above PIP
+function isExtended(lm, tip, pip, mcp) {
+  const tipDist = dist(lm[0], lm[tip]);
+  const mcpDist = dist(lm[0], lm[mcp]);
+  return tipDist > mcpDist * 1.3;
+}
+
+// Finger states using distance from wrist
+function fingerStates(lm) {
+  // Thumb: use x-axis spread from thumb MCP (lm[2])
+  const thumbExt = dist(lm[4], lm[2]) > handSize(lm) * 0.8;
+  const idxExt   = isExtended(lm, 8,  6,  5);
+  const midExt   = isExtended(lm, 12, 10, 9);
+  const rngExt   = isExtended(lm, 16, 14, 13);
+  const pnkExt   = isExtended(lm, 20, 18, 17);
+
+  const thumbCurl = isCurled(lm, 4, 3, 2);
+  const idxCurl   = isCurled(lm, 8, 6, 5);
+  const midCurl   = isCurled(lm, 12, 10, 9);
+  const rngCurl   = isCurled(lm, 16, 14, 13);
+  const pnkCurl   = isCurled(lm, 20, 18, 17);
+
+  return {
+    thumb: thumbExt, index: idxExt, middle: midExt, ring: rngExt, pinky: pnkExt,
+    thumbC: thumbCurl, indexC: idxCurl, middleC: midCurl, ringC: rngCurl, pinkyC: pnkCurl
+  };
+}
+
+// ── GESTURE MODE DETECTION ──────────────────────
 function detectGesture(lm) {
   if (!lm || lm.length < 21) return null;
-  const f = fingerStates(lm);
+  const f   = fingerStates(lm);
+  const hs  = handSize(lm);
 
-  // Thumbs Up: only thumb out, ALL 4 fingers clearly curled
-  // Extra check: thumb tip above wrist
-  if (f.thumb && !f.index && !f.middle && !f.ring && !f.pinky
-      && lm[4].y < lm[5].y) {
-    return { type: 'thumbs_up', name: 'Thumbs Up', confidence: 0.88 };
+  // Thumb tip high above wrist (for thumbs up)
+  const thumbHigh = lm[4].y < lm[0].y - hs * 0.3;
+
+  // OK: thumb tip close to index tip, middle+ring+pinky extended
+  const thumbIdxDist = ndist(lm, 4, 8);
+  const okPinch = thumbIdxDist < 0.35;
+
+  // --- Gestures in priority order ---
+
+  // THUMBS UP: thumb clearly up, all fingers curled
+  if (thumbHigh && f.thumbC === false && f.indexC && f.middleC && f.ringC && f.pinkyC) {
+    return { type:'thumbs_up', name:'Thumbs Up', confidence: 0.92 };
   }
-  // Fist: all curled including thumb
-  if (!f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) {
-    return { type: 'fist', name: 'Fist', confidence: 0.90 };
+  // FIST: everything curled
+  if (f.indexC && f.middleC && f.ringC && f.pinkyC && f.thumbC) {
+    return { type:'fist', name:'Fist', confidence: 0.91 };
   }
-  // Open Hand: all 5 extended
+  // OPEN HAND: all 5 extended
   if (f.thumb && f.index && f.middle && f.ring && f.pinky) {
-    return { type: 'open_hand', name: 'Open Hand', confidence: 0.92 };
+    return { type:'open_hand', name:'Open Hand', confidence: 0.93 };
   }
-  // Peace: index + middle only
-  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky) {
-    return { type: 'peace', name: 'Peace', confidence: 0.87 };
+  // OK SIGN: pinch + middle/ring/pinky extended, NOT all fingers open
+  if (okPinch && f.middle && f.ring && f.pinky) {
+    return { type:'ok', name:'OK Sign', confidence: 0.88 };
   }
-  // Pointing: only index
-  if (!f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
-    return { type: 'pointing', name: 'Pointing', confidence: 0.85 };
+  // PEACE: index + middle extended, ring + pinky curled
+  if (!f.thumb && f.index && f.middle && f.ringC && f.pinkyC) {
+    return { type:'peace', name:'Peace', confidence: 0.87 };
   }
-  // OK: thumb + index only extended (other 3 curled)
-  if (f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
-    return { type: 'ok', name: 'OK Sign', confidence: 0.80 };
+  // POINTING: only index extended, rest curled
+  if (f.index && f.middleC && f.ringC && f.pinkyC) {
+    return { type:'pointing', name:'Pointing', confidence: 0.86 };
   }
-  // Fallback: open hand if 4+ fingers up
-  const extended = [f.thumb,f.index,f.middle,f.ring,f.pinky].filter(Boolean).length;
-  if (extended >= 4) return { type: 'open_hand', name: 'Open Hand', confidence: 0.60 };
+  // Fallback open hand (4+ extended)
+  const extCnt = [f.thumb,f.index,f.middle,f.ring,f.pinky].filter(Boolean).length;
+  if (extCnt >= 4) return { type:'open_hand', name:'Open Hand', confidence: 0.65 };
   return null;
 }
 
-// ══════════════════════════════════════════════
-// ASL LETTER DETECTION (shape-based heuristics)
-// ══════════════════════════════════════════════
+// ── ASL A–Z DETECTION ───────────────────────────
+// Each letter has a dedicated rule using normalized distances & curl states
 function detectASLLetter(lm) {
   if (!lm || lm.length < 21) return null;
-  const f = fingerStates(lm);
+  const f  = fingerStates(lm);
+  const hs = handSize(lm);
 
-  // Curl helpers
-  const thumbCurl = lm[4].y > lm[3].y; // tip below IP = curled down
-  const idxCurl   = !f.index;
-  const midCurl   = !f.middle;
-  const rngCurl   = !f.ring;
-  const pnkCurl   = !f.pinky;
+  // Helper: normalized distances
+  const t2i = ndist(lm, 4, 8);   // thumb tip to index tip
+  const t2m = ndist(lm, 4, 12);  // thumb tip to middle tip
+  const t2r = ndist(lm, 4, 16);  // thumb tip to ring tip
+  const t2p = ndist(lm, 4, 20);  // thumb tip to pinky tip
+  const i2m = ndist(lm, 8, 12);  // index tip to middle tip
 
-  // Pinch: thumb tip close to index tip
-  const pinchDist = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
-  const pinching  = pinchDist < 0.07;
+  // Finger spread helpers
+  const idxMidSpread = Math.abs(lm[8].x - lm[12].x) / hs;
 
-  // Thumb-pinky spread (Y sign)
-  const ySign = f.thumb && !f.index && !f.middle && !f.ring && f.pinky
-                && Math.abs(lm[4].x - lm[20].x) > 0.12;
+  // All 4 fingers extended (no thumb)
+  const all4up = f.index && f.middle && f.ring && f.pinky;
+  // All 4 curled
+  const all4curl = f.indexC && f.middleC && f.ringC && f.pinkyC;
 
-  // Count extended
-  const extCount = [f.thumb,f.index,f.middle,f.ring,f.pinky].filter(Boolean).length;
+  // Y: thumb + pinky open, rest curled, wide apart
+  if (f.thumb && !f.index && !f.middle && !f.ring && f.pinky && t2p > 0.9) return 'Y';
 
-  if (ySign) return 'Y';
-  if (f.thumb && f.index && !f.middle && !f.ring && !f.pinky
-      && lm[4].y < lm[5].y && !pinching)               return 'L';
-  if (pinching && !f.middle && !f.ring && !f.pinky)     return 'A'; // A-shape: fist+pinch
-  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky) {
-    // V or U — check spread
-    const spread = Math.abs(lm[8].x - lm[12].x);
-    return spread > 0.05 ? 'V' : 'U';
+  // B: 4 fingers up + thumb tucked (curled across palm)
+  if (all4up && f.thumbC && !f.thumb) return 'B';
+
+  // L: thumb + index only, forming angle
+  if (f.thumb && f.index && f.middleC && f.ringC && f.pinkyC && t2i > 0.7) return 'L';
+
+  // I: only pinky up
+  if (f.pinky && f.indexC && f.middleC && f.ringC && !f.thumb) return 'I';
+
+  // W: index + middle + ring up, pinky curled, no thumb
+  if (f.index && f.middle && f.ring && f.pinkyC && !f.thumb) return 'W';
+
+  // V: index + middle up, spread apart, ring+pinky curled
+  if (f.index && f.middle && f.ringC && f.pinkyC && !f.thumb) {
+    return idxMidSpread > 0.15 ? 'V' : 'U';
   }
-  if (!f.thumb && f.index && f.middle && f.ring && !f.pinky) return 'W';
-  if (!f.thumb && f.index && f.middle && f.ring && f.pinky)  return 'B';
-  if (f.thumb && f.index && f.middle && f.ring && f.pinky) {
-    // B with thumb or Open — check if fingers tight
-    return extCount === 5 ? 'B' : null;
-  }
-  if (!f.thumb && !f.index && !f.middle && !f.ring && f.pinky) return 'I';
-  if (!f.thumb && f.index && !f.middle && !f.ring && !f.pinky) {
-    // D or G based on orientation
-    return lm[8].y < lm[5].y - 0.06 ? 'D' : 'G';
-  }
-  if (!f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) return 'S';
-  if (f.thumb && !f.index && !f.middle && !f.ring && !f.pinky) return 'A';
 
-  // O: all fingers curled toward thumb forming circle
-  if (pinchDist < 0.09 && !f.index && !f.middle && !f.ring && !f.pinky) return 'O';
-
-  // F: pinch + 3 fingers up
-  if (pinching && f.middle && f.ring && f.pinky) return 'F';
-
-  // R: index + middle crossed
-  if (!f.thumb && f.index && f.middle && !f.ring && !f.pinky) {
-    const cross = Math.abs(lm[8].x - lm[12].x) < 0.03;
-    return cross ? 'R' : 'V';
+  // K: index + middle up, thumb between them (touching middle PIP area)
+  if (f.index && f.middle && f.ringC && f.pinkyC && f.thumb) {
+    const tMidPIP = ndist(lm, 4, 10);
+    return tMidPIP < 0.3 ? 'K' : 'V';
   }
+
+  // D: index up, other 3 fingers form O with thumb
+  if (f.index && f.middleC && f.ringC && f.pinkyC) {
+    const thumbMidDist = ndist(lm, 4, 12);
+    return thumbMidDist < 0.35 ? 'D' : 'G';
+  }
+
+  // F: index+thumb pinch, middle+ring+pinky up
+  if (t2i < 0.25 && f.middle && f.ring && f.pinky) return 'F';
+
+  // O: all fingers curled toward thumb, thumb tip near other fingertips
+  if (all4curl && t2i < 0.35 && t2m < 0.45) return 'O';
+
+  // C: all fingers semi-curved (not fully extended, not fully curled)
+  // Key: fingers are NOT extended (dist from wrist not far) but NOT fully curled either
+  // C = thumb and fingers form a "cup" shape — measure average tip-to-wrist normalized dist
+  {
+    const idxTipWrist  = dist(lm[0], lm[8])  / hs;
+    const midTipWrist  = dist(lm[0], lm[12]) / hs;
+    const rngTipWrist  = dist(lm[0], lm[16]) / hs;
+    const pnkTipWrist  = dist(lm[0], lm[20]) / hs;
+    const thumbTipWrist= dist(lm[0], lm[4])  / hs;
+    // In C shape: all tips moderately far from wrist (semi-extended = 1.3–2.0 range)
+    const cRange = v => v > 1.1 && v < 2.2;
+    if (cRange(idxTipWrist) && cRange(midTipWrist) && cRange(rngTipWrist)
+        && cRange(pnkTipWrist) && cRange(thumbTipWrist)) {
+      // Also verify thumb and index gap is C-shaped (not closed into O, not wide open)
+      if (t2i > 0.3 && t2i < 0.8) return 'C';
+    }
+  }
+
+  // A: fist with thumb on side (not over fingers)
+  if (all4curl && !f.thumb) {
+    const thumbSide = Math.abs(lm[4].x - lm[5].x) / hs > 0.15;
+    return thumbSide ? 'A' : 'S';
+  }
+
+  // S: fist, thumb over fingers
+  if (all4curl && f.thumbC) return 'S';
+
+  // E: all 4 curled, fingers pointing forward (y close to knuckles)
+  if (all4curl) return 'E';
+
+  // R: index + middle crossing
+  if (f.index && f.middle && f.ringC && f.pinkyC && idxMidSpread < 0.08) return 'R';
 
   return null;
 }
@@ -669,12 +757,22 @@ function onResultsAZ(results) {
 
     const detected = detectASLLetter(lm);
     const target   = azState.letters[azState.currentIdx];
+    const liveEl   = document.getElementById('azDetectedLive');
+
+    // Always show what we detect live
+    if (liveEl) liveEl.textContent = detected || '?';
 
     if (detected) {
       document.getElementById('azStabilizeLabel').textContent = detected;
 
+      // Color feedback: green if matches target, red if wrong
+      if (liveEl) liveEl.className = detected === target
+        ? 'text-2xl font-black text-green-400'
+        : 'text-2xl font-black text-red-400';
+
       if (detected === target) {
         azState.stableCount++;
+        azState.addedThisHold = azState.addedThisHold || false;
       } else {
         azState.stableCount = 0;
         azState.addedThisHold = false;
@@ -691,6 +789,10 @@ function onResultsAZ(results) {
       azState.stableCount = 0;
       document.getElementById('azStabilizeBar').style.width = '0%';
       document.getElementById('azStabilizeLabel').textContent = '–';
+      if (liveEl) {
+        liveEl.textContent = '–';
+        liveEl.className = 'text-2xl font-black text-cyan-300';
+      }
     }
   } else {
     badge.classList.add('hidden');
@@ -698,6 +800,8 @@ function onResultsAZ(results) {
     azState.stableCount = 0;
     document.getElementById('azStabilizeBar').style.width = '0%';
     document.getElementById('azStabilizeLabel').textContent = '–';
+    const liveEl = document.getElementById('azDetectedLive');
+    if (liveEl) { liveEl.textContent = '–'; liveEl.className = 'text-2xl font-black text-cyan-300'; }
   }
 }
 
