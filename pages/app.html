@@ -3,587 +3,699 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="GestureFlow - Aplikasi gesture recognition untuk bahasa isyarat Indonesia">
-    <meta name="theme-color" content="#2563EB">
     <title>GestureFlow - Gesture Recognition App</title>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- MediaPipe v0.4 - PASTIKAN VERSION SAMA -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.4/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js" crossorigin="anonymous"></script>
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <link rel="stylesheet" href="../src/styles/app-styles.css">
-    
+
+    <!-- MediaPipe (tanpa versi spesifik supaya dapat latest stable) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
     <style>
-        :root {
-            --primary-color: #2563EB;
-            --success-color: #10B981;
-            --danger-color: #EF4444;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        
+        body { font-family: 'Inter', sans-serif; }
+
         .glass-dark {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
         }
-        
         .gradient-text {
-            background: linear-gradient(135deg, #2563EB, #10B981);
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
-        .animate-slide-in-up {
-            animation: slideInUp 0.5s ease-out;
-        }
-        
         @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in-up { animation: slideInUp 0.5s ease-out; }
+
+        /* Video harus disembunyikan — canvas yang jadi output visual */
+        #videoElement { display: none; }
+
+        /* Glow saat tangan terdeteksi */
+        .hand-detected { box-shadow: 0 0 0 3px #22c55e, 0 0 20px rgba(34,197,94,0.4); }
+
+        /* Toast notification */
+        #toastContainer {
+            position: fixed; top: 80px; right: 16px;
+            z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+        }
+        .toast {
+            padding: 10px 16px; border-radius: 10px;
+            font-size: 14px; font-weight: 500; color: white;
+            opacity: 0; transform: translateX(40px);
+            transition: all 0.3s ease;
+            max-width: 280px;
+        }
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast.success { background: #16a34a; }
+        .toast.error   { background: #dc2626; }
+        .toast.info    { background: #2563eb; }
+
+        /* Landmark style lebih kelihatan */
+        canvas { image-rendering: crisp-edges; }
+
+        /* Sentence builder scroll */
+        #sentenceBuilder {
+            min-height: 48px; max-height: 80px;
+            overflow-y: auto; word-break: break-word;
+        }
+
+        /* Mode button active state */
+        .mode-btn.active {
+            border-color: #a855f7 !important;
+            background: rgba(168,85,247,0.15) !important;
+            color: white;
+        }
+
+        /* Learn Mode cards */
+        .gesture-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .gesture-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(168,85,247,0.3);
+        }
+
+        /* Stabilize indicator */
+        #stabilizeBar {
+            transition: width 0.1s linear;
         }
     </style>
 </head>
 <body class="bg-slate-950 text-white overflow-x-hidden">
-    <!-- Navigation Bar -->
-    <nav class="fixed top-0 w-full z-40 glass-dark border-b border-blue-500/20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center font-bold text-white text-lg">
-                    🤟
-                </div>
-                <span class="font-bold text-lg hidden sm:inline">GestureFlow</span>
-            </div>
-            
-            <div class="flex items-center gap-4">
-                <button id="darkModeToggle" class="text-gray-300 hover:text-white transition" title="Toggle Dark Mode">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                </button>
-                <a href="./landing.html" class="text-gray-300 hover:text-white transition text-sm">Kembali</a>
-            </div>
+
+<!-- Toast container -->
+<div id="toastContainer"></div>
+
+<!-- Navigation -->
+<nav class="fixed top-0 w-full z-40 glass-dark border-b border-purple-500/20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center text-lg">🤟</div>
+            <span class="font-bold text-lg hidden sm:inline">GestureFlow</span>
         </div>
-    </nav>
+        <div class="flex items-center gap-4">
+            <button id="darkModeToggle" class="text-gray-300 hover:text-white transition" title="Toggle Dark Mode">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+            <a href="./landing.html" class="text-gray-300 hover:text-white transition text-sm">Kembali</a>
+        </div>
+    </div>
+</nav>
 
-    <!-- Main Content -->
-    <div class="pt-24 pb-8 px-4 min-h-screen">
-        <div class="max-w-7xl mx-auto">
-            <!-- Mode Selection -->
-            <div class="mb-8 flex flex-wrap gap-3 justify-center">
-                <button class="mode-btn active px-6 py-2 rounded-lg border-2 border-blue-500 bg-blue-500/10 font-semibold" data-mode="gesture">
-                    🎯 Gesture Mode
-                </button>
-                <button class="mode-btn px-6 py-2 rounded-lg border-2 border-gray-600 font-semibold" data-mode="learn">
-                    📚 Learn Mode
-                </button>
-                <button class="mode-btn px-6 py-2 rounded-lg border-2 border-gray-600 font-semibold" data-mode="dashboard">
-                    📊 Dashboard
-                </button>
-            </div>
+<!-- Main Content -->
+<div class="pt-24 pb-8 px-4 min-h-screen">
+    <div class="max-w-7xl mx-auto">
 
-            <!-- Gesture Mode -->
-            <div id="gestureMode" class="space-y-6 block">
-                <!-- Camera Container -->
-                <div class="grid md:grid-cols-3 gap-6">
-                    <!-- Video Feed -->
-                    <div class="md:col-span-2 glass-dark rounded-2xl p-4 border border-blue-400/30">
-                        <div class="space-y-4">
-                            <div class="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg overflow-hidden relative">
-                                <video id="videoElement" class="w-full h-full object-cover" autoplay muted playsinline></video>
-                                <canvas id="canvasElement" class="absolute inset-0 w-full h-full"></canvas>
-                                
-                                <!-- Loading Indicator -->
-                                <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center bg-black/50 hidden">
-                                    <div class="text-center">
-                                        <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                                        <p class="text-gray-300">Initializing Camera...</p>
-                                    </div>
+        <!-- Mode Buttons -->
+        <div class="mb-8 flex flex-wrap gap-3 justify-center">
+            <button class="mode-btn active px-6 py-2 rounded-lg border-2 border-gray-600 font-semibold transition" data-mode="gesture">🎯 Gesture Mode</button>
+            <button class="mode-btn px-6 py-2 rounded-lg border-2 border-gray-600 font-semibold transition" data-mode="learn">📚 Learn Mode</button>
+            <button class="mode-btn px-6 py-2 rounded-lg border-2 border-gray-600 font-semibold transition" data-mode="dashboard">📊 Dashboard</button>
+        </div>
+
+        <!-- ===== GESTURE MODE ===== -->
+        <div id="gestureMode" class="space-y-6">
+            <div class="grid md:grid-cols-3 gap-6">
+
+                <!-- Video Feed -->
+                <div class="md:col-span-2 glass-dark rounded-2xl p-4 border border-purple-400/30">
+                    <div class="space-y-4">
+                        <div id="cameraContainer" class="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg overflow-hidden relative transition-all duration-300">
+                            <!-- video hidden, only used as MediaPipe input -->
+                            <video id="videoElement" autoplay muted playsinline></video>
+                            <!-- canvas is the visual output -->
+                            <canvas id="canvasElement" class="w-full h-full object-cover"></canvas>
+
+                            <!-- Idle placeholder -->
+                            <div id="cameraPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400">
+                                <svg class="w-16 h-16 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+                                </svg>
+                                <p class="text-sm">Klik "Start Camera" untuk mulai</p>
+                            </div>
+
+                            <!-- Loading -->
+                            <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center bg-black/60 hidden">
+                                <div class="text-center">
+                                    <div class="w-14 h-14 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                                    <p class="text-gray-300 text-sm">Memulai kamera...</p>
                                 </div>
                             </div>
 
-                            <!-- Controls -->
-                            <div class="flex gap-3">
-                                <button id="startCameraBtn" class="flex-1 bg-gradient-to-r from-green-600 to-green-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-green-500/50 transition">
-                                    ▶ Start Camera
-                                </button>
-                                <button id="stopCameraBtn" class="flex-1 bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-red-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                    ⏹ Stop Camera
-                                </button>
-                                <button id="screenshotBtn" class="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                                    📸 Screenshot
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Info Panel -->
-                    <div class="glass-dark rounded-2xl p-6 border border-blue-400/30 h-fit animate-slide-in-up">
-                        <!-- Current Detection -->
-                        <div class="mb-6">
-                            <p class="text-gray-400 text-sm mb-2">Current Gesture</p>
-                            <div id="gestureDisplay" class="text-5xl font-bold gradient-text mb-2 text-center">
-                                --
-                            </div>
-                            <p id="gestureNameDisplay" class="text-center text-gray-300">Waiting for gesture...</p>
-                            <div id="confidenceBar" class="mt-4 bg-gray-700 rounded-full h-2">
-                                <div class="bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <p id="confidenceText" class="text-center text-gray-400 text-xs mt-2">Confidence: 0%</p>
-                        </div>
-
-                        <!-- Stats -->
-                        <div class="space-y-3 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">Total Detections:</span>
-                                <span id="totalDetectionsDisplay" class="font-semibold">0</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">Accuracy:</span>
-                                <span id="accuracyDisplay" class="font-semibold text-green-400">0%</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">FPS:</span>
-                                <span id="fpsDisplay" class="font-semibold">19</span>
+                            <!-- Hand detected badge -->
+                            <div id="handBadge" class="absolute top-3 left-3 hidden bg-green-500/90 text-white text-xs font-bold px-3 py-1 rounded-full">
+                                ✋ Tangan Terdeteksi
                             </div>
                         </div>
 
-                        <!-- Sentence Builder -->
-                        <div class="mt-6 pt-6 border-t border-gray-700">
-                            <p class="text-gray-400 text-sm mb-2">Sentence Builder</p>
-                            <div id="sentenceBuilder" class="bg-gray-900 rounded-lg p-3 min-h-12 text-gray-300 text-sm mb-3 break-words">
-                                (gestures will appear here)
+                        <!-- Stabilize bar (shows progress before adding to sentence) -->
+                        <div class="px-1">
+                            <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                <span>Gesture Stability</span>
+                                <span id="stabilizeLabel">–</span>
                             </div>
-                            <button id="clearSentenceBtn" class="w-full bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm transition">
-                                Clear
+                            <div class="bg-gray-700 rounded-full h-1.5">
+                                <div id="stabilizeBar" class="bg-gradient-to-r from-purple-500 to-green-400 h-full rounded-full" style="width:0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Controls -->
+                        <div class="flex gap-3">
+                            <button id="startCameraBtn" class="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/40 transition">
+                                ▶ Start Camera
+                            </button>
+                            <button id="stopCameraBtn" class="flex-1 bg-gradient-to-r from-red-600 to-red-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-red-500/40 transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                                ⏹ Stop Camera
+                            </button>
+                            <button id="screenshotBtn" class="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 rounded-lg font-semibold hover:shadow-lg hover:shadow-indigo-500/40 transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                                📸 Screenshot
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Gesture Guide -->
-                <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                    <h3 class="text-xl font-bold mb-4">📖 Gesture Guide</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="gestureGuide">
-                        <div class="text-center p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer transition">
-                            <div class="text-3xl mb-1">🖐️</div>
-                            <p class="text-xs text-gray-300">All Fingers</p>
+                <!-- Info Panel -->
+                <div class="glass-dark rounded-2xl p-6 border border-purple-400/30 h-fit animate-slide-in-up">
+                    <p class="text-gray-400 text-sm mb-2">Current Gesture</p>
+                    <div id="gestureDisplay" class="text-6xl text-center mb-2">–</div>
+                    <p id="gestureNameDisplay" class="text-center text-gray-300 font-medium">Menunggu gesture...</p>
+                    <div class="mt-4 bg-gray-700 rounded-full h-2">
+                        <div id="confidenceBarFill" class="bg-gradient-to-r from-purple-500 to-purple-300 h-full rounded-full transition-all duration-200" style="width:0%"></div>
+                    </div>
+                    <p id="confidenceText" class="text-center text-gray-400 text-xs mt-2">Confidence: 0%</p>
+
+                    <div class="mt-6 space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Total Detections:</span>
+                            <span id="totalDetectionsDisplay" class="font-semibold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Session Time:</span>
+                            <span id="sessionTimeDisplay" class="font-semibold">0s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">FPS:</span>
+                            <span id="fpsDisplay" class="font-semibold">–</span>
+                        </div>
+                    </div>
+
+                    <!-- Sentence Builder -->
+                    <div class="mt-6 pt-6 border-t border-gray-700">
+                        <div class="flex justify-between items-center mb-2">
+                            <p class="text-gray-400 text-sm">Sentence Builder</p>
+                            <span class="text-xs text-gray-500">(tahan gesture 1 detik)</span>
+                        </div>
+                        <div id="sentenceBuilder" class="bg-gray-900/80 rounded-lg p-3 text-gray-300 text-sm mb-3 leading-relaxed">
+                            (gesture akan muncul di sini)
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="clearSentenceBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm transition">
+                                🗑 Clear
+                            </button>
+                            <button id="copySentenceBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm transition">
+                                📋 Copy
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Learn Mode -->
-            <div id="learnMode" class="space-y-6 hidden">
-                <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                    <h2 class="text-2xl font-bold mb-4">📚 Learn Mode</h2>
-                    <p class="text-gray-300">Select a gesture to see how to perform it</p>
-                </div>
-            </div>
-
-            <!-- Dashboard Mode -->
-            <div id="dashboardMode" class="space-y-6 hidden">
-                <div class="glass-dark rounded-2xl p-6 border border-blue-400/30">
-                    <h2 class="text-2xl font-bold mb-4">📊 Dashboard</h2>
-                    <div class="grid md:grid-cols-4 gap-4">
-                        <div class="bg-gray-800 rounded-lg p-4">
-                            <p class="text-gray-400 text-sm">Total Detections</p>
-                            <p id="dashTotalDetections" class="text-3xl font-bold mt-2">0</p>
-                        </div>
-                        <div class="bg-gray-800 rounded-lg p-4">
-                            <p class="text-gray-400 text-sm">Accuracy</p>
-                            <p id="dashAccuracy" class="text-3xl font-bold mt-2 text-green-400">0%</p>
-                        </div>
-                    </div>
-                </div>
+            <!-- Gesture Guide -->
+            <div class="glass-dark rounded-2xl p-6 border border-purple-400/30">
+                <h3 class="text-xl font-bold mb-4">📖 Gesture Guide</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="gestureGuide"></div>
             </div>
         </div>
+
+        <!-- ===== LEARN MODE ===== -->
+        <div id="learnMode" class="space-y-6 hidden">
+            <div class="glass-dark rounded-2xl p-6 border border-purple-400/30">
+                <h2 class="text-2xl font-bold mb-2">📚 Learn Mode</h2>
+                <p class="text-gray-400 mb-6">Pelajari cara melakukan setiap gesture dengan benar</p>
+                <div id="learnCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- ===== DASHBOARD MODE ===== -->
+        <div id="dashboardMode" class="space-y-6 hidden">
+            <div class="glass-dark rounded-2xl p-6 border border-purple-400/30">
+                <h2 class="text-2xl font-bold mb-6">📊 Dashboard</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                        <p class="text-gray-400 text-xs mb-1">Total Detections</p>
+                        <p id="dashTotalDetections" class="text-3xl font-bold text-purple-400">0</p>
+                    </div>
+                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                        <p class="text-gray-400 text-xs mb-1">Gestures Captured</p>
+                        <p id="dashGesturesCaptured" class="text-3xl font-bold text-blue-400">0</p>
+                    </div>
+                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                        <p class="text-gray-400 text-xs mb-1">Session Time</p>
+                        <p id="dashSessionTime" class="text-3xl font-bold text-green-400">0s</p>
+                    </div>
+                    <div class="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                        <p class="text-gray-400 text-xs mb-1">Avg FPS</p>
+                        <p id="dashAvgFPS" class="text-3xl font-bold text-yellow-400">–</p>
+                    </div>
+                </div>
+
+                <h3 class="font-semibold text-gray-300 mb-3">Gesture Breakdown</h3>
+                <div id="gestureBreakdown" class="space-y-2"></div>
+            </div>
+        </div>
+
     </div>
+</div>
 
-    <script>
-        // ============================================
-        // GESTURE RECOGNITION SYSTEM
-        // ============================================
-        const GESTURES = {
-            'open_hand': { name: 'Open Hand', emoji: '🖐️', description: 'Semua jari terbuka' },
-            'peace': { name: 'Peace', emoji: '✌️', description: 'Jari telunjuk dan jari tengah membentuk V' },
-            'thumbs_up': { name: 'Thumbs Up', emoji: '👍', description: 'Jempol menunjuk ke atas' },
-            'ok': { name: 'OK Sign', emoji: '👌', description: 'Jempol dan telunjuk membentuk lingkaran' },
-            'fist': { name: 'Fist', emoji: '✊', description: 'Semua jari tertutup' },
-            'pointing': { name: 'Pointing', emoji: '☝️', description: 'Hanya jari telunjuk yang terbuka' }
-        };
+<script>
+// ============================================================
+// GESTURE DEFINITIONS
+// ============================================================
+const GESTURES = {
+    open_hand:  { name: 'Open Hand',  emoji: '🖐️', description: 'Buka semua jari selebar mungkin, telapak menghadap kamera.' },
+    peace:      { name: 'Peace',      emoji: '✌️', description: 'Angkat telunjuk & jari tengah, jari lain ditekuk.' },
+    thumbs_up:  { name: 'Thumbs Up',  emoji: '👍', description: 'Acungkan jempol ke atas, semua jari lain tertutup.' },
+    ok:         { name: 'OK Sign',    emoji: '👌', description: 'Satukan ujung jempol & telunjuk, angkat jari lain.' },
+    fist:       { name: 'Fist',       emoji: '✊', description: 'Kepalkan semua jari rapat-rapat.' },
+    pointing:   { name: 'Pointing',   emoji: '☝️', description: 'Angkat hanya jari telunjuk, jari lain tertutup.' }
+};
 
-        let appState = {
-            isDetecting: false,
-            frameCount: 0,
-            currentGesture: null,
-            totalDetections: 0,
-            confidence: 0,
-            sentenceHistory: [],
-            detectionCooldown: 0
-        };
+// ============================================================
+// STATE
+// ============================================================
+let appState = {
+    isDetecting: false,
+    totalDetections: 0,
+    sentenceHistory: [],
+    gestureStats: {},
+    sessionStart: null,
+    lastGestureType: null,
+    stableCount: 0,
+    STABLE_THRESHOLD: 18,   // ~1 detik @18fps sebelum masuk sentence
+    fpsHistory: [],
+    frameTimestamp: 0
+};
 
-        let hands = null;
-        let camera = null;
-        let videoElement = null;
-        let canvasElement = null;
-        let canvasCtx = null;
+let hands = null;
+let camera = null;
+const videoEl = document.getElementById('videoElement');
+const canvasEl = document.getElementById('canvasElement');
+let ctx = null;
+let sessionTimer = null;
 
-        // ============================================
-        // INITIALIZE MEDIAPIPE HANDS
-        // ============================================
-        async function initializeHands() {
-            console.log('🔄 Initializing MediaPipe Hands...');
-            
-            try {
-                hands = new Hands({
-                    locateFile: (file) => {
-                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`;
-                    }
-                });
+// ============================================================
+// MEDIAPIPE INIT
+// ============================================================
+async function initializeHands() {
+    try {
+        hands = new Hands({
+            locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+        });
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
+        });
+        hands.onResults(onResults);
+        console.log('✅ MediaPipe Hands initialized');
+        return true;
+    } catch (e) {
+        console.error('❌ Hands init failed:', e);
+        return false;
+    }
+}
 
-                hands.setOptions({
-                    maxNumHands: 1,
-                    modelComplexity: 1,
-                    minDetectionConfidence: 0.5,
-                    minTrackingConfidence: 0.5
-                });
+// ============================================================
+// ON RESULTS — called every frame by MediaPipe
+// ============================================================
+function onResults(results) {
+    if (!ctx) ctx = canvasEl.getContext('2d');
 
-                // PENTING: Register onResults callback
-                hands.onResults(onResults);
+    // Match canvas size to actual video resolution
+    canvasEl.width  = videoEl.videoWidth  || 640;
+    canvasEl.height = videoEl.videoHeight || 480;
 
-                console.log('✅ MediaPipe Hands initialized');
-                return true;
-            } catch (error) {
-                console.error('❌ Error initializing Hands:', error);
-                showNotification('Error initializing gesture detection', 'error');
-                return false;
-            }
+    ctx.save();
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+    // Mirror horizontally so it feels like a mirror
+    ctx.scale(-1, 1);
+    ctx.translate(-canvasEl.width, 0);
+    ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+    ctx.restore();
+
+    // FPS tracking
+    const now = performance.now();
+    if (appState.frameTimestamp) {
+        const fps = Math.round(1000 / (now - appState.frameTimestamp));
+        appState.fpsHistory.push(fps);
+        if (appState.fpsHistory.length > 30) appState.fpsHistory.shift();
+        const avgFps = Math.round(appState.fpsHistory.reduce((a,b)=>a+b,0)/appState.fpsHistory.length);
+        document.getElementById('fpsDisplay').textContent = avgFps;
+        document.getElementById('dashAvgFPS').textContent = avgFps;
+    }
+    appState.frameTimestamp = now;
+
+    const container = document.getElementById('cameraContainer');
+    const handBadge = document.getElementById('handBadge');
+
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+
+        // Draw skeleton with mirrored transform
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.translate(-canvasEl.width, 0);
+
+        if (typeof drawConnectors === 'function' && typeof HAND_CONNECTIONS !== 'undefined') {
+            drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#a855f7', lineWidth: 3 });
         }
-
-        // ============================================
-        // RESULTS CALLBACK - KRUSIAL UNTUK DETEKSI
-        // ============================================
-        function onResults(results) {
-            videoElement = document.getElementById('videoElement');
-            canvasElement = document.getElementById('canvasElement');
-            
-            if (!canvasElement || !videoElement) return;
-
-            canvasCtx = canvasElement.getContext('2d');
-            canvasElement.width = videoElement.videoWidth;
-            canvasElement.height = videoElement.videoHeight;
-
-            // Clear canvas
-            canvasCtx.save();
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
-            // Mirror image
-            canvasCtx.scale(-1, 1);
-            canvasCtx.translate(-canvasElement.width, 0);
-            canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-            canvasCtx.restore();
-
-            // Draw hand landmarks
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmarks = results.multiHandLandmarks[0];
-                const handedness = results.multiHandedness[0];
-
-                // Draw connections
-                if (typeof drawConnectors === 'function' && typeof HAND_CONNECTIONS !== 'undefined') {
-                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
-                        color: '#00FF00',
-                        lineWidth: 2
-                    });
-                }
-
-                // Draw landmarks
-                if (typeof drawLandmarks === 'function') {
-                    drawLandmarks(canvasCtx, landmarks, {
-                        color: '#FF0000',
-                        lineWidth: 2
-                    });
-                }
-
-                // Detect gesture
-                const detectedGesture = detectGesture(landmarks);
-                updateGestureDisplay(detectedGesture);
-            } else {
-                // No hands detected
-                document.getElementById('gestureNameDisplay').textContent = 'No hands detected';
-                document.getElementById('confidenceText').textContent = 'Confidence: 0%';
-            }
+        if (typeof drawLandmarks === 'function') {
+            drawLandmarks(ctx, landmarks, { color: '#e879f9', fillColor: '#7c3aed', radius: 5, lineWidth: 1 });
         }
+        ctx.restore();
 
-        // ============================================
-        // GESTURE DETECTION LOGIC
-        // ============================================
-        function detectGesture(landmarks) {
-            if (!landmarks || landmarks.length < 21) return null;
+        // Visual feedback
+        container.classList.add('hand-detected');
+        handBadge.classList.remove('hidden');
 
-            const palm = landmarks[0];
-            const thumbTip = landmarks[4];
-            const indexTip = landmarks[8];
-            const middleTip = landmarks[12];
-            const ringTip = landmarks[16];
-            const pinkyTip = landmarks[20];
-
-            // Calculate if fingers are extended
-            const thumbOpen = Math.abs(thumbTip.x - palm.x) > 0.1;
-            const indexOpen = indexTip.y < palm.y - 0.15;
-            const middleOpen = middleTip.y < palm.y - 0.15;
-            const ringOpen = ringTip.y < palm.y - 0.15;
-            const pinkyOpen = pinkyTip.y < palm.y - 0.15;
-
-            // Gesture detection logic
-            let gesture = {
-                type: 'open_hand',
-                name: 'Open Hand',
-                confidence: 0.6
-            };
-
-            // Peace sign (2 fingers up)
-            if (!thumbOpen && indexOpen && middleOpen && !ringOpen && !pinkyOpen) {
-                gesture = { type: 'peace', name: 'Peace', confidence: 0.8 };
-            }
-            // Thumbs up
-            else if (thumbOpen && !indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
-                gesture = { type: 'thumbs_up', name: 'Thumbs Up', confidence: 0.75 };
-            }
-            // Pointing
-            else if (!thumbOpen && indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
-                gesture = { type: 'pointing', name: 'Pointing', confidence: 0.7 };
-            }
-            // OK sign
-            else if (thumbOpen && indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
-                gesture = { type: 'ok', name: 'OK', confidence: 0.65 };
-            }
-            // All fingers open
-            else if (thumbOpen && indexOpen && middleOpen && ringOpen && pinkyOpen) {
-                gesture = { type: 'open_hand', name: 'Open Hand', confidence: 0.85 };
-            }
-            // Fist
-            else if (!thumbOpen && !indexOpen && !middleOpen && !ringOpen && !pinkyOpen) {
-                gesture = { type: 'fist', name: 'Fist', confidence: 0.8 };
-            }
-
-            return gesture;
-        }
-
-        // ============================================
-        // UPDATE DISPLAY
-        // ============================================
-        function updateGestureDisplay(gesture) {
-            if (!gesture) return;
-
-            // Cooldown untuk menghindari deteksi berulang
-            if (appState.detectionCooldown > 0) {
-                appState.detectionCooldown--;
-                return;
-            }
-
-            appState.currentGesture = gesture;
-            appState.confidence = gesture.confidence;
+        // Detect & stabilize
+        const gesture = detectGesture(landmarks);
+        if (gesture) {
             appState.totalDetections++;
-
-            const display = document.getElementById('gestureDisplay');
-            const nameDisplay = document.getElementById('gestureNameDisplay');
-            const confidenceText = document.getElementById('confidenceText');
-            const confidenceBar = document.getElementById('confidenceBar').querySelector('div');
-
-            if (display) display.textContent = GESTURES[gesture.type]?.emoji || '?';
-            if (nameDisplay) nameDisplay.textContent = gesture.name;
-            if (confidenceText) confidenceText.textContent = `Confidence: ${(gesture.confidence * 100).toFixed(0)}%`;
-            if (confidenceBar) {
-                confidenceBar.style.width = (gesture.confidence * 100) + '%';
-            }
-
-            // Update total detections
             document.getElementById('totalDetectionsDisplay').textContent = appState.totalDetections;
+            document.getElementById('dashTotalDetections').textContent = appState.totalDetections;
 
-            // Add to sentence history
-            appState.sentenceHistory.push(gesture.type);
-            updateSentenceBuilder();
+            // Update display immediately (show current frame result)
+            document.getElementById('gestureDisplay').textContent = GESTURES[gesture.type]?.emoji || '?';
+            document.getElementById('gestureNameDisplay').textContent = gesture.name;
+            document.getElementById('confidenceText').textContent = `Confidence: ${(gesture.confidence * 100).toFixed(0)}%`;
+            document.getElementById('confidenceBarFill').style.width = (gesture.confidence * 100) + '%';
 
-            // Cooldown untuk deteksi berikutnya
-            appState.detectionCooldown = 10;
-        }
-
-        // ============================================
-        // SENTENCE BUILDER
-        // ============================================
-        function updateSentenceBuilder() {
-            const builder = document.getElementById('sentenceBuilder');
-            if (builder) {
-                const sentence = appState.sentenceHistory
-                    .map(type => GESTURES[type]?.emoji || '?')
-                    .join(' ');
-                builder.textContent = sentence || '(gestures will appear here)';
-            }
-        }
-
-        // ============================================
-        // CAMERA CONTROL
-        // ============================================
-        async function startCamera() {
-            const startBtn = document.getElementById('startCameraBtn');
-            const stopBtn = document.getElementById('stopCameraBtn');
-            const screenshotBtn = document.getElementById('screenshotBtn');
-            
-            try {
-                startBtn.disabled = true;
-                
-                videoElement = document.getElementById('videoElement');
-                canvasElement = document.getElementById('canvasElement');
-
-                if (!camera) {
-                    camera = new Camera(videoElement, {
-                        onFrame: async () => {
-                            if (hands && appState.isDetecting) {
-                                await hands.send({ image: videoElement });
-                            }
-                        },
-                        width: 1280,
-                        height: 720
-                    });
-                }
-
-                await camera.initialize();
-                await camera.start();
-
-                appState.isDetecting = true;
-                stopBtn.disabled = false;
-                screenshotBtn.disabled = false;
-
-                startFPSCounter();
-                console.log('✅ Camera started');
-                showNotification('Camera started successfully', 'success');
-            } catch (error) {
-                console.error('❌ Error starting camera:', error);
-                startBtn.disabled = false;
-                showNotification('Failed to start camera: ' + error.message, 'error');
-            }
-        }
-
-        async function stopCamera() {
-            try {
-                if (camera) {
-                    await camera.stop();
-                }
-                appState.isDetecting = false;
-
-                document.getElementById('startCameraBtn').disabled = false;
-                document.getElementById('stopCameraBtn').disabled = true;
-                document.getElementById('screenshotBtn').disabled = true;
-
-                console.log('✅ Camera stopped');
-                showNotification('Camera stopped', 'info');
-            } catch (error) {
-                console.error('❌ Error stopping camera:', error);
-            }
-        }
-
-        // ============================================
-        // EVENT LISTENERS
-        // ============================================
-        document.getElementById('startCameraBtn').addEventListener('click', startCamera);
-        document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
-
-        document.getElementById('clearSentenceBtn')?.addEventListener('click', () => {
-            appState.sentenceHistory = [];
-            updateSentenceBuilder();
-            showNotification('Sentence cleared', 'info');
-        });
-
-        // Mode switching
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.mode-btn').forEach(b => {
-                    b.classList.remove('border-blue-500', 'bg-blue-500/10');
-                    b.classList.add('border-gray-600');
-                });
-                btn.classList.add('border-blue-500', 'bg-blue-500/10');
-                btn.classList.remove('border-gray-600');
-
-                const mode = btn.getAttribute('data-mode');
-                document.getElementById('gestureMode').classList.toggle('hidden', mode !== 'gesture');
-                document.getElementById('learnMode').classList.toggle('hidden', mode !== 'learn');
-                document.getElementById('dashboardMode').classList.toggle('hidden', mode !== 'dashboard');
-            });
-        });
-
-        // ============================================
-        // UTILITIES
-        // ============================================
-        function showNotification(message, type = 'info') {
-            console.log(`[${type.toUpperCase()}] ${message}`);
-            // Bisa ditambahkan toast notification di sini
-        }
-
-        function startFPSCounter() {
-            let fps = 0;
-            let frameCount = 0;
-            let lastTime = Date.now();
-
-            const counter = setInterval(() => {
-                if (!appState.isDetecting) {
-                    clearInterval(counter);
-                    return;
-                }
-
-                frameCount++;
-                const currentTime = Date.now();
-
-                if (currentTime - lastTime >= 1000) {
-                    fps = frameCount;
-                    document.getElementById('fpsDisplay').textContent = fps;
-                    frameCount = 0;
-                    lastTime = currentTime;
-                }
-            }, 16);
-        }
-
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 GestureFlow App Initializing...');
-            
-            // Initialize Hands
-            const handsReady = await initializeHands();
-            
-            if (handsReady) {
-                console.log('✅ App ready to use');
-                showNotification('Click "Start Camera" to begin', 'info');
+            // Stabilization: gesture must stay the same for STABLE_THRESHOLD frames
+            if (gesture.type === appState.lastGestureType) {
+                appState.stableCount++;
             } else {
-                console.error('❌ Failed to initialize app');
-                showNotification('Failed to initialize gesture detection', 'error');
+                appState.lastGestureType = gesture.type;
+                appState.stableCount = 1;
             }
-        });
 
-        // Dark mode toggle
-        document.getElementById('darkModeToggle')?.addEventListener('click', () => {
-            document.body.classList.toggle('bg-white');
-            document.body.classList.toggle('text-black');
-        });
-    </script>
+            const progress = Math.min(100, (appState.stableCount / appState.STABLE_THRESHOLD) * 100);
+            document.getElementById('stabilizeBar').style.width = progress + '%';
+            document.getElementById('stabilizeLabel').textContent = gesture.name;
+
+            // Add to sentence when stable threshold reached
+            if (appState.stableCount === appState.STABLE_THRESHOLD) {
+                addToSentence(gesture.type);
+                appState.stableCount = 0; // reset, must stabilize again for next
+            }
+        }
+    } else {
+        // No hand
+        container.classList.remove('hand-detected');
+        handBadge.classList.add('hidden');
+        document.getElementById('gestureNameDisplay').textContent = 'Tidak ada tangan terdeteksi';
+        document.getElementById('confidenceBarFill').style.width = '0%';
+        document.getElementById('stabilizeBar').style.width = '0%';
+        document.getElementById('stabilizeLabel').textContent = '–';
+        appState.lastGestureType = null;
+        appState.stableCount = 0;
+    }
+}
+
+// ============================================================
+// GESTURE DETECTION — menggunakan joint reference yang benar
+// ============================================================
+function detectGesture(landmarks) {
+    if (!landmarks || landmarks.length < 21) return null;
+
+    // Finger extended: tip must be above PIP joint (smaller Y = higher on screen)
+    const thumbOpen  = Math.abs(landmarks[4].x - landmarks[2].x) > 0.08;
+    const indexOpen  = landmarks[8].y  < landmarks[6].y;
+    const middleOpen = landmarks[12].y < landmarks[10].y;
+    const ringOpen   = landmarks[16].y < landmarks[14].y;
+    const pinkyOpen  = landmarks[20].y < landmarks[18].y;
+
+    // Match gestures in priority order
+    if (thumbOpen && indexOpen && middleOpen && ringOpen && pinkyOpen)
+        return { type: 'open_hand',  name: 'Open Hand',  confidence: 0.90 };
+
+    if (!thumbOpen && !indexOpen && !middleOpen && !ringOpen && !pinkyOpen)
+        return { type: 'fist',       name: 'Fist',        confidence: 0.88 };
+
+    if (!thumbOpen && indexOpen && middleOpen && !ringOpen && !pinkyOpen)
+        return { type: 'peace',      name: 'Peace',       confidence: 0.85 };
+
+    if (!thumbOpen && indexOpen && !middleOpen && !ringOpen && !pinkyOpen)
+        return { type: 'pointing',   name: 'Pointing',    confidence: 0.82 };
+
+    if (thumbOpen && !indexOpen && !middleOpen && !ringOpen && !pinkyOpen)
+        return { type: 'thumbs_up',  name: 'Thumbs Up',   confidence: 0.80 };
+
+    if (thumbOpen && indexOpen && !middleOpen && !ringOpen && !pinkyOpen)
+        return { type: 'ok',         name: 'OK Sign',     confidence: 0.75 };
+
+    return { type: 'open_hand', name: 'Open Hand', confidence: 0.55 };
+}
+
+// ============================================================
+// SENTENCE BUILDER
+// ============================================================
+function addToSentence(gestureType) {
+    appState.sentenceHistory.push(gestureType);
+    // Track stats
+    appState.gestureStats[gestureType] = (appState.gestureStats[gestureType] || 0) + 1;
+    updateSentenceBuilder();
+    updateDashboardBreakdown();
+    document.getElementById('dashGesturesCaptured').textContent = appState.sentenceHistory.length;
+    showNotification(`Ditambahkan: ${GESTURES[gestureType].emoji} ${GESTURES[gestureType].name}`, 'success');
+}
+
+function updateSentenceBuilder() {
+    const builder = document.getElementById('sentenceBuilder');
+    if (appState.sentenceHistory.length === 0) {
+        builder.textContent = '(gesture akan muncul di sini)';
+    } else {
+        builder.textContent = appState.sentenceHistory.map(t => GESTURES[t]?.emoji || '?').join(' ');
+    }
+}
+
+// ============================================================
+// CAMERA CONTROL
+// ============================================================
+async function startCamera() {
+    const startBtn = document.getElementById('startCameraBtn');
+    const stopBtn  = document.getElementById('stopCameraBtn');
+    const ssBtn    = document.getElementById('screenshotBtn');
+    const placeholder = document.getElementById('cameraPlaceholder');
+    const loading  = document.getElementById('loadingIndicator');
+
+    startBtn.disabled = true;
+    loading.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+
+    try {
+        if (!camera) {
+            camera = new Camera(videoEl, {
+                onFrame: async () => {
+                    if (hands && appState.isDetecting) {
+                        await hands.send({ image: videoEl });
+                    }
+                },
+                width: 1280,
+                height: 720
+            });
+        }
+
+        await camera.start();
+        appState.isDetecting = true;
+        appState.sessionStart = Date.now();
+
+        loading.classList.add('hidden');
+        stopBtn.disabled = false;
+        ssBtn.disabled = false;
+
+        // Session timer
+        sessionTimer = setInterval(() => {
+            if (!appState.sessionStart) return;
+            const elapsed = Math.floor((Date.now() - appState.sessionStart) / 1000);
+            document.getElementById('sessionTimeDisplay').textContent = elapsed + 's';
+            document.getElementById('dashSessionTime').textContent = elapsed + 's';
+        }, 1000);
+
+        showNotification('Kamera berhasil dimulai!', 'success');
+    } catch (err) {
+        console.error('❌ Camera error:', err);
+        loading.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        startBtn.disabled = false;
+        showNotification('Gagal memulai kamera: ' + err.message, 'error');
+    }
+}
+
+async function stopCamera() {
+    try {
+        if (camera) await camera.stop();
+        appState.isDetecting = false;
+        clearInterval(sessionTimer);
+
+        // Clear canvas
+        if (ctx) ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+        document.getElementById('startCameraBtn').disabled = false;
+        document.getElementById('stopCameraBtn').disabled = true;
+        document.getElementById('screenshotBtn').disabled = true;
+        document.getElementById('cameraPlaceholder').classList.remove('hidden');
+        document.getElementById('cameraContainer').classList.remove('hand-detected');
+        document.getElementById('handBadge').classList.add('hidden');
+        document.getElementById('gestureDisplay').textContent = '–';
+        document.getElementById('gestureNameDisplay').textContent = 'Menunggu gesture...';
+        document.getElementById('fpsDisplay').textContent = '–';
+
+        showNotification('Kamera dihentikan', 'info');
+    } catch (err) {
+        console.error('❌ Stop camera error:', err);
+    }
+}
+
+// ============================================================
+// SCREENSHOT
+// ============================================================
+function takeScreenshot() {
+    const link = document.createElement('a');
+    link.download = `gestureflow-${Date.now()}.png`;
+    link.href = canvasEl.toDataURL('image/png');
+    link.click();
+    showNotification('Screenshot disimpan!', 'success');
+}
+
+// ============================================================
+// POPULATE UI
+// ============================================================
+function populateGestureGuide() {
+    const guide = document.getElementById('gestureGuide');
+    guide.innerHTML = '';
+    Object.entries(GESTURES).forEach(([key, g]) => {
+        guide.innerHTML += `
+            <div class="text-center p-3 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 border border-gray-700 hover:border-purple-500/50 cursor-pointer transition gesture-card" title="${g.description}">
+                <div class="text-3xl mb-1">${g.emoji}</div>
+                <p class="text-xs font-medium text-gray-200">${g.name}</p>
+            </div>`;
+    });
+}
+
+function populateLearnMode() {
+    const cards = document.getElementById('learnCards');
+    cards.innerHTML = '';
+    Object.entries(GESTURES).forEach(([key, g]) => {
+        cards.innerHTML += `
+            <div class="gesture-card bg-gray-800/80 border border-gray-700 hover:border-purple-500/50 rounded-2xl p-5">
+                <div class="text-5xl mb-3">${g.emoji}</div>
+                <h3 class="font-bold text-lg mb-1">${g.name}</h3>
+                <p class="text-gray-400 text-sm">${g.description}</p>
+            </div>`;
+    });
+}
+
+function updateDashboardBreakdown() {
+    const container = document.getElementById('gestureBreakdown');
+    container.innerHTML = '';
+    const total = Object.values(appState.gestureStats).reduce((a,b)=>a+b,0) || 1;
+    Object.entries(appState.gestureStats).forEach(([type, count]) => {
+        const pct = Math.round((count / total) * 100);
+        container.innerHTML += `
+            <div class="flex items-center gap-3">
+                <span class="text-xl w-8">${GESTURES[type]?.emoji}</span>
+                <span class="text-sm text-gray-300 w-28">${GESTURES[type]?.name}</span>
+                <div class="flex-1 bg-gray-700 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-purple-500 to-purple-300 h-full rounded-full" style="width:${pct}%"></div>
+                </div>
+                <span class="text-sm text-gray-400 w-10 text-right">${count}x</span>
+            </div>`;
+    });
+    if (!container.innerHTML) {
+        container.innerHTML = '<p class="text-gray-500 text-sm">Belum ada data. Mulai deteksi gesture!</p>';
+    }
+}
+
+// ============================================================
+// TOAST NOTIFICATION
+// ============================================================
+function showNotification(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => toast.classList.add('show'));
+    });
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 350);
+    }, 2800);
+}
+
+// ============================================================
+// MODE SWITCHING
+// ============================================================
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const mode = btn.dataset.mode;
+        document.getElementById('gestureMode').classList.toggle('hidden', mode !== 'gesture');
+        document.getElementById('learnMode').classList.toggle('hidden', mode !== 'learn');
+        document.getElementById('dashboardMode').classList.toggle('hidden', mode !== 'dashboard');
+        if (mode === 'dashboard') updateDashboardBreakdown();
+    });
+});
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+document.getElementById('startCameraBtn').addEventListener('click', startCamera);
+document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
+document.getElementById('screenshotBtn').addEventListener('click', takeScreenshot);
+
+document.getElementById('clearSentenceBtn').addEventListener('click', () => {
+    appState.sentenceHistory = [];
+    updateSentenceBuilder();
+    showNotification('Sentence dihapus', 'info');
+});
+
+document.getElementById('copySentenceBtn').addEventListener('click', () => {
+    const text = appState.sentenceHistory.map(t => GESTURES[t]?.emoji).join(' ');
+    if (!text) { showNotification('Sentence masih kosong', 'info'); return; }
+    navigator.clipboard.writeText(text).then(() => showNotification('Disalin ke clipboard!', 'success'));
+});
+
+document.getElementById('darkModeToggle').addEventListener('click', () => {
+    document.body.classList.toggle('bg-slate-950');
+    document.body.classList.toggle('bg-gray-100');
+    document.body.classList.toggle('text-white');
+    document.body.classList.toggle('text-gray-900');
+});
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    populateGestureGuide();
+    populateLearnMode();
+    updateDashboardBreakdown();
+    const ok = await initializeHands();
+    if (ok) showNotification('GestureFlow siap! Klik Start Camera.', 'info');
+    else showNotification('Gagal memuat MediaPipe', 'error');
+});
+</script>
 </body>
 </html>

@@ -1,15 +1,15 @@
 
         :root {
-            --primary-color: #2563EB;
-            --primary-dark: #1E40AF;
-            --secondary-color: #10B981;
-            --bg-light: #F8FAFC;
-            --bg-white: #FFFFFF;
-            --border-color: #E2E8F0;
-            --text-primary: #1E293B;
-            --text-secondary: #64748B;
-            --success-color: #059669;
-            --warning-color: #D97706;
+            --primary-color: #667eea;
+            --primary-dark: #764ba2;
+            --secondary-color: #8b5cf6;
+            --bg-light: #1a0f2e;
+            --bg-white: #0f0f1e;
+            --border-color: rgba(102, 126, 234, 0.3);
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --success-color: #667eea;
+            --warning-color: #764ba2;
         }
 
         * {
@@ -20,7 +20,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--bg-light) 0%, #E0E7FF 100%);
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a0f2e 50%, #2d0f47 100%);
             color: var(--text-primary);
             min-height: 100vh;
             padding: 20px;
@@ -28,10 +28,12 @@
 
         /* Header */
         header {
-            background: var(--bg-white);
+            background: rgba(15, 15, 30, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 126, 234, 0.2);
             padding: 20px 30px;
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
             margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
@@ -96,17 +98,20 @@
         }
 
         .stat-card {
-            background: var(--bg-white);
+            background: rgba(26, 15, 46, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 126, 234, 0.2);
             padding: 30px;
             border-radius: 14px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
             border-left: 4px solid var(--primary-color);
             transition: all 0.3s;
         }
 
         .stat-card:hover {
-            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
             transform: translateY(-4px);
+            border-color: rgba(102, 126, 234, 0.5);
         }
 
         .stat-label {
@@ -131,10 +136,12 @@
 
         /* Progress Section */
         .progress-section {
-            background: var(--bg-white);
+            background: rgba(26, 15, 46, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 126, 234, 0.2);
             padding: 30px;
             border-radius: 14px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
             margin-bottom: 30px;
         }
 
@@ -168,7 +175,7 @@
         .progress-bar {
             width: 100%;
             height: 10px;
-            background: var(--border-color);
+            background: rgba(102, 126, 234, 0.1);
             border-radius: 5px;
             overflow: hidden;
         }
@@ -189,17 +196,17 @@
         }
 
         .achievement-badge {
-            background: var(--bg-light);
+            background: rgba(102, 126, 234, 0.1);
             padding: 15px;
             border-radius: 10px;
             text-align: center;
-            border: 2px dashed var(--border-color);
+            border: 2px dashed rgba(102, 126, 234, 0.3);
             transition: all 0.3s;
             cursor: default;
         }
 
         .achievement-badge.unlocked {
-            background: linear-gradient(135deg, #FFF3CD, #FFE5B4);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(102, 126, 234, 0.3));
             border: 2px solid var(--warning-color);
             transform: scale(1.05);
         }
