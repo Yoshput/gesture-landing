@@ -418,7 +418,29 @@ canvas { display: block; width: 100%; height: 100%; }
 
   <!-- AZ Reference -->
   <div class="glass p-5">
-    <h3 class="font-bold text-sm mb-4 text-gray-300">📖 Referensi ASL A–Z</h3>
+    <h3 class="font-bold text-sm mb-3 text-gray-300">📖 Referensi ASL A–Z</h3>
+    <!-- Disambiguation tips for confusable letters -->
+    <div class="mb-4 p-3 rounded-xl text-xs" style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2)">
+      <p class="font-bold text-yellow-400 mb-2">⚠️ Huruf yang sering tertukar — baca bedanya:</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <span class="text-lg font-black nt2">E</span> vs <span class="text-lg font-black text-cyan-400">O</span>
+          <p class="text-gray-500 mt-1">E: jari tekuk RAPAT ke telapak. O: jari membentuk LINGKARAN penuh.</p>
+        </div>
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <span class="text-lg font-black nt2">A</span> vs <span class="text-lg font-black text-red-400">S</span>
+          <p class="text-gray-500 mt-1">A: jempol di SISI. S: jempol MELINTANG di depan jari.</p>
+        </div>
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <span class="text-lg font-black nt2">V</span> vs <span class="text-lg font-black text-blue-400">U</span>
+          <p class="text-gray-500 mt-1">V: 2 jari TERBUKA lebar. U: 2 jari RAPAT berdampingan.</p>
+        </div>
+        <div class="bg-black/30 rounded-lg p-2 text-center">
+          <span class="text-lg font-black nt2">D</span> vs <span class="text-lg font-black text-orange-400">G</span>
+          <p class="text-gray-500 mt-1">D: telunjuk tegak ke ATAS. G: telunjuk+jempol ke SAMPING.</p>
+        </div>
+      </div>
+    </div>
     <div id="azRef" class="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-13 gap-2"></div>
   </div>
 </section>
@@ -844,32 +866,32 @@ const GESTURES = {
 };
 
 const ASL = {
-  A:{desc:'Kepalan tangan, jempol di samping.',      hint:'Semua jari tertutup, jempol di sisi'},
-  B:{desc:'4 jari tegak, jempol ditekuk ke dalam.',  hint:'4 jari rapat ke atas, jempol dalam'},
-  C:{desc:'Tangan membentuk lengkungan huruf C.',     hint:'Jari melengkung seperti mangkuk'},
-  D:{desc:'Telunjuk tegak, jari lain membentuk O.',   hint:'Telunjuk lurus, sisanya bulat'},
-  E:{desc:'Semua jari ditekuk ke arah telapak.',      hint:'Jari-jari menekuk ke depan'},
-  F:{desc:'Jempol+telunjuk menyentuh, 3 jari tegak.', hint:'OK terbalik + 3 jari atas'},
-  G:{desc:'Telunjuk & jempol menunjuk ke samping.',   hint:'Seperti pistol menunjuk kanan'},
-  H:{desc:'Telunjuk & jari tengah horizontal.',       hint:'2 jari lurus ke samping'},
-  I:{desc:'Kelingking tegak, jari lain tertutup.',    hint:'Hanya jari kelingking terangkat'},
-  J:{desc:'Kelingking tegak lalu gambar huruf J.',    hint:'Mulai dari I, gambar huruf J'},
-  K:{desc:'Telunjuk+tengah tegak, jempol di tengah.', hint:'Jari tengah menyentuh jempol'},
-  L:{desc:'Telunjuk+jempol membentuk sudut L.',       hint:'Jempol kiri + telunjuk ke atas'},
-  M:{desc:'3 jari menutupi jempol.',                  hint:'Lipat 3 jari di atas jempol'},
-  N:{desc:'2 jari menutupi jempol.',                  hint:'Lipat 2 jari di atas jempol'},
-  O:{desc:'Semua jari membentuk bulatan O.',          hint:'Ujung semua jari sentuh jempol'},
-  P:{desc:'Seperti K tapi menghadap ke bawah.',       hint:'K terbalik'},
-  Q:{desc:'Seperti G tapi menghadap ke bawah.',       hint:'Jari & jempol menunjuk bawah'},
-  R:{desc:'Telunjuk & jari tengah menyilang.',        hint:'Silangkan 2 jari depan'},
-  S:{desc:'Kepalan tangan, jempol di atas jari.',     hint:'Tinju rapat, jempol di depan'},
-  T:{desc:'Jempol di antara telunjuk & jari tengah.', hint:'Jempol keluar di antara jari'},
-  U:{desc:'Telunjuk & jari tengah tegak berdampingan.',hint:'2 jari naik berdampingan'},
-  V:{desc:'Telunjuk & jari tengah membentuk V.',      hint:'Peace sign klasik'},
-  W:{desc:'Telunjuk, tengah, manis tegak.',           hint:'3 jari tengah tegak'},
-  X:{desc:'Telunjuk ditekuk seperti kait.',           hint:'Telunjuk bengkok ke bawah'},
-  Y:{desc:'Jempol & kelingking terbuka.',             hint:'Shaka / hang loose'},
-  Z:{desc:'Gambar huruf Z dengan telunjuk.',          hint:'Gerakkan telunjuk membentuk Z'},
+  A:{desc:'Kepalan tangan, jempol di SISI luar.',        hint:'Tinju, jempol menyentuh sisi telunjuk (bukan di depan)'},
+  B:{desc:'4 jari tegak rapat, jempol ditekuk ke dalam.',hint:'Jempol tersembunyi di dalam telapak'},
+  C:{desc:'Tangan melengkung seperti huruf C.',          hint:'Semua jari melengkung, tidak ditutup penuh'},
+  D:{desc:'Telunjuk tegak, jari lain melingkar ke jempol.',hint:'Seperti menunjuk tapi jari lain membentuk O'},
+  E:{desc:'Semua jari ditekuk RAPAT ke telapak.',        hint:'Jari-jari tertekuk ke depan, ujung jari mendekati telapak — BERBEDA dari O!'},
+  F:{desc:'Jempol+telunjuk menyentuh, 3 jari lain tegak.',hint:'Buat lingkaran OK, tapi 3 jari atas tetap berdiri'},
+  G:{desc:'Telunjuk+jempol menunjuk ke samping.',        hint:'Seperti pistol menunjuk ke kanan'},
+  H:{desc:'Telunjuk+jari tengah horizontal.',            hint:'2 jari lurus ke samping'},
+  I:{desc:'Kelingking saja tegak, jari lain tertutup.',  hint:'Hanya jari kelingking terangkat'},
+  J:{desc:'Kelingking tegak lalu gambar huruf J.',       hint:'Mulai dari posisi I, gambar J ke bawah'},
+  K:{desc:'Telunjuk+tengah tegak, jempol di tengah.',    hint:'Jari tengah menyentuh jempol'},
+  L:{desc:'Jempol+telunjuk membentuk sudut L.',          hint:'Jempol ke samping, telunjuk ke atas'},
+  M:{desc:'3 jari (telunjuk-tengah-manis) menutupi jempol.',hint:'Lipat 3 jari di atas jempol yang tertekuk'},
+  N:{desc:'2 jari (telunjuk-tengah) menutupi jempol.',   hint:'Lipat 2 jari di atas jempol'},
+  O:{desc:'Semua jari membentuk lingkaran O.',           hint:'Ujung SEMUA jari menyentuh jempol — membentuk bulatan penuh'},
+  P:{desc:'Seperti K tapi menghadap ke bawah.',          hint:'K terbalik'},
+  Q:{desc:'Seperti G tapi menghadap ke bawah.',          hint:'Jari+jempol menunjuk ke bawah'},
+  R:{desc:'Telunjuk+jari tengah menyilang.',             hint:'Silangkan 2 jari di depan satu sama lain'},
+  S:{desc:'Kepalan tangan, jempol MELINTANG di DEPAN jari.',hint:'Tinju penuh, jempol menutup di depan jari-jari'},
+  T:{desc:'Jempol muncul di antara telunjuk & jari tengah.',hint:'Jempol keluar di antara dua jari'},
+  U:{desc:'Telunjuk+jari tengah tegak BERDAMPINGAN rapat.',hint:'2 jari naik berdampingan tanpa jarak'},
+  V:{desc:'Telunjuk+jari tengah bentuk V terbuka.',      hint:'Peace sign dengan jarak antar 2 jari'},
+  W:{desc:'Telunjuk, tengah, dan manis tegak.',          hint:'3 jari tengah berdiri'},
+  X:{desc:'Telunjuk ditekuk seperti kait/kail.',         hint:'Telunjuk bengkok ke bawah seperti tanda tanya'},
+  Y:{desc:'Jempol+kelingking terbuka, sisanya tertutup.',hint:'Shaka / hang loose'},
+  Z:{desc:'Gambar huruf Z dengan telunjuk.',             hint:'Gerakkan telunjuk: kanan → diagonal → kanan lagi'},
 };
 
 const NUMBERS = {
@@ -986,61 +1008,186 @@ function detectGesture(lm) {
   return null;
 }
 
-// ─── ASL Letter Detection ────────────────────
+// ─── ASL Letter Detection (v2 — improved disambiguation) ──
 function detectASL(lm) {
   if (!lm || lm.length < 21) return null;
-  const f  = fingers(lm);
-  const hs = hSize(lm);
-  const t2i = nd(lm,4,8), t2m = nd(lm,4,12), t2p = nd(lm,4,20);
-  const iSpread = Math.abs(lm[8].x - lm[12].x) / hs;
-  const a4c = f.Ic && f.Mc && f.Rc && f.Pc;  // all 4 curled
+  const f   = fingers(lm);
+  const hs  = hSize(lm);
 
-  if (f.T && !f.I && !f.M && !f.R && f.P && t2p > 0.88) return 'Y';
-  if (f.I && f.M && f.R && f.P && f.Tc && !f.T)          return 'B';
-  if (f.T && f.I && f.Mc && f.Rc && f.Pc && t2i > 0.68)  return 'L';
-  if (f.P && f.Ic && f.Mc && f.Rc && !f.T)               return 'I';
-  if (f.I && f.M && f.R && f.Pc && !f.T)                 return 'W';
+  // ── Normalised distances ──
+  const t2i = nd(lm, 4, 8);   // thumb tip → index tip
+  const t2m = nd(lm, 4, 12);  // thumb tip → middle tip
+  const t2r = nd(lm, 4, 16);  // thumb tip → ring tip
+  const t2p = nd(lm, 4, 20);  // thumb tip → pinky tip
+
+  // ── Spread / position helpers ──
+  const iSpread   = Math.abs(lm[8].x  - lm[12].x) / hs;  // index-middle spread
+  const thumbSide = Math.abs(lm[4].x  - lm[5].x)  / hs;  // thumb side distance
+
+  // ── Knuckle-to-tip distances for curl depth ──
+  const iDip = nd(lm, 7, 8);   // index DIP-to-tip (tight curl = small)
+  const mDip = nd(lm, 11, 12);
+  const rDip = nd(lm, 15, 16);
+
+  // ── Thumb tip height relative to wrist ──
+  const thumbAboveWrist = lm[4].y < lm[0].y - hs * 0.20;
+  const thumbAboveIndex = lm[4].y < lm[5].y;
+
+  // ── ALL four curled flag ──
+  const a4c = f.Ic && f.Mc && f.Rc && f.Pc;
+
+  // ── Tip-to-palm distances ──
+  const iDist = dist(lm[0], lm[8])  / hs;
+  const mDist = dist(lm[0], lm[12]) / hs;
+  const rDist = dist(lm[0], lm[16]) / hs;
+  const pDist = dist(lm[0], lm[20]) / hs;
+  const tDist = dist(lm[0], lm[4])  / hs;
+
+  // ══ PRIORITY: fingers UP first ══════════════════════
+
+  // Y — thumb + pinky open, rest closed
+  if (f.T && !f.I && !f.M && !f.R && f.P && t2p > 0.85) return 'Y';
+
+  // B — 4 fingers up, thumb STRICTLY curled inside
+  if (f.I && f.M && f.R && f.P && f.Tc && !f.T) return 'B';
+
+  // W — index + middle + ring up, pinky closed
+  if (f.I && f.M && f.R && f.Pc && !f.T) return 'W';
+
+  // L — thumb + index up, rest closed
+  if (f.T && f.I && f.Mc && f.Rc && f.Pc && t2i > 0.65) return 'L';
+
+  // I — only pinky up
+  if (f.P && f.Ic && f.Mc && f.Rc && !f.T) return 'I';
+
+  // V or U — index + middle up, rest closed
   if (f.I && f.M && f.Rc && f.Pc && !f.T) return iSpread > 0.14 ? 'V' : 'U';
+
+  // K — index + middle + thumb, specific angle
   if (f.I && f.M && f.Rc && f.Pc && f.T) {
-    return nd(lm,4,10) < 0.28 ? 'K' : 'V';
+    return nd(lm, 4, 10) < 0.28 ? 'K' : 'V';
   }
-  if (f.I && f.Mc && f.Rc && f.Pc) return nd(lm,4,12) < 0.33 ? 'D' : 'G';
-  if (t2i < 0.25 && f.M && f.R && f.P)  return 'F';
-  if (a4c && t2i < 0.34 && t2m < 0.44)  return 'O';
-  {
-    const cr = v => v > 1.10 && v < 2.20;
-    const iw = dist(lm[0],lm[8])/hs, mw = dist(lm[0],lm[12])/hs,
-          rw = dist(lm[0],lm[16])/hs, pw = dist(lm[0],lm[20])/hs,
-          tw = dist(lm[0],lm[4])/hs;
-    if (cr(iw)&&cr(mw)&&cr(rw)&&cr(pw)&&cr(tw) && t2i>0.28&&t2i<0.82) return 'C';
-  }
-  if (a4c && !f.T)  return Math.abs(lm[4].x - lm[5].x)/hs > 0.14 ? 'A' : 'S';
-  if (a4c && f.Tc)  return 'S';
-  if (a4c)          return 'E';
+
+  // D — index only + others curl to make O-shape
+  if (f.I && f.Mc && f.Rc && f.Pc) return t2m < 0.33 ? 'D' : 'G';
+
+  // R — index + middle crossed (very close together)
   if (f.I && f.M && f.Rc && f.Pc && iSpread < 0.07) return 'R';
+
+  // F — OK pinch (thumb+index touch) + 3 fingers up
+  if (t2i < 0.25 && f.M && f.R && f.P) return 'F';
+
+  // ══ All 4 curled — distinguish A / S / E / O ════════
+
+  if (a4c) {
+    // O — thumb AND index tips very close, fingers forming round shape
+    // Key: thumb tip close to index tip but NOT close to base
+    // O has rounded shape → each fingertip roughly equidistant from palm
+    const avgTipDist = (iDist + mDist + rDist + pDist) / 4;
+    const roundShape = iDist > 0.55 && mDist > 0.55 && rDist > 0.55 && pDist > 0.55;
+    if (roundShape && t2i < 0.40 && t2m < 0.55 && thumbAboveIndex) return 'O';
+
+    // E — fingers tightly curled DOWN toward palm, fingertips close to palm
+    // Key feature: fingertip-to-palm distances are SMALL (tight curl)
+    // Thumb is to the side or slightly in front, NOT touching index tip closely
+    const tightCurl = iDist < 0.65 && mDist < 0.65 && rDist < 0.65 && pDist < 0.65;
+    const thumbNotTouchingIndex = t2i > 0.30;
+    if (tightCurl && thumbNotTouchingIndex) return 'E';
+
+    // A — fist but thumb on SIDE (not over fingers), visible from outside
+    // Thumb is lateral: thumbSide is larger than in S
+    if (thumbSide > 0.15 && !f.Tc) return 'A';
+
+    // S — fist with thumb OVER / across fingers
+    if (f.Tc || thumbSide <= 0.15) return 'S';
+
+    return 'E'; // fallback for all-curled
+  }
+
+  // C — curved open hand (like holding a ball)
+  {
+    const cr = v => v > 1.05 && v < 2.10;
+    if (cr(iDist) && cr(mDist) && cr(rDist) && cr(pDist) && cr(tDist)
+        && t2i > 0.30 && t2i < 0.90) return 'C';
+  }
+
+  // M — 3 fingers over thumb (thumb tucked, 3 down)
+  // N — 2 fingers over thumb
+  // T — thumb between index and middle
+  // (complex motions — approximate with curl depth)
+  if (f.Ic && f.Mc && f.Rc && !f.Pc && !f.T) {
+    // T has thumb peeking between index and middle
+    const thumbBetween = lm[4].x > Math.min(lm[5].x, lm[9].x) &&
+                         lm[4].x < Math.max(lm[5].x, lm[9].x);
+    if (thumbBetween) return 'T';
+    return nd(lm, 4, 9) < 0.35 ? 'M' : 'N';
+  }
+
+  // X — index hook (bent but not fully extended)
+  if (!f.I && f.Ic && f.Mc && f.Rc && f.Pc && !f.T) {
+    const indexHook = iDip < 0.25 && iDist > 0.40 && iDist < 0.85;
+    if (indexHook) return 'X';
+  }
+
   return null;
 }
 
-// ─── Number Detection (ASL 0–9) ──────────────
+// ─── Number Detection v2 — clear separation from letters ──
 function detectNumber(lm) {
   if (!lm || lm.length < 21) return null;
-  const f  = fingers(lm);
-  const hs = hSize(lm);
-  const t2i = nd(lm,4,8), t2m = nd(lm,4,12),
-        t2r = nd(lm,4,16), t2p = nd(lm,4,20);
-  const iSpread = Math.abs(lm[8].x - lm[12].x) / hs;
+  const f   = fingers(lm);
+  const hs  = hSize(lm);
+
+  const t2i = nd(lm, 4, 8);
+  const t2m = nd(lm, 4, 12);
+  const t2r = nd(lm, 4, 16);
+  const t2p = nd(lm, 4, 20);
+  const iSpread  = Math.abs(lm[8].x - lm[12].x) / hs;
+
+  // Tip-to-palm distances
+  const iDist = dist(lm[0], lm[8])  / hs;
+  const mDist = dist(lm[0], lm[12]) / hs;
+  const rDist = dist(lm[0], lm[16]) / hs;
+  const pDist = dist(lm[0], lm[20]) / hs;
   const a4c = f.Ic && f.Mc && f.Rc && f.Pc;
 
-  if (a4c && t2i < 0.34 && t2m < 0.44)                              return '0';
-  if (f.T && f.I && f.M && f.R && f.P)                              return '5';
-  if (f.I && f.M && f.R && f.P && !f.T && f.Tc)                     return '4';
-  if (t2i < 0.28 && !f.M && !f.R && !f.P)                           return '9';
-  if (f.I && f.Mc && f.Rc && f.Pc && !f.T)                          return '1';
-  if (f.I && f.M && f.Rc && f.Pc && !f.T && iSpread > 0.11)         return '2';
-  if (f.T && f.I && f.M && f.Rc && f.Pc)                            return '3';
-  if (f.I && f.M && f.R && f.P && !f.T && t2p < 0.38)               return '6';
-  if (f.I && f.M && !f.R && f.P && !f.T && t2r < 0.38)              return '7';
-  if (f.I && !f.M && f.R && f.P && !f.T && t2m < 0.33)              return '8';
+  // 5 — all 5 fingers open
+  if (f.T && f.I && f.M && f.R && f.P) return '5';
+
+  // 4 — 4 fingers up, thumb strictly in
+  if (f.I && f.M && f.R && f.P && !f.T && f.Tc) return '4';
+
+  // 0 — round O shape: all curled, tips form near-equal circle
+  // Key: all fingertips at medium distance from palm (not tight like E)
+  //      thumb tip close to index tip
+  if (a4c) {
+    const roundish = iDist > 0.55 && mDist > 0.55 && rDist > 0.55 && pDist > 0.55;
+    if (roundish && t2i < 0.38) return '0';
+    // If tight curl → NOT a number 0 (could be E in ASL, but in numeric mode still return null)
+    return null;
+  }
+
+  // 9 — OK pinch (thumb+index) rest curled
+  if (t2i < 0.28 && f.Mc && f.Rc && f.Pc && !f.M && !f.R && !f.P) return '9';
+
+  // 1 — only index finger up
+  if (f.I && f.Mc && f.Rc && f.Pc && !f.T) return '1';
+
+  // 2 — index + middle up, spread
+  if (f.I && f.M && f.Rc && f.Pc && !f.T && iSpread > 0.11) return '2';
+
+  // 3 — thumb + index + middle up
+  if (f.T && f.I && f.M && f.Rc && f.Pc) return '3';
+
+  // 6 — pinky + thumb touch, 3 middle up
+  if (f.I && f.M && f.R && !f.P && !f.T && t2p < 0.40) return '6';
+
+  // 7 — ring + thumb touch
+  if (f.I && f.M && !f.R && f.P && !f.T && t2r < 0.40) return '7';
+
+  // 8 — middle + thumb touch
+  if (f.I && !f.M && f.R && f.P && !f.T && t2m < 0.35) return '8';
+
   return null;
 }
 
@@ -1306,12 +1453,37 @@ function nextAZ() {
   }
 }
 
+// Letters that commonly get confused with each other
+const CONFUSABLE = {
+  E: '⚠️ Berbeda dari O! Tekuk jari RAPAT ke telapak, bukan melingkar.',
+  O: '⚠️ Berbeda dari E! Buat LINGKARAN penuh, semua ujung jari sentuh jempol.',
+  A: '⚠️ Berbeda dari S! Jempol di SISI telunjuk, bukan di depan jari.',
+  S: '⚠️ Berbeda dari A! Jempol MELINTANG menutup di depan jari-jari.',
+  V: '⚠️ Berbeda dari U! Buka 2 jari LEBAR membentuk V.',
+  U: '⚠️ Berbeda dari V! 2 jari RAPAT berdampingan, tidak terbuka.',
+  D: '⚠️ Berbeda dari G! Telunjuk tegak ke ATAS, sisanya melingkar.',
+  G: '⚠️ Berbeda dari D! Telunjuk+jempol menunjuk ke SAMPING.',
+  B: '💡 Pastikan jempol benar-benar TERSEMBUNYI di dalam telapak.',
+  I: '💡 Hanya KELINGKING yang terangkat, jari lain tertutup penuh.',
+  R: '💡 Silangkan telunjuk+tengah seperti tanda silang.',
+  T: '💡 Jempol harus TERLIHAT di antara telunjuk dan jari tengah.',
+};
+
 function updateAZCurrent() {
   const l = azSt.letters[azSt.idx], info = ASL[l];
   $('azTargLet').textContent  = l;
   $('azCurLet').textContent   = l;
   $('azCurDesc').textContent  = info?.desc  || '';
-  $('azCurHint').textContent  = info?.hint  || '';
+
+  // Show confusion warning if applicable
+  const warn = CONFUSABLE[l];
+  if (warn) {
+    $('azCurHint').textContent = warn;
+    $('azCurHint').style.color = warn.startsWith('⚠️') ? '#fbbf24' : 'var(--neon3)';
+  } else {
+    $('azCurHint').textContent = '💡 ' + (info?.hint || '');
+    $('azCurHint').style.color = '';
+  }
   $('azTargOv').classList.remove('hidden');
   speak('Tunjukkan huruf ' + l);
 }
