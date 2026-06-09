@@ -2,1169 +2,1849 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GestureFlow - Gesture Recognition App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GestureFlow — Final v3.0</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <style>
-  body{font-family:'Inter',sans-serif;}
-  .glass-dark{background:rgba(15,23,42,0.88);backdrop-filter:blur(14px);}
-  #videoElement{display:none;}
-  .hand-detected{box-shadow:0 0 0 3px #22c55e,0 0 24px rgba(34,197,94,0.35);}
-  #toastContainer{position:fixed;top:80px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
-  .toast{padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;opacity:0;transform:translateX(50px);transition:all .3s ease;max-width:260px;}
-  .toast.show{opacity:1;transform:translateX(0);}
-  .toast.success{background:#16a34a;}
-  .toast.error{background:#dc2626;}
-  .toast.info{background:#2563eb;}
-  .toast.warn{background:#d97706;}
-  .mode-btn.active{border-color:#a855f7!important;background:rgba(168,85,247,0.18)!important;}
-  #stabilizeBar{transition:width .08s linear;}
-  #sentenceBuilder{min-height:44px;max-height:90px;overflow-y:auto;word-break:break-word;line-height:1.8;}
-  .gesture-card{transition:transform .2s,box-shadow .2s;cursor:pointer;}
-  .gesture-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(168,85,247,0.3);}
-  /* A-Z grid */
-  .az-card{transition:all .18s;cursor:pointer;border:2px solid transparent;}
-  .az-card:hover{border-color:#a855f7;transform:scale(1.05);}
-  .az-card.active-letter{border-color:#22c55e;box-shadow:0 0 12px rgba(34,197,94,0.4);}
-  /* Tab underline */
-  .tab-btn{border-bottom:3px solid transparent;transition:border-color .2s,color .2s;}
-  .tab-btn.active-tab{border-bottom-color:#a855f7;color:#e9d5ff;}
-  /* Progress ring */
-  .progress-ring{transform:rotate(-90deg);}
-  .progress-ring-circle{transition:stroke-dashoffset .15s linear;stroke-linecap:round;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-  .fade-in{animation:fadeIn .3s ease-out;}
+/* ── CSS Variables ── */
+:root {
+  --neon:  #00ff88;
+  --neon2: #a855f7;
+  --neon3: #22d3ee;
+  --gold:  #fbbf24;
+  --red:   #f87171;
+  --bg:    #03070f;
+  --surf:  rgba(8,16,32,0.9);
+  --bord:  rgba(168,85,247,0.22);
+  --bord2: rgba(0,255,136,0.18);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--bg);
+  color: #e2e8f0;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+/* Background blobs */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  width: 600px; height: 600px;
+  top: -10%; right: -10%;
+  background: radial-gradient(circle, rgba(168,85,247,.1) 0%, transparent 70%);
+}
+body::after {
+  width: 500px; height: 500px;
+  bottom: -10%; left: -10%;
+  background: radial-gradient(circle, rgba(0,255,136,.07) 0%, transparent 70%);
+}
+
+/* Glass card */
+.glass {
+  background: var(--surf);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid var(--bord);
+  border-radius: 16px;
+  position: relative;
+  z-index: 1;
+}
+.glass-cyan { border-color: rgba(34,211,238,.2); }
+.glass-green { border-color: var(--bord2); }
+
+/* Nav */
+nav { background: rgba(3,7,15,0.92); backdrop-filter: blur(24px); }
+
+/* Tabs */
+.tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2.5px solid transparent;
+  transition: color .18s, border-color .18s;
+  color: #64748b;
+  user-select: none;
+}
+.tab:hover:not(.active) { color: #94a3b8; border-bottom-color: rgba(168,85,247,.3); }
+.tab.active { color: var(--neon); border-bottom-color: var(--neon); }
+
+/* Video hidden, canvas shown */
+video { display: none !important; }
+canvas { display: block; width: 100%; height: 100%; }
+
+/* Camera glow states */
+.cam-idle   { box-shadow: none; }
+.cam-active { box-shadow: 0 0 0 2px rgba(168,85,247,.5), 0 0 24px rgba(168,85,247,.2); }
+.cam-detect { box-shadow: 0 0 0 2.5px var(--neon), 0 0 28px rgba(0,255,136,.25); transition: box-shadow .15s; }
+
+/* Toast */
+#toasts {
+  position: fixed; top: 72px; right: 14px;
+  z-index: 9999; display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none; width: 260px;
+}
+.toast {
+  padding: 10px 14px; border-radius: 11px;
+  font-size: 12.5px; font-weight: 600; color: #fff;
+  opacity: 0; transform: translateX(70px);
+  transition: opacity .22s ease, transform .22s cubic-bezier(.34,1.56,.64,1);
+  border-left: 3px solid transparent;
+}
+.toast.show { opacity: 1; transform: translateX(0); }
+.toast.s { background: rgba(6,78,59,.92); border-color: var(--neon); }
+.toast.e { background: rgba(127,29,29,.92); border-color: var(--red); }
+.toast.i { background: rgba(15,23,42,.92); border-color: var(--neon2); }
+.toast.w { background: rgba(78,30,0,.92); border-color: var(--gold); }
+
+/* Stability bar animated fill */
+.stab-bar { transition: width .07s linear; }
+
+/* Progress ring */
+.p-ring { transform: rotate(-90deg); }
+.p-ring-c { transition: stroke-dashoffset .12s linear; stroke-linecap: round; }
+
+/* Letter/number cells */
+.cell {
+  border: 1.5px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.02);
+  border-radius: 8px;
+  transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+.cell.done  { background: rgba(5,150,105,.3); border-color: #059669; color: #6ee7b7; }
+.cell.cur   { background: rgba(168,85,247,.3); border-color: var(--neon2); color: #e9d5ff; box-shadow: 0 0 14px rgba(168,85,247,.4); animation: cellPulse 1.2s ease-in-out infinite; }
+.cell.cur-c { background: rgba(34,211,238,.2); border-color: var(--neon3); color: #a5f3fc; box-shadow: 0 0 14px rgba(34,211,238,.35); animation: cellPulse 1.2s ease-in-out infinite; }
+
+@keyframes cellPulse { 0%,100%{opacity:1} 50%{opacity:.65} }
+
+/* Spin loader */
+@keyframes spin { to { transform: rotate(360deg) } }
+.spin { animation: spin .7s linear infinite; }
+
+/* Result flash */
+@keyframes popIn { 0%{transform:scale(.4);opacity:0} 65%{transform:scale(1.18)} 100%{transform:scale(1);opacity:1} }
+.pop-in { animation: popIn .3s ease-out forwards; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fadeUp .25s ease-out; }
+
+/* Game timer ring color transition */
+#gameRingPath { transition: stroke .3s; }
+
+/* Mobile tab scrollbar hide */
+#tabRow { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+#tabRow::-webkit-scrollbar { display: none; }
+
+/* Custom scrollbar for boxes */
+.scroll-box { overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(168,85,247,.3) transparent; }
+.scroll-box::-webkit-scrollbar { width: 4px; }
+.scroll-box::-webkit-scrollbar-thumb { background: rgba(168,85,247,.3); border-radius: 99px; }
+
+/* Neon text */
+.nt  { color: var(--neon); text-shadow: 0 0 16px rgba(0,255,136,.4); }
+.nt2 { color: var(--neon2); }
+.nt3 { color: var(--neon3); }
+
+/* Glow button */
+.btn-glow:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.btn-glow { transition: filter .15s, transform .15s; }
+
+/* Card hover */
+.hov { transition: transform .15s, box-shadow .15s; }
+.hov:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,255,136,.12); }
+
+/* Score pop */
+@keyframes scorePop { 0%{transform:scale(.5);opacity:0} 60%{transform:scale(1.3)} 100%{transform:scale(1);opacity:1} }
+.score-pop { animation: scorePop .35s ease-out; }
+
+/* Live detection badge */
+.live-badge {
+  position: absolute; bottom: 10px; left: 10px;
+  background: rgba(3,7,15,.75); backdrop-filter: blur(8px);
+  border-radius: 12px; padding: 6px 12px;
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+/* Level bar */
+.lvl-bar { height: 6px; border-radius: 99px; transition: background .3s; }
 </style>
 </head>
-<body class="bg-slate-950 text-white overflow-x-hidden">
+<body>
 
-<div id="toastContainer"></div>
+<!-- ══ TOAST CONTAINER ══ -->
+<div id="toasts"></div>
 
-<!-- NAV -->
-<nav class="fixed top-0 w-full z-40 glass-dark border-b border-purple-500/20">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
-    <div class="flex items-center gap-2">
-      <div class="w-9 h-9 bg-gradient-to-br from-purple-500 to-violet-700 rounded-lg flex items-center justify-center text-base">🤟</div>
-      <span class="font-bold text-base hidden sm:inline">GestureFlow</span>
+<!-- ══ NAVBAR ══ -->
+<nav class="fixed top-0 w-full z-50 border-b" style="border-color:rgba(168,85,247,.18)">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between relative z-10">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">🤟</div>
+      <span class="font-bold text-sm nt hidden sm:inline">GestureFlow</span>
+      <span class="text-xs px-1.5 py-0.5 rounded font-mono" style="background:rgba(0,255,136,.1);color:var(--neon);border:1px solid rgba(0,255,136,.2)">v3.0</span>
     </div>
-    <div class="flex items-center gap-4">
-      <button id="darkModeToggle" class="text-gray-400 hover:text-white transition">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <div class="flex items-center gap-2">
+      <button id="btnSound" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold btn-glow" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);color:var(--neon)">
+        <span id="soundIcon">🔊</span><span id="soundLbl">Suara ON</span>
       </button>
-      <a href="./landing.html" class="text-gray-400 hover:text-white text-sm transition">Kembali</a>
+      <a href="./landing.html" class="text-xs text-gray-600 hover:text-gray-400 transition px-2 py-1.5 rounded-lg hover:bg-white/5">← Beranda</a>
     </div>
   </div>
 </nav>
 
-<!-- MAIN -->
-<div class="pt-20 pb-8 px-4 min-h-screen">
-<div class="max-w-7xl mx-auto">
-
-  <!-- MODE BUTTONS -->
-  <div class="mb-6 flex flex-wrap gap-3 justify-center">
-    <button class="mode-btn active px-5 py-2 rounded-lg border-2 border-gray-600 font-semibold text-sm transition" data-mode="gesture">🎯 Gesture Mode</button>
-    <button class="mode-btn px-5 py-2 rounded-lg border-2 border-gray-600 font-semibold text-sm transition" data-mode="learn">📚 Learn Mode</button>
-    <button class="mode-btn px-5 py-2 rounded-lg border-2 border-gray-600 font-semibold text-sm transition" data-mode="alphabet">🔤 A–Z Training</button>
-    <button class="mode-btn px-5 py-2 rounded-lg border-2 border-gray-600 font-semibold text-sm transition" data-mode="dashboard">📊 Dashboard</button>
+<!-- ══ TAB BAR ══ -->
+<div class="fixed top-[52px] w-full z-40 border-b" style="background:rgba(3,7,15,.95);backdrop-filter:blur(20px);border-color:rgba(168,85,247,.15)">
+  <div id="tabRow" class="flex max-w-7xl mx-auto px-3">
+    <button class="tab active" data-tab="gesture">🎯 Gesture</button>
+    <button class="tab" data-tab="alphabet">🔤 A–Z</button>
+    <button class="tab" data-tab="numeric">🔢 0–9</button>
+    <button class="tab" data-tab="game">🎮 Game</button>
+    <button class="tab" data-tab="learn">📚 Belajar</button>
+    <button class="tab" data-tab="dashboard">📊 Dashboard</button>
   </div>
+</div>
 
-  <!-- ════════════ GESTURE MODE ════════════ -->
-  <div id="gestureMode" class="space-y-5">
-    <div class="grid md:grid-cols-3 gap-5">
+<!-- ══ MAIN ══ -->
+<main class="max-w-7xl mx-auto px-4 pt-28 pb-10 relative z-10">
 
-      <!-- Camera -->
-      <div class="md:col-span-2 glass-dark rounded-2xl p-4 border border-purple-500/25">
-        <div class="space-y-3">
-          <!-- Feed -->
-          <div id="cameraContainer" class="aspect-video bg-slate-900 rounded-xl overflow-hidden relative transition-all duration-300">
-            <video id="videoElement" autoplay muted playsinline></video>
-            <canvas id="canvasElement" class="w-full h-full"></canvas>
-            <!-- placeholder -->
-            <div id="cameraPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-500">
-              <svg class="w-14 h-14 opacity-25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-              </svg>
-              <p class="text-sm">Klik "Start Camera" untuk memulai</p>
-            </div>
-            <!-- loading -->
-            <div id="loadingIndicator" class="absolute inset-0 flex items-center justify-center bg-black/60 hidden">
-              <div class="text-center">
-                <div class="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                <p class="text-gray-300 text-sm">Memulai kamera...</p>
-              </div>
-            </div>
-            <!-- hand badge -->
-            <div id="handBadge" class="absolute top-3 left-3 hidden bg-green-500/90 text-white text-xs font-bold px-2.5 py-1 rounded-full">✋ Tangan Terdeteksi</div>
-            <!-- gesture overlay on video -->
-            <div id="gestureOverlay" class="absolute bottom-3 left-3 hidden bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-2">
-              <span id="overlayEmoji" class="text-2xl"></span>
-              <span id="overlayName" class="text-sm font-semibold text-white"></span>
-            </div>
-          </div>
+<!-- ════════════════════════════════════════
+     TAB: GESTURE MODE
+════════════════════════════════════════ -->
+<section id="tab-gesture" class="space-y-4 fade-up">
+  <div class="grid md:grid-cols-3 gap-4">
 
-          <!-- Stability bar -->
-          <div>
-            <div class="flex justify-between text-xs text-gray-400 mb-1">
-              <span>Gesture Stability</span>
-              <span id="stabilizeLabel">–</span>
-            </div>
-            <div class="bg-gray-700/60 rounded-full h-1.5">
-              <div id="stabilizeBar" class="bg-gradient-to-r from-purple-500 to-emerald-400 h-full rounded-full" style="width:0%"></div>
-            </div>
-          </div>
-
-          <!-- Controls -->
-          <div class="flex gap-2">
-            <button id="startCameraBtn" class="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 px-3 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">▶ Start Camera</button>
-            <button id="stopCameraBtn" class="flex-1 bg-gradient-to-r from-red-600 to-rose-600 px-3 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>⏹ Stop Camera</button>
-            <button id="screenshotBtn" class="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>📸 Screenshot</button>
-          </div>
+    <!-- Camera Feed -->
+    <div class="md:col-span-2 glass p-4">
+      <div id="camWrap" class="aspect-video bg-black rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
+        <video id="vidMain" autoplay muted playsinline></video>
+        <canvas id="cvsMain"></canvas>
+        <!-- Placeholder -->
+        <div id="camPH" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+          <div class="text-5xl opacity-20">📷</div>
+          <p class="text-sm text-gray-600">Klik <strong class="text-gray-500">▶ Start</strong> untuk memulai</p>
+        </div>
+        <!-- Loader -->
+        <div id="camLoad" class="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-black/70">
+          <div class="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full spin"></div>
+          <p class="text-xs text-gray-400">Memuat model AI...</p>
+        </div>
+        <!-- Hand badge -->
+        <div id="handBadge" class="absolute top-3 left-3 hidden text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(0,255,136,.85);color:#03070f">✋ Terdeteksi</div>
+        <!-- Gesture overlay on video -->
+        <div id="gOv" class="absolute bottom-3 right-3 hidden bg-black/70 backdrop-blur rounded-xl px-3 py-2 flex items-center gap-2">
+          <span id="gOvEmoji" class="text-2xl"></span>
+          <span id="gOvName" class="text-sm font-semibold text-white"></span>
+        </div>
+        <!-- FPS badge -->
+        <div id="fpsBadge" class="absolute top-3 right-3 hidden text-xs font-mono px-2 py-1 rounded-lg" style="background:rgba(0,0,0,.7);color:var(--neon3)">
+          <span id="fpsVal">–</span> FPS
         </div>
       </div>
 
-      <!-- Info Panel -->
-      <div class="glass-dark rounded-2xl p-5 border border-purple-500/25 space-y-5">
-        <!-- Current -->
-        <div>
-          <p class="text-gray-400 text-xs mb-2 uppercase tracking-wider">Current Gesture</p>
-          <div id="gestureDisplay" class="text-6xl text-center mb-1">–</div>
-          <p id="gestureNameDisplay" class="text-center text-gray-200 font-semibold">Menunggu...</p>
-          <div class="mt-3 bg-gray-700/50 rounded-full h-1.5">
-            <div id="confidenceBarFill" class="bg-gradient-to-r from-purple-500 to-violet-300 h-full rounded-full transition-all duration-200" style="width:0%"></div>
-          </div>
-          <p id="confidenceText" class="text-center text-gray-500 text-xs mt-1.5">Confidence: 0%</p>
+      <!-- Stability -->
+      <div class="mt-3">
+        <div class="flex justify-between text-xs text-gray-600 mb-1">
+          <span>Gesture Stability</span>
+          <span id="stabLbl" class="font-mono text-gray-500">–</span>
         </div>
-        <!-- Stats -->
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between"><span class="text-gray-400">Total Detections</span><span id="totalDetectionsDisplay" class="font-bold">0</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">Session Time</span><span id="sessionTimeDisplay" class="font-bold">0s</span></div>
-          <div class="flex justify-between"><span class="text-gray-400">FPS</span><span id="fpsDisplay" class="font-bold text-green-400">–</span></div>
+        <div class="h-1.5 rounded-full bg-gray-900 overflow-hidden">
+          <div id="stabBar" class="stab-bar h-full rounded-full" style="width:0%;background:linear-gradient(90deg,var(--neon2),var(--neon))"></div>
         </div>
-        <!-- Sentence Builder -->
-        <div class="pt-4 border-t border-gray-700/60">
-          <div class="flex justify-between items-center mb-1.5">
-            <p class="text-gray-400 text-xs uppercase tracking-wider">Sentence Builder</p>
-            <span class="text-xs text-gray-600">tahan 1.5 detik</span>
-          </div>
-          <div id="sentenceBuilder" class="bg-gray-900/70 rounded-lg p-3 text-gray-300 text-sm mb-2">(gesture akan muncul di sini)</div>
-          <div class="flex gap-2">
-            <button id="clearSentenceBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition">🗑 Clear</button>
-            <button id="copySentenceBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition">📋 Salin</button>
-            <button id="speakSentenceBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition">🔊 Baca</button>
-          </div>
-        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex gap-2 mt-3">
+        <button id="btnStart" onclick="startMain()" class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">▶ Start Camera</button>
+        <button id="btnStop" onclick="stopMain()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#be123c,#dc2626)">⏹ Stop</button>
+        <button id="btnSS" onclick="doScreenshot()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#0369a1,#0ea5e9)">📸</button>
       </div>
     </div>
 
-    <!-- Gesture Guide -->
-    <div class="glass-dark rounded-2xl p-5 border border-purple-500/20">
-      <h3 class="text-lg font-bold mb-4">📖 Gesture Guide</h3>
-      <div id="gestureGuide" class="grid grid-cols-3 md:grid-cols-6 gap-3"></div>
+    <!-- Info Panel -->
+    <div class="glass p-5 flex flex-col gap-4">
+      <!-- Current Gesture -->
+      <div>
+        <p class="text-xs text-gray-600 uppercase tracking-widest mb-2">Gesture Terbaca</p>
+        <div id="gDisplay" class="text-7xl text-center leading-none mb-2" style="min-height:84px; display:flex; align-items:center; justify-content:center">–</div>
+        <p id="gName" class="text-center font-semibold text-gray-300 text-sm">Menunggu tangan...</p>
+        <div class="mt-2 h-1.5 rounded-full bg-gray-900 overflow-hidden">
+          <div id="confBar" class="h-full rounded-full transition-all duration-200" style="width:0%;background:linear-gradient(90deg,var(--neon2),#e879f9)"></div>
+        </div>
+        <p id="confTxt" class="text-center text-gray-700 text-xs mt-1.5 font-mono">Confidence: –</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="space-y-1.5 text-sm border-t border-gray-800/60 pt-4">
+        <div class="flex justify-between"><span class="text-gray-600">Total Deteksi</span><span id="totalDet" class="font-mono font-bold">0</span></div>
+        <div class="flex justify-between"><span class="text-gray-600">Durasi Sesi</span><span id="sessTime" class="font-mono font-bold">0s</span></div>
+        <div class="flex justify-between"><span class="text-gray-600">FPS Rata-rata</span><span id="fpsTxt" class="font-mono font-bold nt">–</span></div>
+      </div>
+
+      <!-- Sentence Builder -->
+      <div class="border-t border-gray-800/60 pt-4 flex flex-col gap-2">
+        <div class="flex justify-between items-center">
+          <p class="text-xs text-gray-600 uppercase tracking-widest">Kalimat Builder</p>
+          <span class="text-xs text-gray-700">tahan 1.5 detik</span>
+        </div>
+        <div id="sentBox" class="scroll-box bg-gray-950 rounded-xl p-3 text-gray-500 text-sm min-h-[44px] max-h-[72px] leading-relaxed">(gesture akan muncul di sini)</div>
+        <div class="flex gap-1.5">
+          <button onclick="clearSent()" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-gray-900 hover:bg-gray-800 transition border border-gray-800">🗑 Hapus</button>
+          <button onclick="copySent()" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-gray-900 hover:bg-gray-800 transition border border-gray-800">📋 Salin</button>
+          <button onclick="speakSent()" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-gray-900 hover:bg-gray-800 transition border border-gray-800">🔊 Baca</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- ════════════ LEARN MODE ════════════ -->
-  <div id="learnMode" class="hidden space-y-5">
-    <div class="glass-dark rounded-2xl p-5 border border-purple-500/25">
-      <h2 class="text-2xl font-bold mb-1">📚 Learn Mode</h2>
-      <p class="text-gray-400 text-sm mb-5">Pelajari cara melakukan setiap gesture dasar</p>
-      <div id="learnCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-    </div>
+  <!-- Gesture Reference Grid -->
+  <div class="glass p-5">
+    <h3 class="font-bold text-sm mb-4 text-gray-300">📖 Referensi Gesture</h3>
+    <div id="gestRef" class="grid grid-cols-3 sm:grid-cols-6 gap-3"></div>
   </div>
+</section>
 
-  <!-- ════════════ A–Z TRAINING ════════════ -->
-  <div id="alphabetMode" class="hidden space-y-5">
-    <div class="grid md:grid-cols-3 gap-5">
-
-      <!-- Camera feed (reused canvas) -->
-      <div class="md:col-span-2 glass-dark rounded-2xl p-4 border border-purple-500/25 space-y-3">
-        <div class="flex items-center justify-between mb-1">
-          <h2 class="text-lg font-bold">🔤 A–Z Training</h2>
-          <div class="flex items-center gap-2 text-sm">
-            <span class="text-gray-400">Mode:</span>
-            <button id="azModeBtn" class="px-3 py-1 rounded-full bg-purple-700/50 border border-purple-500 text-xs font-semibold hover:bg-purple-600/60 transition" onclick="toggleAZMode()">Belajar</button>
+<!-- ════════════════════════════════════════
+     TAB: A–Z TRAINING
+════════════════════════════════════════ -->
+<section id="tab-alphabet" class="hidden space-y-4 fade-up">
+  <div class="grid md:grid-cols-3 gap-4">
+    <!-- Camera -->
+    <div class="md:col-span-2 glass p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold">🔤 A–Z Training</h2>
+        <button onclick="toggleAZMode()" id="azModeBtn" class="px-3 py-1 rounded-full text-xs font-semibold border transition btn-glow" style="border-color:var(--neon2);color:var(--neon2)">Mode: Belajar</button>
+      </div>
+      <div id="azCamWrap" class="aspect-video bg-black rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
+        <video id="vidAZ" autoplay muted playsinline></video>
+        <canvas id="cvsAZ"></canvas>
+        <div id="azPH" class="absolute inset-0 flex flex-col items-center justify-center gap-2">
+          <div class="text-5xl opacity-20">📷</div>
+          <p class="text-sm text-gray-600">Klik Start untuk latihan</p>
+        </div>
+        <!-- Target letter overlay -->
+        <div id="azTargOv" class="absolute top-3 right-3 hidden bg-black/80 backdrop-blur-sm rounded-2xl px-4 py-2 text-center">
+          <p class="text-xs text-gray-500 mb-0.5">Tunjukkan</p>
+          <p id="azTargLet" class="text-5xl font-black leading-none font-mono nt2">A</p>
+        </div>
+        <!-- Result flash -->
+        <div id="azResOv" class="absolute inset-0 hidden items-center justify-center bg-black/50">
+          <div class="pop-in text-center bg-black/80 backdrop-blur rounded-2xl px-10 py-7 border" style="border-color:rgba(255,255,255,.1)">
+            <div id="azResEmoji" class="text-6xl mb-2">✅</div>
+            <p id="azResTxt" class="text-2xl font-black">A Benar!</p>
           </div>
         </div>
+        <div id="azHandBadge" class="absolute top-3 left-3 hidden text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(0,255,136,.85);color:#03070f">✋</div>
+        <div class="live-badge">
+          <span class="text-xs text-gray-600">Terbaca:</span>
+          <span id="azLive" class="text-2xl font-black font-mono nt3">–</span>
+        </div>
+      </div>
+      <!-- Stability -->
+      <div>
+        <div class="flex justify-between text-xs text-gray-600 mb-1"><span>Hold Stability</span><span id="azStabLbl" class="font-mono text-gray-500">–</span></div>
+        <div class="h-2 rounded-full bg-gray-900 overflow-hidden">
+          <div id="azStabBar" class="stab-bar h-full rounded-full" style="width:0%;background:linear-gradient(90deg,var(--neon2),var(--neon))"></div>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="azBtnStart" onclick="startAZ()" class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">▶ Start</button>
+        <button id="azBtnStop" onclick="stopAZ()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#be123c,#dc2626)">⏹ Stop</button>
+        <button id="azBtnSkip" onclick="skipAZ()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40 bg-gray-800 hover:bg-gray-700 transition">⏭ Skip</button>
+      </div>
+    </div>
 
-        <div id="azCameraContainer" class="aspect-video bg-slate-900 rounded-xl overflow-hidden relative transition-all duration-300">
-          <video id="azVideoElement" autoplay muted playsinline style="display:none;"></video>
-          <canvas id="azCanvasElement" class="w-full h-full"></canvas>
-          <div id="azPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-500">
-            <svg class="w-14 h-14 opacity-25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+    <!-- AZ Score Panel -->
+    <div class="glass p-5 space-y-4">
+      <div>
+        <p class="text-xs text-gray-600 uppercase tracking-widest mb-3">Progress Sesi</p>
+        <div class="flex items-center gap-3">
+          <div class="relative w-16 h-16 flex-shrink-0">
+            <svg class="w-16 h-16 p-ring" viewBox="0 0 64 64">
+              <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/>
+              <circle id="azPRing" cx="32" cy="32" r="26" fill="none" stroke="var(--neon2)" stroke-width="5" stroke-dasharray="163.4" stroke-dashoffset="163.4" class="p-ring-c"/>
             </svg>
-            <p class="text-sm">Klik Start untuk mulai latihan</p>
+            <div class="absolute inset-0 flex items-center justify-center"><span id="azPct" class="text-xs font-bold font-mono">0%</span></div>
           </div>
-          <!-- target letter overlay -->
-          <div id="azTargetOverlay" class="absolute top-3 right-3 hidden bg-black/70 backdrop-blur rounded-xl px-4 py-2 text-center">
-            <p class="text-xs text-gray-400">Target</p>
-            <p id="azTargetLetter" class="text-5xl font-black text-white leading-none">A</p>
-          </div>
-          <!-- result badge -->
-          <div id="azResultBadge" class="absolute inset-0 hidden items-center justify-center">
-            <div id="azResultInner" class="text-center bg-black/70 backdrop-blur rounded-2xl px-8 py-6">
-              <p id="azResultEmoji" class="text-6xl mb-2"></p>
-              <p id="azResultText" class="text-2xl font-black"></p>
-            </div>
-          </div>
-          <!-- hand badge -->
-          <div id="azHandBadge" class="absolute top-3 left-3 hidden bg-green-500/90 text-white text-xs font-bold px-2.5 py-1 rounded-full">✋ Tangan Terdeteksi</div>
-          <!-- live detected letter debug -->
-          <div class="absolute bottom-3 left-3 bg-black/65 backdrop-blur rounded-xl px-3 py-1.5 flex items-center gap-2">
-            <span class="text-xs text-gray-400">Terbaca:</span>
-            <span id="azDetectedLive" class="text-2xl font-black text-cyan-300">–</span>
-          </div>
-        </div>
-
-        <!-- AZ stability bar -->
-        <div>
-          <div class="flex justify-between text-xs text-gray-400 mb-1">
-            <span>Holding Stability</span><span id="azStabilizeLabel">–</span>
-          </div>
-          <div class="bg-gray-700/60 rounded-full h-2">
-            <div id="azStabilizeBar" class="bg-gradient-to-r from-purple-500 to-emerald-400 h-full rounded-full transition-none" style="width:0%;transition:width .08s linear;"></div>
-          </div>
-        </div>
-
-        <div class="flex gap-2">
-          <button id="azStartBtn" class="flex-1 bg-gradient-to-r from-purple-600 to-violet-600 px-3 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition">▶ Start</button>
-          <button id="azStopBtn" class="flex-1 bg-gradient-to-r from-red-600 to-rose-600 px-3 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>⏹ Stop</button>
-          <button id="azSkipBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg font-semibold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>⏭ Skip</button>
-        </div>
-      </div>
-
-      <!-- A-Z Panel -->
-      <div class="glass-dark rounded-2xl p-5 border border-purple-500/25 space-y-4">
-        <!-- Progress -->
-        <div>
-          <p class="text-gray-400 text-xs uppercase tracking-wider mb-2">Progress Sesi</p>
-          <div class="flex items-center gap-3">
-            <div class="relative w-16 h-16 flex-shrink-0">
-              <svg class="w-16 h-16 progress-ring" viewBox="0 0 64 64">
-                <circle cx="32" cy="32" r="26" fill="none" stroke="#1e293b" stroke-width="6"/>
-                <circle id="azProgressCircle" cx="32" cy="32" r="26" fill="none" stroke="#a855f7" stroke-width="6"
-                  stroke-dasharray="163.4" stroke-dashoffset="163.4" class="progress-ring-circle"/>
-              </svg>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <span id="azProgressPct" class="text-xs font-bold">0%</span>
-              </div>
-            </div>
-            <div>
-              <p class="text-2xl font-black" id="azCorrectCount">0</p>
-              <p class="text-xs text-gray-400">Benar dari <span id="azTotalAttempts">0</span> percobaan</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Current target info -->
-        <div class="bg-gray-900/60 rounded-xl p-4 text-center">
-          <p class="text-xs text-gray-400 mb-1">Huruf Sekarang</p>
-          <div id="azCurrentLetterBig" class="text-6xl font-black text-purple-400 mb-1">–</div>
-          <p id="azCurrentLetterName" class="text-sm text-gray-300">–</p>
-          <p id="azCurrentLetterHint" class="text-xs text-gray-500 mt-1">–</p>
-        </div>
-
-        <!-- Letters grid progress -->
-        <div>
-          <p class="text-xs text-gray-400 mb-2">A–Z Progress</p>
-          <div id="azLetterGrid" class="grid grid-cols-7 gap-1"></div>
-        </div>
-
-        <!-- Score -->
-        <div class="grid grid-cols-2 gap-2 text-center text-sm">
-          <div class="bg-gray-800/60 rounded-lg p-2">
-            <p class="text-gray-500 text-xs">Streak</p>
-            <p id="azStreak" class="font-black text-yellow-400 text-lg">0🔥</p>
-          </div>
-          <div class="bg-gray-800/60 rounded-lg p-2">
-            <p class="text-gray-500 text-xs">Best Streak</p>
-            <p id="azBestStreak" class="font-black text-orange-400 text-lg">0⭐</p>
+          <div>
+            <p class="text-2xl font-black" id="azCorrNum">0</p>
+            <p class="text-xs text-gray-600">Benar dari <span id="azTotNum" class="font-mono">0</span></p>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- A-Z Reference Grid -->
-    <div class="glass-dark rounded-2xl p-5 border border-purple-500/20">
-      <h3 class="text-base font-bold mb-4">📖 Referensi Alphabet ASL (A–Z)</h3>
-      <div id="azReferenceGrid" class="grid grid-cols-4 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-13 gap-2"></div>
+      <!-- Current letter info -->
+      <div class="bg-black/40 rounded-xl p-4 text-center border border-gray-800/50">
+        <p class="text-xs text-gray-600 mb-1">Huruf Sekarang</p>
+        <div id="azCurLet" class="text-6xl font-black font-mono nt2 mb-1">–</div>
+        <p id="azCurDesc" class="text-xs text-gray-400 leading-snug">–</p>
+        <p id="azCurHint" class="text-xs text-gray-700 mt-1">–</p>
+      </div>
+      <!-- Letter progress grid -->
+      <div>
+        <p class="text-xs text-gray-600 mb-2">A–Z Progress</p>
+        <div id="azGrid" class="grid grid-cols-7 gap-1"></div>
+      </div>
+      <!-- Streak info -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
+          <p class="text-gray-700 text-xs">Streak</p>
+          <p id="azStreak" class="font-black text-yellow-400 text-xl font-mono">0</p>
+        </div>
+        <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
+          <p class="text-gray-700 text-xs">Best</p>
+          <p id="azBest" class="font-black text-orange-400 text-xl font-mono">0</p>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- ════════════ DASHBOARD ════════════ -->
-  <div id="dashboardMode" class="hidden space-y-5">
-    <div class="glass-dark rounded-2xl p-5 border border-purple-500/25">
-      <h2 class="text-2xl font-bold mb-5">📊 Dashboard</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div class="bg-gray-800/60 rounded-xl p-4 border border-gray-700/50">
-          <p class="text-gray-400 text-xs mb-1">Total Detections</p>
-          <p id="dashTotalDetections" class="text-3xl font-black text-purple-400">0</p>
+  <!-- AZ Reference -->
+  <div class="glass p-5">
+    <h3 class="font-bold text-sm mb-4 text-gray-300">📖 Referensi ASL A–Z</h3>
+    <div id="azRef" class="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-13 gap-2"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     TAB: NUMERIC 0–9
+════════════════════════════════════════ -->
+<section id="tab-numeric" class="hidden space-y-4 fade-up">
+  <div class="grid md:grid-cols-3 gap-4">
+    <!-- Camera -->
+    <div class="md:col-span-2 glass glass-cyan p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold">🔢 Pengenalan Angka 0–9</h2>
+        <span class="text-xs px-2 py-0.5 rounded-full font-bold font-mono" style="background:rgba(34,211,238,.12);color:var(--neon3);border:1px solid rgba(34,211,238,.3)">NEW ✨</span>
+      </div>
+      <div id="numCamWrap" class="aspect-video bg-black rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
+        <video id="vidNum" autoplay muted playsinline></video>
+        <canvas id="cvsNum"></canvas>
+        <div id="numPH" class="absolute inset-0 flex flex-col items-center justify-center gap-2">
+          <div class="text-5xl opacity-20">📷</div>
+          <p class="text-sm text-gray-600">Klik Start untuk latihan angka</p>
         </div>
-        <div class="bg-gray-800/60 rounded-xl p-4 border border-gray-700/50">
-          <p class="text-gray-400 text-xs mb-1">Gestures Saved</p>
-          <p id="dashGesturesSaved" class="text-3xl font-black text-blue-400">0</p>
+        <div id="numTargOv" class="absolute top-3 right-3 hidden bg-black/80 backdrop-blur-sm rounded-2xl px-4 py-2 text-center">
+          <p class="text-xs text-gray-500 mb-0.5">Tunjukkan</p>
+          <p id="numTargNum" class="text-5xl font-black leading-none font-mono nt3">0</p>
         </div>
-        <div class="bg-gray-800/60 rounded-xl p-4 border border-gray-700/50">
-          <p class="text-gray-400 text-xs mb-1">A–Z Benar</p>
-          <p id="dashAZCorrect" class="text-3xl font-black text-green-400">0</p>
+        <div id="numResOv" class="absolute inset-0 hidden items-center justify-center bg-black/50">
+          <div class="pop-in text-center bg-black/80 backdrop-blur rounded-2xl px-10 py-7 border border-gray-800">
+            <div id="numResEmoji" class="text-6xl mb-2">✅</div>
+            <p id="numResTxt" class="text-2xl font-black">0 Benar!</p>
+          </div>
         </div>
-        <div class="bg-gray-800/60 rounded-xl p-4 border border-gray-700/50">
-          <p class="text-gray-400 text-xs mb-1">Best Streak</p>
-          <p id="dashBestStreak" class="text-3xl font-black text-yellow-400">0</p>
+        <div id="numHandBadge" class="absolute top-3 left-3 hidden text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(34,211,238,.9);color:#03070f">✋</div>
+        <div class="live-badge">
+          <span class="text-xs text-gray-600">Terbaca:</span>
+          <span id="numLive" class="text-2xl font-black font-mono nt3">–</span>
         </div>
       </div>
-      <h3 class="text-sm font-semibold text-gray-300 mb-3">Gesture Breakdown</h3>
-      <div id="gestureBreakdown" class="space-y-2"></div>
+      <div>
+        <div class="flex justify-between text-xs text-gray-600 mb-1"><span>Hold Stability</span><span id="numStabLbl" class="font-mono text-gray-500">–</span></div>
+        <div class="h-2 rounded-full bg-gray-900 overflow-hidden">
+          <div id="numStabBar" class="stab-bar h-full rounded-full" style="width:0%;background:linear-gradient(90deg,var(--neon3),var(--neon))"></div>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="numBtnStart" onclick="startNum()" class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm" style="background:linear-gradient(135deg,#0e7490,#06b6d4)">▶ Start</button>
+        <button id="numBtnStop" onclick="stopNum()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#be123c,#dc2626)">⏹ Stop</button>
+        <button id="numBtnSkip" onclick="skipNum()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40 bg-gray-800 hover:bg-gray-700 transition">⏭ Skip</button>
+      </div>
+    </div>
+
+    <!-- Num Score Panel -->
+    <div class="glass glass-cyan p-5 space-y-4">
+      <div>
+        <p class="text-xs text-gray-600 uppercase tracking-widest mb-3">Progress</p>
+        <div class="flex items-center gap-3">
+          <div class="relative w-16 h-16 flex-shrink-0">
+            <svg class="w-16 h-16 p-ring" viewBox="0 0 64 64">
+              <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/>
+              <circle id="numPRing" cx="32" cy="32" r="26" fill="none" stroke="var(--neon3)" stroke-width="5" stroke-dasharray="163.4" stroke-dashoffset="163.4" class="p-ring-c"/>
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center"><span id="numPct" class="text-xs font-bold font-mono">0%</span></div>
+          </div>
+          <div>
+            <p class="text-2xl font-black" id="numCorrNum">0</p>
+            <p class="text-xs text-gray-600">Benar dari <span id="numTotNum" class="font-mono">0</span></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-black/40 rounded-xl p-4 text-center border border-gray-800/50">
+        <p class="text-xs text-gray-600 mb-1">Angka Sekarang</p>
+        <div id="numCurNum" class="text-6xl font-black font-mono nt3 mb-1">–</div>
+        <p id="numCurHint" class="text-xs text-gray-500 leading-snug mt-1">–</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-600 mb-2">0–9 Progress</p>
+        <div id="numGrid" class="grid grid-cols-5 gap-2"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
+          <p class="text-gray-700 text-xs">Streak</p>
+          <p id="numStreak" class="font-black text-yellow-400 text-xl font-mono">0</p>
+        </div>
+        <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
+          <p class="text-gray-700 text-xs">Best</p>
+          <p id="numBest" class="font-black text-orange-400 text-xl font-mono">0</p>
+        </div>
+      </div>
     </div>
   </div>
 
-</div>
-</div>
+  <!-- Number Reference -->
+  <div class="glass glass-cyan p-5">
+    <h3 class="font-bold text-sm mb-4 text-gray-300">📖 Referensi ASL 0–9</h3>
+    <div id="numRef" class="grid grid-cols-5 sm:grid-cols-10 gap-3"></div>
+  </div>
+</section>
 
+<!-- ════════════════════════════════════════
+     TAB: GAME & KUIS
+════════════════════════════════════════ -->
+<section id="tab-game" class="hidden space-y-4 fade-up">
+  <div class="grid md:grid-cols-3 gap-4">
+    <!-- Camera -->
+    <div class="md:col-span-2 glass glass-green p-4 space-y-3">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h2 class="font-bold">🎮 Game & Kuis Interaktif</h2>
+        <div class="flex gap-1.5">
+          <button id="gameModeAZ" onclick="setGameMode('az')" class="px-3 py-1 rounded-full text-xs font-semibold border transition btn-glow" style="background:rgba(0,255,136,.1);color:var(--neon);border-color:var(--neon)">🔤 A–Z</button>
+          <button id="gameModeNum" onclick="setGameMode('num')" class="px-3 py-1 rounded-full text-xs font-semibold border transition btn-glow" style="color:#6b7280;border-color:rgba(255,255,255,.1)">🔢 0–9</button>
+          <button id="gameModeGest" onclick="setGameMode('gest')" class="px-3 py-1 rounded-full text-xs font-semibold border transition btn-glow" style="color:#6b7280;border-color:rgba(255,255,255,.1)">🖐 Gesture</button>
+        </div>
+      </div>
+
+      <div id="gameCamWrap" class="aspect-video bg-black rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
+        <video id="vidGame" autoplay muted playsinline></video>
+        <canvas id="cvsGame"></canvas>
+
+        <!-- Pre-game screen -->
+        <div id="gamePH" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+          <div class="text-7xl">🎮</div>
+          <p class="text-lg font-bold text-white">Siap Bermain?</p>
+          <p class="text-sm text-gray-500 text-center px-6">Tunjukkan gesture yang diminta secepatnya untuk mendapat poin!</p>
+        </div>
+
+        <!-- In-game target -->
+        <div id="gameTargOv" class="absolute top-3 right-3 hidden">
+          <div class="bg-black/85 backdrop-blur-sm rounded-2xl p-3 text-center border border-gray-700/50">
+            <p class="text-xs text-gray-500 mb-1">Tunjukkan</p>
+            <p id="gameTargTxt" class="text-5xl font-black font-mono leading-none text-white">A</p>
+          </div>
+        </div>
+
+        <!-- Timer ring -->
+        <div id="gameTimerOv" class="absolute top-3 left-3 hidden">
+          <div class="relative w-14 h-14">
+            <svg class="w-14 h-14 p-ring" viewBox="0 0 56 56">
+              <circle cx="28" cy="28" r="22" fill="rgba(0,0,0,.75)" stroke="rgba(255,255,255,.07)" stroke-width="4.5"/>
+              <circle id="gameRingPath" cx="28" cy="28" r="22" fill="none" stroke="var(--neon)" stroke-width="4.5"
+                stroke-dasharray="138.2" stroke-dashoffset="0" class="p-ring-c"/>
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span id="gameTimerTxt" class="text-sm font-black font-mono text-white">10</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result flash -->
+        <div id="gameFlash" class="absolute inset-0 hidden items-center justify-center pointer-events-none">
+          <div id="gameFlashInner" class="text-8xl"></div>
+        </div>
+
+        <div id="gameHandBadge" class="absolute top-3 left-20 hidden text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(0,255,136,.85);color:#03070f">✋</div>
+        <div class="live-badge">
+          <span class="text-xs text-gray-600">Terbaca:</span>
+          <span id="gameLive" class="text-2xl font-black font-mono nt">–</span>
+        </div>
+      </div>
+
+      <!-- Game stab -->
+      <div>
+        <div class="flex justify-between text-xs text-gray-600 mb-1"><span>Hold Stability</span><span id="gameStabLbl" class="font-mono text-gray-500">–</span></div>
+        <div class="h-2 rounded-full bg-gray-900 overflow-hidden">
+          <div id="gameStabBar" class="stab-bar h-full rounded-full" style="width:0%;background:linear-gradient(90deg,var(--neon),var(--neon2))"></div>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="gameBtnStart" onclick="startGame()" class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm" style="background:linear-gradient(135deg,#065f46,#059669)">🎮 Mulai Game</button>
+        <button id="gameBtnStop" onclick="stopGame()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#be123c,#dc2626)">⏹ Stop</button>
+        <button id="gameBtnSkip" onclick="skipGame()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40 bg-gray-800 hover:bg-gray-700 transition">⏭ Skip</button>
+      </div>
+    </div>
+
+    <!-- Score Panel -->
+    <div class="glass glass-green p-5 space-y-4">
+      <!-- Big Score -->
+      <div>
+        <p class="text-xs text-gray-600 uppercase tracking-widest mb-2">Skor</p>
+        <div class="bg-black/50 rounded-2xl py-4 text-center border border-gray-800/40">
+          <p id="gameScore" class="text-6xl font-black font-mono nt">0</p>
+          <p class="text-xs text-gray-700 mt-1">poin</p>
+        </div>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="grid grid-cols-2 gap-2">
+        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-gray-800/40">
+          <p class="text-gray-700 text-xs">Benar</p>
+          <p id="gameCorrect" class="font-black text-green-400 text-xl font-mono">0</p>
+        </div>
+        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-gray-800/40">
+          <p class="text-gray-700 text-xs">Salah</p>
+          <p id="gameWrong" class="font-black text-red-400 text-xl font-mono">0</p>
+        </div>
+        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-gray-800/40">
+          <p class="text-gray-700 text-xs">Streak</p>
+          <p id="gameStreak" class="font-black text-yellow-400 text-xl font-mono">0</p>
+        </div>
+        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-gray-800/40">
+          <p class="text-gray-700 text-xs">Waktu</p>
+          <p id="gameElapsed" class="font-black text-blue-400 text-xl font-mono">0s</p>
+        </div>
+      </div>
+
+      <!-- Current target hint -->
+      <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
+        <p class="text-xs text-gray-600 mb-1">Target</p>
+        <div id="gameCurTgt" class="text-4xl font-black font-mono nt mb-1">–</div>
+        <p id="gameCurHint" class="text-xs text-gray-600 leading-snug">Mulai game dulu</p>
+      </div>
+
+      <!-- Level indicator -->
+      <div>
+        <div class="flex justify-between text-xs text-gray-600 mb-2">
+          <span>Level</span>
+          <span id="gameLevelTxt" class="font-mono text-gray-500">Pemula</span>
+        </div>
+        <div class="flex gap-1">
+          <div id="lv1" class="lvl-bar flex-1 bg-green-500"></div>
+          <div id="lv2" class="lvl-bar flex-1 bg-gray-800"></div>
+          <div id="lv3" class="lvl-bar flex-1 bg-gray-800"></div>
+          <div id="lv4" class="lvl-bar flex-1 bg-gray-800"></div>
+          <div id="lv5" class="lvl-bar flex-1 bg-gray-800"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session records -->
+  <div class="glass glass-green p-5">
+    <h3 class="font-bold text-sm mb-4 text-gray-300">🏆 Rekaman Sesi</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+      <div class="bg-black/40 rounded-xl p-3 border border-gray-800/40">
+        <p class="text-gray-600 text-xs">Skor Tertinggi</p>
+        <p id="gameBestScore" class="text-2xl font-black font-mono nt">0</p>
+      </div>
+      <div class="bg-black/40 rounded-xl p-3 border border-gray-800/40">
+        <p class="text-gray-600 text-xs">Best Streak</p>
+        <p id="gameBestStreak" class="text-2xl font-black font-mono text-yellow-400">0</p>
+      </div>
+      <div class="bg-black/40 rounded-xl p-3 border border-gray-800/40">
+        <p class="text-gray-600 text-xs">Total Sesi</p>
+        <p id="gameTotalSess" class="text-2xl font-black font-mono text-blue-400">0</p>
+      </div>
+      <div class="bg-black/40 rounded-xl p-3 border border-gray-800/40">
+        <p class="text-gray-600 text-xs">Akurasi Rata-rata</p>
+        <p id="gameAvgAcc" class="text-2xl font-black font-mono nt2">–</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     TAB: BELAJAR
+════════════════════════════════════════ -->
+<section id="tab-learn" class="hidden fade-up">
+  <div class="glass p-5">
+    <h2 class="font-bold text-xl mb-1">📚 Mode Belajar</h2>
+    <p class="text-gray-600 text-sm mb-5">Pelajari posisi tangan untuk setiap gesture & alfabet isyarat</p>
+    <div id="learnCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     TAB: DASHBOARD
+════════════════════════════════════════ -->
+<section id="tab-dashboard" class="hidden space-y-4 fade-up">
+  <!-- Stat cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="glass p-4"><p class="text-xs text-gray-600 mb-1">Total Deteksi</p><p id="dTot" class="text-3xl font-black font-mono nt2">0</p></div>
+    <div class="glass p-4"><p class="text-xs text-gray-600 mb-1">Gesture Disimpan</p><p id="dSaved" class="text-3xl font-black font-mono text-blue-400">0</p></div>
+    <div class="glass p-4"><p class="text-xs text-gray-600 mb-1">A–Z Benar</p><p id="dAZ" class="text-3xl font-black font-mono text-green-400">0</p></div>
+    <div class="glass p-4"><p class="text-xs text-gray-600 mb-1">Best Game Score</p><p id="dGame" class="text-3xl font-black font-mono text-yellow-400">0</p></div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="glass p-5">
+    <h3 class="font-bold text-sm mb-4 text-gray-300">📊 Gesture Breakdown</h3>
+    <div id="breakdown" class="space-y-2.5"></div>
+  </div>
+
+  <!-- Roadmap -->
+  <div class="glass p-5">
+    <h3 class="font-bold text-sm mb-8 text-gray-300">🗺️ Roadmap & Status Pengembangan</h3>
+    <div class="relative px-2">
+      <!-- Timeline line -->
+      <div class="absolute left-0 right-0 top-[22px] h-0.5 z-0" style="background:linear-gradient(90deg,var(--neon),var(--neon2),var(--neon3),rgba(251,191,36,.5))"></div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
+        <!-- Phase 1 -->
+        <div class="text-center">
+          <div class="w-5 h-5 rounded-full mx-auto mb-4 ring-4" style="background:var(--neon);box-shadow:0 0 16px var(--neon);ring-color:rgba(0,255,136,.2)"></div>
+          <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-2" style="background:rgba(0,255,136,.12);color:var(--neon);border:1px solid rgba(0,255,136,.3)">✅ Tahap 1</span>
+          <p class="text-xs font-semibold text-gray-300 mt-1">Game & Kuis Interaktif</p>
+          <p class="text-xs text-gray-600 mt-1 leading-snug">Evaluasi alfabet real-time di browser</p>
+        </div>
+        <!-- Phase 2 -->
+        <div class="text-center">
+          <div class="w-5 h-5 rounded-full mx-auto mb-4" style="background:var(--neon2);box-shadow:0 0 16px var(--neon2)"></div>
+          <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-2" style="background:rgba(168,85,247,.12);color:var(--neon2);border:1px solid rgba(168,85,247,.3)">✅ Tahap 2</span>
+          <p class="text-xs font-semibold text-gray-300 mt-1">Pengenalan Angka 0–9</p>
+          <p class="text-xs text-gray-600 mt-1 leading-snug">Pemetaan gestur & model numerik</p>
+        </div>
+        <!-- Phase 3 -->
+        <div class="text-center">
+          <div class="w-5 h-5 rounded-full mx-auto mb-4" style="background:var(--neon3);box-shadow:0 0 16px var(--neon3)"></div>
+          <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-2" style="background:rgba(34,211,238,.12);color:var(--neon3);border:1px solid rgba(34,211,238,.3)">✅ Tahap 3</span>
+          <p class="text-xs font-semibold text-gray-300 mt-1">UI King-Class Final</p>
+          <p class="text-xs text-gray-600 mt-1 leading-snug">CSS polish, animasi, dark-mode premium</p>
+        </div>
+        <!-- Phase 4 -->
+        <div class="text-center">
+          <div class="w-5 h-5 rounded-full mx-auto mb-4 border-2" style="border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.08)"></div>
+          <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-2" style="background:rgba(251,191,36,.08);color:#fbbf24;border:1px solid rgba(251,191,36,.3)">🔜 Tahap 4</span>
+          <p class="text-xs font-semibold text-gray-300 mt-1">Beta Testing PWA</p>
+          <p class="text-xs text-gray-600 mt-1 leading-snug">Multi-device smartphone testing</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Module status -->
+  <div class="glass p-5">
+    <h3 class="font-bold text-sm mb-4 text-gray-300">✅ Status Modul Final</h3>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <div class="rounded-xl p-4 border" style="background:rgba(0,255,136,.04);border-color:rgba(0,255,136,.2)">
+        <div class="flex gap-2 items-start mb-2">
+          <span class="text-base mt-0.5">✅</span>
+          <div>
+            <h4 class="font-semibold text-sm text-green-400">Game & Kuis Interaktif</h4>
+            <p class="text-xs text-gray-500 mt-1 leading-snug">Score, timer per soal, streak, level, 3 mode (A–Z, 0–9, Gesture). Suara feedback aktif.</p>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-xl p-4 border" style="background:rgba(0,255,136,.04);border-color:rgba(0,255,136,.2)">
+        <div class="flex gap-2 items-start mb-2">
+          <span class="text-base mt-0.5">✅</span>
+          <div>
+            <h4 class="font-semibold text-sm text-green-400">Pengenalan Angka (0–9)</h4>
+            <p class="text-xs text-gray-500 mt-1 leading-snug">Deteksi koordinat tangan untuk angka ASL 0–9, progress tracker, streak, referensi visual.</p>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-xl p-4 border" style="background:rgba(34,211,238,.04);border-color:rgba(34,211,238,.2)">
+        <div class="flex gap-2 items-start mb-2">
+          <span class="text-base mt-0.5">✅</span>
+          <div>
+            <h4 class="font-semibold text-sm text-cyan-400">FPS Stabil & Deteksi Lancar</h4>
+            <p class="text-xs text-gray-500 mt-1 leading-snug">Model MediaPipe dipisah per mode, tidak saling mengganggu. Hold-stability anti-spam aktif.</p>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-xl p-4 border" style="background:rgba(168,85,247,.04);border-color:rgba(168,85,247,.2)">
+        <div class="flex gap-2 items-start mb-2">
+          <span class="text-base mt-0.5">✅</span>
+          <div>
+            <h4 class="font-semibold text-sm nt2">Text-to-Speech Optimized</h4>
+            <p class="text-xs text-gray-500 mt-1 leading-snug">Queue-based TTS, tidak tumpang tindih. Toggle on/off, priority speech untuk event penting.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ══ JAVASCRIPT ══ -->
 <script>
-// ══════════════════════════════════════════════
-// GESTURE DEFINITIONS
-// ══════════════════════════════════════════════
+'use strict';
+// ═══════════════════════════════════════════════
+// SHORTHAND HELPERS — defined first, used everywhere
+// ═══════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const $$ = id => document.getElementById(id); // alias
+
+// ═══════════════════════════════════════════════
+// DATA DEFINITIONS
+// ═══════════════════════════════════════════════
 const GESTURES = {
-  open_hand: { name:'Open Hand', emoji:'🖐️', description:'Buka semua jari, telapak menghadap kamera.' },
-  peace:     { name:'Peace',     emoji:'✌️', description:'Angkat telunjuk & jari tengah.' },
-  thumbs_up: { name:'Thumbs Up', emoji:'👍', description:'Acungkan jempol ke atas.' },
-  ok:        { name:'OK Sign',   emoji:'👌', description:'Satukan jempol & telunjuk.' },
-  fist:      { name:'Fist',      emoji:'✊', description:'Kepalan tangan.' },
-  pointing:  { name:'Pointing',  emoji:'☝️', description:'Hanya telunjuk terangkat.' }
+  open_hand: { name:'Open Hand',  emoji:'🖐️', desc:'Buka semua jari, telapak menghadap kamera.' },
+  peace:     { name:'Peace',      emoji:'✌️', desc:'Angkat telunjuk & jari tengah.' },
+  thumbs_up: { name:'Thumbs Up',  emoji:'👍', desc:'Acungkan jempol ke atas.' },
+  ok:        { name:'OK Sign',    emoji:'👌', desc:'Satukan jempol & telunjuk membentuk O.' },
+  fist:      { name:'Fist',       emoji:'✊', desc:'Kepalan tangan semua jari.' },
+  pointing:  { name:'Pointing',   emoji:'☝️', desc:'Hanya telunjuk terangkat, sisanya tertutup.' },
 };
 
-// ASL A–Z descriptions & hints
-const ASL_ALPHABET = {
-  A:{desc:'Kepalan tangan, jempol di sisi.',          hint:'Semua jari tertutup, jempol samping'},
-  B:{desc:'Semua jari tegak lurus, jempol ditekuk.',  hint:'4 jari rapat ke atas, jempol ke dalam'},
-  C:{desc:'Tangan membentuk huruf C.',                hint:'Jari-jari melengkung seperti mangkuk'},
+const ASL = {
+  A:{desc:'Kepalan tangan, jempol di samping.',      hint:'Semua jari tertutup, jempol di sisi'},
+  B:{desc:'4 jari tegak, jempol ditekuk ke dalam.',  hint:'4 jari rapat ke atas, jempol dalam'},
+  C:{desc:'Tangan membentuk lengkungan huruf C.',     hint:'Jari melengkung seperti mangkuk'},
   D:{desc:'Telunjuk tegak, jari lain membentuk O.',   hint:'Telunjuk lurus, sisanya bulat'},
-  E:{desc:'Jari-jari ditekuk, jempol di bawah.',      hint:'Semua jari tekuk ke arah telapak'},
-  F:{desc:'Jempol & telunjuk menyentuh, sisanya tegak.',hint:'OK terbalik + 3 jari atas tegak'},
-  G:{desc:'Telunjuk & jempol menunjuk ke samping.',   hint:'Seperti pistol, jari ke kanan'},
-  H:{desc:'Telunjuk & jari tengah sejajar horizontal.',hint:'2 jari lurus ke samping'},
-  I:{desc:'Kelingking tegak.',                        hint:'Hanya jari kelingking terangkat'},
-  J:{desc:'Kelingking tegak lalu buat gerakan J.',    hint:'Mulai dari I, gambar huruf J'},
-  K:{desc:'Telunjuk & jari tengah tegak, jempol di tengah.',hint:'Jari tengah menyentuh jempol'},
-  L:{desc:'Telunjuk & jempol membentuk L.',           hint:'Jempol kiri + telunjuk ke atas'},
+  E:{desc:'Semua jari ditekuk ke arah telapak.',      hint:'Jari-jari menekuk ke depan'},
+  F:{desc:'Jempol+telunjuk menyentuh, 3 jari tegak.', hint:'OK terbalik + 3 jari atas'},
+  G:{desc:'Telunjuk & jempol menunjuk ke samping.',   hint:'Seperti pistol menunjuk kanan'},
+  H:{desc:'Telunjuk & jari tengah horizontal.',       hint:'2 jari lurus ke samping'},
+  I:{desc:'Kelingking tegak, jari lain tertutup.',    hint:'Hanya jari kelingking terangkat'},
+  J:{desc:'Kelingking tegak lalu gambar huruf J.',    hint:'Mulai dari I, gambar huruf J'},
+  K:{desc:'Telunjuk+tengah tegak, jempol di tengah.', hint:'Jari tengah menyentuh jempol'},
+  L:{desc:'Telunjuk+jempol membentuk sudut L.',       hint:'Jempol kiri + telunjuk ke atas'},
   M:{desc:'3 jari menutupi jempol.',                  hint:'Lipat 3 jari di atas jempol'},
   N:{desc:'2 jari menutupi jempol.',                  hint:'Lipat 2 jari di atas jempol'},
-  O:{desc:'Semua jari membentuk bulatan O.',          hint:'Ujung semua jari menyentuh jempol'},
-  P:{desc:'Seperti K tapi menghadap bawah.',          hint:'K terbalik'},
-  Q:{desc:'Seperti G tapi menghadap bawah.',          hint:'Jari & jempol menunjuk ke bawah'},
-  R:{desc:'Telunjuk & jari tengah menyilang.',        hint:'Silangkan telunjuk & jari tengah'},
-  S:{desc:'Kepalan tangan, jempol di atas.',          hint:'Tinju rapat, jempol di depan'},
+  O:{desc:'Semua jari membentuk bulatan O.',          hint:'Ujung semua jari sentuh jempol'},
+  P:{desc:'Seperti K tapi menghadap ke bawah.',       hint:'K terbalik'},
+  Q:{desc:'Seperti G tapi menghadap ke bawah.',       hint:'Jari & jempol menunjuk bawah'},
+  R:{desc:'Telunjuk & jari tengah menyilang.',        hint:'Silangkan 2 jari depan'},
+  S:{desc:'Kepalan tangan, jempol di atas jari.',     hint:'Tinju rapat, jempol di depan'},
   T:{desc:'Jempol di antara telunjuk & jari tengah.', hint:'Jempol keluar di antara jari'},
-  U:{desc:'Telunjuk & jari tengah tegak rapat.',      hint:'2 jari naik berdampingan'},
+  U:{desc:'Telunjuk & jari tengah tegak berdampingan.',hint:'2 jari naik berdampingan'},
   V:{desc:'Telunjuk & jari tengah membentuk V.',      hint:'Peace sign klasik'},
-  W:{desc:'3 jari tengah tegak.',                     hint:'Telunjuk, tengah, manis tegak'},
+  W:{desc:'Telunjuk, tengah, manis tegak.',           hint:'3 jari tengah tegak'},
   X:{desc:'Telunjuk ditekuk seperti kait.',           hint:'Telunjuk bengkok ke bawah'},
   Y:{desc:'Jempol & kelingking terbuka.',             hint:'Shaka / hang loose'},
-  Z:{desc:'Gambar Z dengan telunjuk.',                hint:'Gerakkan telunjuk membentuk Z'},
+  Z:{desc:'Gambar huruf Z dengan telunjuk.',          hint:'Gerakkan telunjuk membentuk Z'},
 };
 
-// ══════════════════════════════════════════════
-// APP STATE
-// ══════════════════════════════════════════════
-let appState = {
-  isDetecting: false,
-  totalDetections: 0,
-  sentenceHistory: [],
-  gestureStats: {},
-  sessionStart: null,
-  lastGestureType: null,
-  stableCount: 0,
-  STABLE_THRESHOLD: 27, // ~1.5s @18fps — avoid spam
-  addedThisHold: false, // prevent multi-add per hold
-  fpsHistory: [],
-  frameTs: 0,
+const NUMBERS = {
+  0:{desc:'Semua jari membentuk O.',           hint:'Ujung semua jari sentuh jempol'},
+  1:{desc:'Hanya telunjuk tegak lurus.',        hint:'Telunjuk lurus ke atas, sisanya tertutup'},
+  2:{desc:'Telunjuk & tengah tegak (V/Peace).', hint:'Peace sign / 2 jari ke atas'},
+  3:{desc:'Jempol+telunjuk+tengah terbuka.',    hint:'3 jari depan terbuka lebar'},
+  4:{desc:'4 jari tegak, jempol ditekuk.',      hint:'Semua jari kecuali jempol tegak'},
+  5:{desc:'Semua jari terbuka penuh.',          hint:'Open hand / buka semua jari'},
+  6:{desc:'Jempol & kelingking menyentuh.',     hint:'Shaka: jempol+pinky sentuh, 3 tengah tegak'},
+  7:{desc:'Jempol & jari manis menyentuh.',     hint:'Ring finger ke jempol, sisanya tegak'},
+  8:{desc:'Jempol & jari tengah menyentuh.',    hint:'Middle finger ke jempol, sisanya tegak'},
+  9:{desc:'Jempol & telunjuk membentuk O.',     hint:'Index finger ke jempol (mirip OK)'},
 };
 
-// A–Z state
-let azState = {
-  isRunning: false,
-  isLearnMode: true,
-  letters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-  currentIdx: 0,
-  correctCount: 0,
-  totalAttempts: 0,
-  streak: 0,
-  bestStreak: 0,
-  letterProgress: {}, // letter -> 'correct'|'wrong'|null
-  stableCount: 0,
-  STABLE_THRESHOLD: 20,
-  addedThisHold: false,
-  handsCam: null,
-  camera: null,
-};
+// ═══════════════════════════════════════════════
+// SPEECH ENGINE — queue-based, no overlap
+// ═══════════════════════════════════════════════
+let _sMuted = false, _sQ = [], _sBusy = false;
 
-let handsMain = null, cameraMain = null;
-let handsAZ = null;
-let sessionTimer = null;
-
-const videoEl = document.getElementById('videoElement');
-const canvasEl = document.getElementById('canvasElement');
-const azVideoEl = document.getElementById('azVideoElement');
-const azCanvasEl = document.getElementById('azCanvasElement');
-
-// ══════════════════════════════════════════════
-// MEDIAPIPE INIT
-// ══════════════════════════════════════════════
-async function initHands(onResultsFn) {
-  const h = new Hands({
-    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
-  });
-  h.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.65,
-    minTrackingConfidence: 0.65,
-  });
-  h.onResults(onResultsFn);
-  return h;
+function speak(txt, priority = false) {
+  if (_sMuted || !txt) return;
+  if (priority) { window.speechSynthesis.cancel(); _sQ = []; _sBusy = false; }
+  _sQ.push(txt);
+  _sFlush();
 }
 
-// ══════════════════════════════════════════════
-// CORE DETECTION ENGINE — distance + curl based
-// ══════════════════════════════════════════════
-
-// Euclidean distance between two landmarks
-function dist(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y, (a.z||0) - (b.z||0));
+function _sFlush() {
+  if (_sBusy || !_sQ.length) return;
+  const u = new SpeechSynthesisUtterance(_sQ.shift());
+  u.lang = 'id-ID'; u.rate = 1.1; u.pitch = 1; u.volume = 1;
+  _sBusy = true;
+  u.onend = u.onerror = () => { _sBusy = false; setTimeout(_sFlush, 60); };
+  window.speechSynthesis.speak(u);
 }
 
-// Hand size normalizer: wrist to middle MCP
-function handSize(lm) {
-  return Math.max(dist(lm[0], lm[9]), 0.01);
-}
-
-// Normalized distance (relative to hand size)
-function ndist(lm, a, b) {
-  return dist(lm[a], lm[b]) / handSize(lm);
-}
-
-// Curl score for a finger (0=fully open, 1=fully curled)
-// Uses angle: tip vs MCP relative to wrist
-// A finger is "extended" if its tip is farther from wrist than its base (MCP)
-function isCurled(lm, tip, pip, mcp) {
-  // tip must be clearly above PIP (smaller y) AND above MCP to count as extended
-  // We use distance from wrist: extended = tip far from wrist
-  const tipDist = dist(lm[0], lm[tip]);
-  const mcpDist = dist(lm[0], lm[mcp]);
-  // If tip is less than 1.1x the MCP distance, finger is curled
-  return tipDist < mcpDist * 1.15;
-}
-
-// More strict: clearly extended means tip is well above PIP
-function isExtended(lm, tip, pip, mcp) {
-  const tipDist = dist(lm[0], lm[tip]);
-  const mcpDist = dist(lm[0], lm[mcp]);
-  return tipDist > mcpDist * 1.3;
-}
-
-// Finger states using distance from wrist
-function fingerStates(lm) {
-  // Thumb: use x-axis spread from thumb MCP (lm[2])
-  const thumbExt = dist(lm[4], lm[2]) > handSize(lm) * 0.8;
-  const idxExt   = isExtended(lm, 8,  6,  5);
-  const midExt   = isExtended(lm, 12, 10, 9);
-  const rngExt   = isExtended(lm, 16, 14, 13);
-  const pnkExt   = isExtended(lm, 20, 18, 17);
-
-  const thumbCurl = isCurled(lm, 4, 3, 2);
-  const idxCurl   = isCurled(lm, 8, 6, 5);
-  const midCurl   = isCurled(lm, 12, 10, 9);
-  const rngCurl   = isCurled(lm, 16, 14, 13);
-  const pnkCurl   = isCurled(lm, 20, 18, 17);
-
-  return {
-    thumb: thumbExt, index: idxExt, middle: midExt, ring: rngExt, pinky: pnkExt,
-    thumbC: thumbCurl, indexC: idxCurl, middleC: midCurl, ringC: rngCurl, pinkyC: pnkCurl
-  };
-}
-
-// ── GESTURE MODE DETECTION ──────────────────────
-function detectGesture(lm) {
-  if (!lm || lm.length < 21) return null;
-  const f   = fingerStates(lm);
-  const hs  = handSize(lm);
-
-  // Thumb tip high above wrist (for thumbs up)
-  const thumbHigh = lm[4].y < lm[0].y - hs * 0.3;
-
-  // OK: thumb tip close to index tip, middle+ring+pinky extended
-  const thumbIdxDist = ndist(lm, 4, 8);
-  const okPinch = thumbIdxDist < 0.35;
-
-  // --- Gestures in priority order ---
-
-  // THUMBS UP: thumb clearly up, all fingers curled
-  if (thumbHigh && f.thumbC === false && f.indexC && f.middleC && f.ringC && f.pinkyC) {
-    return { type:'thumbs_up', name:'Thumbs Up', confidence: 0.92 };
-  }
-  // FIST: everything curled
-  if (f.indexC && f.middleC && f.ringC && f.pinkyC && f.thumbC) {
-    return { type:'fist', name:'Fist', confidence: 0.91 };
-  }
-  // OPEN HAND: all 5 extended
-  if (f.thumb && f.index && f.middle && f.ring && f.pinky) {
-    return { type:'open_hand', name:'Open Hand', confidence: 0.93 };
-  }
-  // OK SIGN: pinch + middle/ring/pinky extended, NOT all fingers open
-  if (okPinch && f.middle && f.ring && f.pinky) {
-    return { type:'ok', name:'OK Sign', confidence: 0.88 };
-  }
-  // PEACE: index + middle extended, ring + pinky curled
-  if (!f.thumb && f.index && f.middle && f.ringC && f.pinkyC) {
-    return { type:'peace', name:'Peace', confidence: 0.87 };
-  }
-  // POINTING: only index extended, rest curled
-  if (f.index && f.middleC && f.ringC && f.pinkyC) {
-    return { type:'pointing', name:'Pointing', confidence: 0.86 };
-  }
-  // Fallback open hand (4+ extended)
-  const extCnt = [f.thumb,f.index,f.middle,f.ring,f.pinky].filter(Boolean).length;
-  if (extCnt >= 4) return { type:'open_hand', name:'Open Hand', confidence: 0.65 };
-  return null;
-}
-
-// ── ASL A–Z DETECTION ───────────────────────────
-// Each letter has a dedicated rule using normalized distances & curl states
-function detectASLLetter(lm) {
-  if (!lm || lm.length < 21) return null;
-  const f  = fingerStates(lm);
-  const hs = handSize(lm);
-
-  // Helper: normalized distances
-  const t2i = ndist(lm, 4, 8);   // thumb tip to index tip
-  const t2m = ndist(lm, 4, 12);  // thumb tip to middle tip
-  const t2r = ndist(lm, 4, 16);  // thumb tip to ring tip
-  const t2p = ndist(lm, 4, 20);  // thumb tip to pinky tip
-  const i2m = ndist(lm, 8, 12);  // index tip to middle tip
-
-  // Finger spread helpers
-  const idxMidSpread = Math.abs(lm[8].x - lm[12].x) / hs;
-
-  // All 4 fingers extended (no thumb)
-  const all4up = f.index && f.middle && f.ring && f.pinky;
-  // All 4 curled
-  const all4curl = f.indexC && f.middleC && f.ringC && f.pinkyC;
-
-  // Y: thumb + pinky open, rest curled, wide apart
-  if (f.thumb && !f.index && !f.middle && !f.ring && f.pinky && t2p > 0.9) return 'Y';
-
-  // B: 4 fingers up + thumb tucked (curled across palm)
-  if (all4up && f.thumbC && !f.thumb) return 'B';
-
-  // L: thumb + index only, forming angle
-  if (f.thumb && f.index && f.middleC && f.ringC && f.pinkyC && t2i > 0.7) return 'L';
-
-  // I: only pinky up
-  if (f.pinky && f.indexC && f.middleC && f.ringC && !f.thumb) return 'I';
-
-  // W: index + middle + ring up, pinky curled, no thumb
-  if (f.index && f.middle && f.ring && f.pinkyC && !f.thumb) return 'W';
-
-  // V: index + middle up, spread apart, ring+pinky curled
-  if (f.index && f.middle && f.ringC && f.pinkyC && !f.thumb) {
-    return idxMidSpread > 0.15 ? 'V' : 'U';
-  }
-
-  // K: index + middle up, thumb between them (touching middle PIP area)
-  if (f.index && f.middle && f.ringC && f.pinkyC && f.thumb) {
-    const tMidPIP = ndist(lm, 4, 10);
-    return tMidPIP < 0.3 ? 'K' : 'V';
-  }
-
-  // D: index up, other 3 fingers form O with thumb
-  if (f.index && f.middleC && f.ringC && f.pinkyC) {
-    const thumbMidDist = ndist(lm, 4, 12);
-    return thumbMidDist < 0.35 ? 'D' : 'G';
-  }
-
-  // F: index+thumb pinch, middle+ring+pinky up
-  if (t2i < 0.25 && f.middle && f.ring && f.pinky) return 'F';
-
-  // O: all fingers curled toward thumb, thumb tip near other fingertips
-  if (all4curl && t2i < 0.35 && t2m < 0.45) return 'O';
-
-  // C: all fingers semi-curved (not fully extended, not fully curled)
-  // Key: fingers are NOT extended (dist from wrist not far) but NOT fully curled either
-  // C = thumb and fingers form a "cup" shape — measure average tip-to-wrist normalized dist
-  {
-    const idxTipWrist  = dist(lm[0], lm[8])  / hs;
-    const midTipWrist  = dist(lm[0], lm[12]) / hs;
-    const rngTipWrist  = dist(lm[0], lm[16]) / hs;
-    const pnkTipWrist  = dist(lm[0], lm[20]) / hs;
-    const thumbTipWrist= dist(lm[0], lm[4])  / hs;
-    // In C shape: all tips moderately far from wrist (semi-extended = 1.3–2.0 range)
-    const cRange = v => v > 1.1 && v < 2.2;
-    if (cRange(idxTipWrist) && cRange(midTipWrist) && cRange(rngTipWrist)
-        && cRange(pnkTipWrist) && cRange(thumbTipWrist)) {
-      // Also verify thumb and index gap is C-shaped (not closed into O, not wide open)
-      if (t2i > 0.3 && t2i < 0.8) return 'C';
-    }
-  }
-
-  // A: fist with thumb on side (not over fingers)
-  if (all4curl && !f.thumb) {
-    const thumbSide = Math.abs(lm[4].x - lm[5].x) / hs > 0.15;
-    return thumbSide ? 'A' : 'S';
-  }
-
-  // S: fist, thumb over fingers
-  if (all4curl && f.thumbC) return 'S';
-
-  // E: all 4 curled, fingers pointing forward (y close to knuckles)
-  if (all4curl) return 'E';
-
-  // R: index + middle crossing
-  if (f.index && f.middle && f.ringC && f.pinkyC && idxMidSpread < 0.08) return 'R';
-
-  return null;
-}
-
-// ══════════════════════════════════════════════
-// MAIN CAMERA ON RESULTS
-// ══════════════════════════════════════════════
-function onResultsMain(results) {
-  const ctx = canvasEl.getContext('2d');
-  canvasEl.width  = videoEl.videoWidth  || 640;
-  canvasEl.height = videoEl.videoHeight || 480;
-
-  ctx.save();
-  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-  ctx.scale(-1, 1);
-  ctx.translate(-canvasEl.width, 0);
-  ctx.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
-  ctx.restore();
-
-  // FPS
-  const now = performance.now();
-  if (appState.frameTs) {
-    const fps = Math.round(1000 / (now - appState.frameTs));
-    appState.fpsHistory.push(fps);
-    if (appState.fpsHistory.length > 30) appState.fpsHistory.shift();
-    const avg = Math.round(appState.fpsHistory.reduce((a,b)=>a+b,0)/appState.fpsHistory.length);
-    document.getElementById('fpsDisplay').textContent = avg;
-  }
-  appState.frameTs = now;
-
-  const container = document.getElementById('cameraContainer');
-  const badge     = document.getElementById('handBadge');
-  const overlay   = document.getElementById('gestureOverlay');
-
-  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    const lm = results.multiHandLandmarks[0];
-
-    // Draw skeleton (mirrored)
-    ctx.save();
-    ctx.scale(-1,1);
-    ctx.translate(-canvasEl.width, 0);
-    if (typeof drawConnectors === 'function') {
-      drawConnectors(ctx, lm, HAND_CONNECTIONS, {color:'#a855f7', lineWidth:3});
-    }
-    if (typeof drawLandmarks === 'function') {
-      drawLandmarks(ctx, lm, {color:'#f0abfc', fillColor:'#7c3aed', radius:5, lineWidth:1});
-    }
-    ctx.restore();
-
-    container.classList.add('hand-detected');
-    badge.classList.remove('hidden');
-
-    appState.totalDetections++;
-    document.getElementById('totalDetectionsDisplay').textContent = appState.totalDetections;
-    document.getElementById('dashTotalDetections').textContent = appState.totalDetections;
-
-    const g = detectGesture(lm);
-    if (g) {
-      document.getElementById('gestureDisplay').textContent = GESTURES[g.type]?.emoji || '?';
-      document.getElementById('gestureNameDisplay').textContent = g.name;
-      document.getElementById('confidenceText').textContent = `Confidence: ${Math.round(g.confidence*100)}%`;
-      document.getElementById('confidenceBarFill').style.width = (g.confidence*100)+'%';
-      document.getElementById('overlayEmoji').textContent = GESTURES[g.type]?.emoji || '';
-      document.getElementById('overlayName').textContent = g.name;
-      overlay.classList.remove('hidden');
-
-      // Stabilize
-      if (g.type === appState.lastGestureType) {
-        appState.stableCount++;
-      } else {
-        appState.lastGestureType = g.type;
-        appState.stableCount = 1;
-        appState.addedThisHold = false;
-      }
-
-      const pct = Math.min(100, (appState.stableCount / appState.STABLE_THRESHOLD) * 100);
-      document.getElementById('stabilizeBar').style.width = pct + '%';
-      document.getElementById('stabilizeLabel').textContent = g.name;
-
-      if (appState.stableCount >= appState.STABLE_THRESHOLD && !appState.addedThisHold) {
-        appState.addedThisHold = true;
-        addToSentence(g.type);
-      }
-    }
-  } else {
-    container.classList.remove('hand-detected');
-    badge.classList.add('hidden');
-    overlay.classList.add('hidden');
-    document.getElementById('gestureNameDisplay').textContent = 'Tidak ada tangan terdeteksi';
-    document.getElementById('confidenceBarFill').style.width = '0%';
-    document.getElementById('stabilizeBar').style.width = '0%';
-    document.getElementById('stabilizeLabel').textContent = '–';
-    appState.lastGestureType = null;
-    appState.stableCount = 0;
-    appState.addedThisHold = false;
-  }
-}
-
-// ══════════════════════════════════════════════
-// A–Z ON RESULTS
-// ══════════════════════════════════════════════
-function onResultsAZ(results) {
-  const ctx = azCanvasEl.getContext('2d');
-  azCanvasEl.width  = azVideoEl.videoWidth  || 640;
-  azCanvasEl.height = azVideoEl.videoHeight || 480;
-
-  ctx.save();
-  ctx.clearRect(0, 0, azCanvasEl.width, azCanvasEl.height);
-  ctx.scale(-1,1);
-  ctx.translate(-azCanvasEl.width, 0);
-  ctx.drawImage(azVideoEl, 0, 0, azCanvasEl.width, azCanvasEl.height);
-  ctx.restore();
-
-  const badge = document.getElementById('azHandBadge');
-
-  if (!azState.isRunning) return;
-
-  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    const lm = results.multiHandLandmarks[0];
-
-    ctx.save();
-    ctx.scale(-1,1);
-    ctx.translate(-azCanvasEl.width, 0);
-    if (typeof drawConnectors === 'function') drawConnectors(ctx, lm, HAND_CONNECTIONS, {color:'#06b6d4', lineWidth:3});
-    if (typeof drawLandmarks === 'function') drawLandmarks(ctx, lm, {color:'#67e8f9', fillColor:'#0e7490', radius:5, lineWidth:1});
-    ctx.restore();
-
-    badge.classList.remove('hidden');
-    document.getElementById('azCameraContainer').classList.add('hand-detected');
-
-    const detected = detectASLLetter(lm);
-    const target   = azState.letters[azState.currentIdx];
-    const liveEl   = document.getElementById('azDetectedLive');
-
-    // Always show what we detect live
-    if (liveEl) liveEl.textContent = detected || '?';
-
-    if (detected) {
-      document.getElementById('azStabilizeLabel').textContent = detected;
-
-      // Color feedback: green if matches target, red if wrong
-      if (liveEl) liveEl.className = detected === target
-        ? 'text-2xl font-black text-green-400'
-        : 'text-2xl font-black text-red-400';
-
-      if (detected === target) {
-        azState.stableCount++;
-        azState.addedThisHold = azState.addedThisHold || false;
-      } else {
-        azState.stableCount = 0;
-        azState.addedThisHold = false;
-      }
-
-      const pct = Math.min(100, (azState.stableCount / azState.STABLE_THRESHOLD)*100);
-      document.getElementById('azStabilizeBar').style.width = pct + '%';
-
-      if (azState.stableCount >= azState.STABLE_THRESHOLD && !azState.addedThisHold) {
-        azState.addedThisHold = true;
-        azCorrect(target);
-      }
-    } else {
-      azState.stableCount = 0;
-      document.getElementById('azStabilizeBar').style.width = '0%';
-      document.getElementById('azStabilizeLabel').textContent = '–';
-      if (liveEl) {
-        liveEl.textContent = '–';
-        liveEl.className = 'text-2xl font-black text-cyan-300';
-      }
-    }
-  } else {
-    badge.classList.add('hidden');
-    document.getElementById('azCameraContainer').classList.remove('hand-detected');
-    azState.stableCount = 0;
-    document.getElementById('azStabilizeBar').style.width = '0%';
-    document.getElementById('azStabilizeLabel').textContent = '–';
-    const liveEl = document.getElementById('azDetectedLive');
-    if (liveEl) { liveEl.textContent = '–'; liveEl.className = 'text-2xl font-black text-cyan-300'; }
-  }
-}
-
-// ══════════════════════════════════════════════
-// A–Z LOGIC
-// ══════════════════════════════════════════════
-function azCorrect(letter) {
-  azState.correctCount++;
-  azState.totalAttempts++;
-  azState.streak++;
-  if (azState.streak > azState.bestStreak) azState.bestStreak = azState.streak;
-  azState.letterProgress[letter] = 'correct';
-
-  updateAZUI();
-  showAZResult('✅', letter + ' Benar!', '#22c55e');
-  updateAZLetterGrid();
-
-  setTimeout(() => {
-    hideAZResult();
-    nextAZLetter();
-  }, 1200);
-}
-
-function nextAZLetter() {
-  if (azState.currentIdx < azState.letters.length - 1) {
-    azState.currentIdx++;
-    azState.stableCount = 0;
-    azState.addedThisHold = false;
-    document.getElementById('azStabilizeBar').style.width = '0%';
-    updateAZCurrentInfo();
-  } else {
-    // All done!
-    showAZResult('🎉', 'Selesai! Skor: ' + azState.correctCount + '/26', '#a855f7');
-    showNotification('🎉 Selamat! Kamu menyelesaikan A–Z!', 'success');
-    setTimeout(() => {
-      hideAZResult();
-      stopAZ();
-    }, 2500);
-  }
-}
-
-function showAZResult(emoji, text, color) {
-  const badge = document.getElementById('azResultBadge');
-  document.getElementById('azResultEmoji').textContent = emoji;
-  document.getElementById('azResultText').textContent = text;
-  document.getElementById('azResultText').style.color = color;
-  badge.style.display = 'flex';
-}
-function hideAZResult() {
-  document.getElementById('azResultBadge').style.display = 'none';
-}
-
-function updateAZCurrentInfo() {
-  const letter = azState.letters[azState.currentIdx];
-  const info = ASL_ALPHABET[letter];
-  document.getElementById('azTargetLetter').textContent = letter;
-  document.getElementById('azCurrentLetterBig').textContent = letter;
-  document.getElementById('azCurrentLetterName').textContent = info?.desc || '';
-  document.getElementById('azCurrentLetterHint').textContent = info?.hint || '';
-  document.getElementById('azTargetOverlay').classList.remove('hidden');
-}
-
-function updateAZUI() {
-  document.getElementById('azCorrectCount').textContent = azState.correctCount;
-  document.getElementById('azTotalAttempts').textContent = azState.totalAttempts;
-  document.getElementById('azStreak').textContent = azState.streak + '🔥';
-  document.getElementById('azBestStreak').textContent = azState.bestStreak + '⭐';
-  document.getElementById('dashAZCorrect').textContent = azState.correctCount;
-  document.getElementById('dashBestStreak').textContent = azState.bestStreak;
-
-  const pct = Math.round((azState.correctCount / 26) * 100);
-  document.getElementById('azProgressPct').textContent = pct + '%';
-  const offset = 163.4 * (1 - pct/100);
-  document.getElementById('azProgressCircle').style.strokeDashoffset = offset;
-}
-
-function updateAZLetterGrid() {
-  const grid = document.getElementById('azLetterGrid');
-  grid.innerHTML = '';
-  azState.letters.forEach((l, i) => {
-    const status = azState.letterProgress[l];
-    const isCurrent = i === azState.currentIdx && azState.isRunning;
-    const bg = status === 'correct' ? 'bg-green-700/60 border-green-500' :
-               isCurrent ? 'bg-purple-700/60 border-purple-400 ring-2 ring-purple-400' :
-               'bg-gray-800 border-gray-600';
-    grid.innerHTML += `<div class="w-7 h-7 rounded flex items-center justify-center text-xs font-black border ${bg} transition-all">${l}</div>`;
-  });
-}
-
-async function startAZ() {
-  if (!handsAZ) {
-    handsAZ = await initHands(onResultsAZ);
-  }
-  if (!azState.camera) {
-    azState.camera = new Camera(azVideoEl, {
-      onFrame: async () => {
-        if (handsAZ && azState.isRunning) await handsAZ.send({ image: azVideoEl });
-      },
-      width: 1280, height: 720
-    });
-  }
-  await azState.camera.start();
-  azState.isRunning = true;
-  azState.currentIdx = 0;
-  azState.correctCount = 0;
-  azState.totalAttempts = 0;
-  azState.streak = 0;
-  azState.letterProgress = {};
-  azState.stableCount = 0;
-  azState.addedThisHold = false;
-
-  document.getElementById('azPlaceholder').classList.add('hidden');
-  document.getElementById('azStartBtn').disabled = true;
-  document.getElementById('azStopBtn').disabled = false;
-  document.getElementById('azSkipBtn').disabled = false;
-
-  updateAZCurrentInfo();
-  updateAZUI();
-  updateAZLetterGrid();
-  showNotification('A–Z Training dimulai! Tunjukkan huruf: A', 'info');
-}
-
-async function stopAZ() {
-  azState.isRunning = false;
-  if (azState.camera) { try { await azState.camera.stop(); } catch(e){} azState.camera = null; }
-  document.getElementById('azStartBtn').disabled = false;
-  document.getElementById('azStopBtn').disabled = true;
-  document.getElementById('azSkipBtn').disabled = true;
-  document.getElementById('azTargetOverlay').classList.add('hidden');
-  document.getElementById('azPlaceholder').classList.remove('hidden');
-  document.getElementById('azCameraContainer').classList.remove('hand-detected');
-  document.getElementById('azHandBadge').classList.add('hidden');
-  const ctx = azCanvasEl.getContext('2d');
-  ctx.clearRect(0,0,azCanvasEl.width,azCanvasEl.height);
-}
-
-function toggleAZMode() {
-  azState.isLearnMode = !azState.isLearnMode;
-  document.getElementById('azModeBtn').textContent = azState.isLearnMode ? 'Belajar' : 'Test';
-}
-
-// ══════════════════════════════════════════════
-// SENTENCE BUILDER
-// ══════════════════════════════════════════════
-function addToSentence(type) {
-  appState.sentenceHistory.push(type);
-  appState.gestureStats[type] = (appState.gestureStats[type]||0) + 1;
-  updateSentenceBuilder();
-  updateGestureBreakdown();
-  document.getElementById('dashGesturesSaved').textContent = appState.sentenceHistory.length;
-  showNotification(`Ditambahkan: ${GESTURES[type].emoji} ${GESTURES[type].name}`, 'success');
-}
-
-function updateSentenceBuilder() {
-  const el = document.getElementById('sentenceBuilder');
-  el.textContent = appState.sentenceHistory.length
-    ? appState.sentenceHistory.map(t => GESTURES[t]?.emoji||'?').join(' ')
-    : '(gesture akan muncul di sini)';
-}
-
-// ══════════════════════════════════════════════
-// MAIN CAMERA
-// ══════════════════════════════════════════════
-async function startCamera() {
-  const startBtn = document.getElementById('startCameraBtn');
-  const loading  = document.getElementById('loadingIndicator');
-  const ph       = document.getElementById('cameraPlaceholder');
-
-  startBtn.disabled = true;
-  loading.classList.remove('hidden');
-  ph.classList.add('hidden');
-
-  try {
-    if (!handsMain) handsMain = await initHands(onResultsMain);
-    if (!cameraMain) {
-      cameraMain = new Camera(videoEl, {
-        onFrame: async () => {
-          if (handsMain && appState.isDetecting) await handsMain.send({ image: videoEl });
-        },
-        width: 1280, height: 720
-      });
-    }
-    await cameraMain.start();
-    appState.isDetecting = true;
-    appState.sessionStart = Date.now();
-
-    loading.classList.add('hidden');
-    document.getElementById('stopCameraBtn').disabled = false;
-    document.getElementById('screenshotBtn').disabled = false;
-
-    sessionTimer = setInterval(() => {
-      const s = Math.floor((Date.now() - appState.sessionStart) / 1000);
-      document.getElementById('sessionTimeDisplay').textContent = s + 's';
-    }, 1000);
-
-    showNotification('Kamera berhasil dimulai!', 'success');
-  } catch(e) {
-    console.error(e);
-    loading.classList.add('hidden');
-    ph.classList.remove('hidden');
-    startBtn.disabled = false;
-    showNotification('Gagal memulai kamera: ' + e.message, 'error');
-  }
-}
-
-async function stopCamera() {
-  appState.isDetecting = false;
-  clearInterval(sessionTimer);
-  try { if (cameraMain) await cameraMain.stop(); } catch(e){}
-  const ctx = canvasEl.getContext('2d');
-  ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
-  document.getElementById('startCameraBtn').disabled = false;
-  document.getElementById('stopCameraBtn').disabled = true;
-  document.getElementById('screenshotBtn').disabled = true;
-  document.getElementById('cameraPlaceholder').classList.remove('hidden');
-  document.getElementById('cameraContainer').classList.remove('hand-detected');
-  document.getElementById('handBadge').classList.add('hidden');
-  document.getElementById('gestureDisplay').textContent = '–';
-  document.getElementById('gestureNameDisplay').textContent = 'Menunggu...';
-  document.getElementById('fpsDisplay').textContent = '–';
-  showNotification('Kamera dihentikan', 'info');
-}
-
-function takeScreenshot() {
-  const a = document.createElement('a');
-  a.download = 'gestureflow-' + Date.now() + '.png';
-  a.href = canvasEl.toDataURL('image/png');
-  a.click();
-  showNotification('Screenshot disimpan!', 'success');
-}
-
-// ══════════════════════════════════════════════
-// POPULATE UI
-// ══════════════════════════════════════════════
-function populateGestureGuide() {
-  const el = document.getElementById('gestureGuide');
-  el.innerHTML = Object.entries(GESTURES).map(([k,g])=>
-    `<div class="gesture-card text-center p-3 rounded-xl bg-gray-800/70 border border-gray-700 hover:border-purple-500/50 transition" title="${g.description}">
-      <div class="text-3xl mb-1">${g.emoji}</div>
-      <p class="text-xs font-medium text-gray-200">${g.name}</p>
-    </div>`
-  ).join('');
-}
-
-function populateLearnMode() {
-  const el = document.getElementById('learnCards');
-  el.innerHTML = Object.entries(GESTURES).map(([k,g])=>
-    `<div class="gesture-card bg-gray-800/70 border border-gray-700 hover:border-purple-500/50 rounded-2xl p-5">
-      <div class="text-5xl mb-3">${g.emoji}</div>
-      <h3 class="font-bold text-base mb-1">${g.name}</h3>
-      <p class="text-gray-400 text-sm">${g.description}</p>
-    </div>`
-  ).join('');
-}
-
-function populateAZReference() {
-  const el = document.getElementById('azReferenceGrid');
-  el.innerHTML = Object.entries(ASL_ALPHABET).map(([letter, info])=>
-    `<div class="az-card bg-gray-800/70 rounded-xl p-2 text-center border border-gray-700" title="${info.desc}">
-      <div class="text-xl font-black text-purple-300">${letter}</div>
-      <div class="text-xs text-gray-400 mt-0.5 leading-tight">${info.hint}</div>
-    </div>`
-  ).join('');
-}
-
-function updateGestureBreakdown() {
-  const el = document.getElementById('gestureBreakdown');
-  const total = Object.values(appState.gestureStats).reduce((a,b)=>a+b,0)||1;
-  el.innerHTML = Object.entries(appState.gestureStats).map(([type, count])=>{
-    const pct = Math.round((count/total)*100);
-    return `<div class="flex items-center gap-3">
-      <span class="text-lg w-8">${GESTURES[type]?.emoji}</span>
-      <span class="text-sm text-gray-300 w-24">${GESTURES[type]?.name}</span>
-      <div class="flex-1 bg-gray-700 rounded-full h-1.5">
-        <div class="bg-gradient-to-r from-purple-500 to-violet-300 h-full rounded-full" style="width:${pct}%"></div>
-      </div>
-      <span class="text-xs text-gray-400 w-8 text-right">${count}x</span>
-    </div>`;
-  }).join('') || '<p class="text-gray-500 text-sm">Belum ada data deteksi</p>';
-}
-
-// ══════════════════════════════════════════════
+document.getElementById('btnSound').addEventListener('click', () => {
+  _sMuted = !_sMuted;
+  if (_sMuted) { window.speechSynthesis.cancel(); _sQ = []; _sBusy = false; }
+  const icon = _sMuted ? '🔇' : '🔊';
+  const lbl  = _sMuted ? 'Suara OFF' : 'Suara ON';
+  const col  = _sMuted ? '#f87171' : 'var(--neon)';
+  const bg   = _sMuted ? 'rgba(239,68,68,.08)' : 'rgba(0,255,136,.08)';
+  const bc   = _sMuted ? 'rgba(239,68,68,.25)' : 'rgba(0,255,136,.25)';
+  document.getElementById('soundIcon').textContent = icon;
+  document.getElementById('soundLbl').textContent  = lbl;
+  const btn = document.getElementById('btnSound');
+  btn.style.color = col; btn.style.background = bg; btn.style.borderColor = bc;
+  toast(_sMuted ? '🔇 Suara dimatikan' : '🔊 Suara aktif', 'i');
+});
+
+// ═══════════════════════════════════════════════
 // TOAST
-// ══════════════════════════════════════════════
-function showNotification(msg, type='info') {
-  const c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  t.textContent = msg;
-  c.appendChild(t);
-  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
-  setTimeout(()=>{
-    t.classList.remove('show');
-    setTimeout(()=>t.remove(), 350);
+// ═══════════════════════════════════════════════
+function toast(msg, type = 'i') {
+  const wrap = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 280);
   }, 2600);
 }
 
-// ══════════════════════════════════════════════
-// MODE SWITCHING
-// ══════════════════════════════════════════════
-document.querySelectorAll('.mode-btn').forEach(btn => {
+// ═══════════════════════════════════════════════
+// HAND LANDMARK MATH
+// ═══════════════════════════════════════════════
+const dist  = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z||0) - (b.z||0));
+const hSize = (lm)   => Math.max(dist(lm[0], lm[9]), 0.01);
+const nd    = (lm,a,b) => dist(lm[a], lm[b]) / hSize(lm);
+
+function isCurled(lm, tip, mcp) {
+  return dist(lm[0], lm[tip]) < dist(lm[0], lm[mcp]) * 1.15;
+}
+function isExtended(lm, tip, mcp) {
+  return dist(lm[0], lm[tip]) > dist(lm[0], lm[mcp]) * 1.30;
+}
+
+function fingers(lm) {
+  const hs = hSize(lm);
+  return {
+    T:  dist(lm[4], lm[2]) > hs * 0.80,   // thumb extended
+    I:  isExtended(lm, 8,  5),
+    M:  isExtended(lm, 12, 9),
+    R:  isExtended(lm, 16, 13),
+    P:  isExtended(lm, 20, 17),
+    Tc: isCurled(lm,  4,  2),
+    Ic: isCurled(lm,  8,  5),
+    Mc: isCurled(lm,  12, 9),
+    Rc: isCurled(lm,  16, 13),
+    Pc: isCurled(lm,  20, 17),
+  };
+}
+
+// ─── Gesture Mode Detection ──────────────────
+function detectGesture(lm) {
+  if (!lm || lm.length < 21) return null;
+  const f = fingers(lm);
+  const hs = hSize(lm);
+  const thumbHigh = lm[4].y < lm[0].y - hs * 0.28;
+  const t2i = nd(lm, 4, 8);
+
+  if (thumbHigh && f.Ic && f.Mc && f.Rc && f.Pc) return {type:'thumbs_up', name:'Thumbs Up', conf:0.93};
+  if (f.Ic && f.Mc && f.Rc && f.Pc && f.Tc)      return {type:'fist',      name:'Fist',      conf:0.91};
+  if (f.T && f.I && f.M && f.R && f.P)            return {type:'open_hand', name:'Open Hand', conf:0.93};
+  if (t2i < 0.35 && f.M && f.R && f.P)            return {type:'ok',        name:'OK Sign',   conf:0.88};
+  if (!f.T && f.I && f.M && f.Rc && f.Pc)         return {type:'peace',     name:'Peace',     conf:0.87};
+  if (f.I && f.Mc && f.Rc && f.Pc)                return {type:'pointing',  name:'Pointing',  conf:0.86};
+  const ext = [f.T,f.I,f.M,f.R,f.P].filter(Boolean).length;
+  if (ext >= 4) return {type:'open_hand', name:'Open Hand', conf:0.65};
+  return null;
+}
+
+// ─── ASL Letter Detection ────────────────────
+function detectASL(lm) {
+  if (!lm || lm.length < 21) return null;
+  const f  = fingers(lm);
+  const hs = hSize(lm);
+  const t2i = nd(lm,4,8), t2m = nd(lm,4,12), t2p = nd(lm,4,20);
+  const iSpread = Math.abs(lm[8].x - lm[12].x) / hs;
+  const a4c = f.Ic && f.Mc && f.Rc && f.Pc;  // all 4 curled
+
+  if (f.T && !f.I && !f.M && !f.R && f.P && t2p > 0.88) return 'Y';
+  if (f.I && f.M && f.R && f.P && f.Tc && !f.T)          return 'B';
+  if (f.T && f.I && f.Mc && f.Rc && f.Pc && t2i > 0.68)  return 'L';
+  if (f.P && f.Ic && f.Mc && f.Rc && !f.T)               return 'I';
+  if (f.I && f.M && f.R && f.Pc && !f.T)                 return 'W';
+  if (f.I && f.M && f.Rc && f.Pc && !f.T) return iSpread > 0.14 ? 'V' : 'U';
+  if (f.I && f.M && f.Rc && f.Pc && f.T) {
+    return nd(lm,4,10) < 0.28 ? 'K' : 'V';
+  }
+  if (f.I && f.Mc && f.Rc && f.Pc) return nd(lm,4,12) < 0.33 ? 'D' : 'G';
+  if (t2i < 0.25 && f.M && f.R && f.P)  return 'F';
+  if (a4c && t2i < 0.34 && t2m < 0.44)  return 'O';
+  {
+    const cr = v => v > 1.10 && v < 2.20;
+    const iw = dist(lm[0],lm[8])/hs, mw = dist(lm[0],lm[12])/hs,
+          rw = dist(lm[0],lm[16])/hs, pw = dist(lm[0],lm[20])/hs,
+          tw = dist(lm[0],lm[4])/hs;
+    if (cr(iw)&&cr(mw)&&cr(rw)&&cr(pw)&&cr(tw) && t2i>0.28&&t2i<0.82) return 'C';
+  }
+  if (a4c && !f.T)  return Math.abs(lm[4].x - lm[5].x)/hs > 0.14 ? 'A' : 'S';
+  if (a4c && f.Tc)  return 'S';
+  if (a4c)          return 'E';
+  if (f.I && f.M && f.Rc && f.Pc && iSpread < 0.07) return 'R';
+  return null;
+}
+
+// ─── Number Detection (ASL 0–9) ──────────────
+function detectNumber(lm) {
+  if (!lm || lm.length < 21) return null;
+  const f  = fingers(lm);
+  const hs = hSize(lm);
+  const t2i = nd(lm,4,8), t2m = nd(lm,4,12),
+        t2r = nd(lm,4,16), t2p = nd(lm,4,20);
+  const iSpread = Math.abs(lm[8].x - lm[12].x) / hs;
+  const a4c = f.Ic && f.Mc && f.Rc && f.Pc;
+
+  if (a4c && t2i < 0.34 && t2m < 0.44)                              return '0';
+  if (f.T && f.I && f.M && f.R && f.P)                              return '5';
+  if (f.I && f.M && f.R && f.P && !f.T && f.Tc)                     return '4';
+  if (t2i < 0.28 && !f.M && !f.R && !f.P)                           return '9';
+  if (f.I && f.Mc && f.Rc && f.Pc && !f.T)                          return '1';
+  if (f.I && f.M && f.Rc && f.Pc && !f.T && iSpread > 0.11)         return '2';
+  if (f.T && f.I && f.M && f.Rc && f.Pc)                            return '3';
+  if (f.I && f.M && f.R && f.P && !f.T && t2p < 0.38)               return '6';
+  if (f.I && f.M && !f.R && f.P && !f.T && t2r < 0.38)              return '7';
+  if (f.I && !f.M && f.R && f.P && !f.T && t2m < 0.33)              return '8';
+  return null;
+}
+
+// ═══════════════════════════════════════════════
+// MEDIAPIPE HELPERS
+// ═══════════════════════════════════════════════
+async function mkHands(cb, complexity = 1) {
+  const h = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+  h.setOptions({ maxNumHands:1, modelComplexity:complexity, minDetectionConfidence:0.65, minTrackingConfidence:0.65 });
+  h.onResults(cb);
+  return h;
+}
+
+function drawSkeleton(ctx, lm, canvas, cc, pc) {
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.translate(-canvas.width, 0);
+  if (typeof drawConnectors === 'function') drawConnectors(ctx, lm, HAND_CONNECTIONS, {color:cc, lineWidth:2.5});
+  if (typeof drawLandmarks  === 'function') drawLandmarks (ctx, lm, {color:pc, fillColor:cc, radius:3.5, lineWidth:1});
+  ctx.restore();
+}
+
+function drawFrame(ctx, vid, cvs) {
+  cvs.width  = vid.videoWidth  || 640;
+  cvs.height = vid.videoHeight || 480;
+  ctx.save();
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  ctx.scale(-1, 1);
+  ctx.translate(-cvs.width, 0);
+  ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════
+// TAB: GESTURE MODE
+// ═══════════════════════════════════════════════
+let handsMain = null, camMain = null, detectingMain = false, timerMain = null;
+const mainSt = {
+  totalDet:0, hist:[], stats:{}, lastType:null,
+  stable:0, THRESH:27, held:false,
+  fps:[], fts:0, sessStart:null
+};
+const vidMain = document.getElementById('vidMain');
+const cvsMain = document.getElementById('cvsMain');
+
+function onMain(res) {
+  const ctx = cvsMain.getContext('2d');
+  drawFrame(ctx, vidMain, cvsMain);
+
+  const now = performance.now();
+  if (mainSt.fts) {
+    mainSt.fps.push(Math.round(1000 / (now - mainSt.fts)));
+    if (mainSt.fps.length > 30) mainSt.fps.shift();
+    const avg = Math.round(mainSt.fps.reduce((a,b) => a+b, 0) / mainSt.fps.length);
+    document.getElementById('fpsVal').textContent = avg;
+    document.getElementById('fpsTxt').textContent = avg;
+  }
+  mainSt.fts = now;
+
+  const wrap = document.getElementById('camWrap');
+  const badge = document.getElementById('handBadge');
+  const ov = document.getElementById('gOv');
+
+  if (res.multiHandLandmarks?.length) {
+    const lm = res.multiHandLandmarks[0];
+    drawSkeleton(ctx, lm, cvsMain, '#a855f7', '#f0abfc');
+    wrap.className = wrap.className.replace(/cam-\w+/, 'cam-detect');
+    badge.classList.remove('hidden');
+    document.getElementById('fpsBadge').classList.remove('hidden');
+
+    mainSt.totalDet++;
+    $('totalDet').textContent = mainSt.totalDet;
+    $('dTot').textContent = mainSt.totalDet;
+
+    const g = detectGesture(lm);
+    if (g) {
+      $('gDisplay').textContent    = GESTURES[g.type]?.emoji || '?';
+      $('gName').textContent       = g.name;
+      $('confBar').style.width     = (g.conf * 100) + '%';
+      $('confTxt').textContent     = `Confidence: ${Math.round(g.conf*100)}%`;
+      $('gOvEmoji').textContent    = GESTURES[g.type]?.emoji || '';
+      $('gOvName').textContent     = g.name;
+      ov.classList.remove('hidden');
+
+      if (g.type === mainSt.lastType) mainSt.stable++;
+      else { mainSt.lastType = g.type; mainSt.stable = 1; mainSt.held = false; }
+
+      const pct = Math.min(100, (mainSt.stable / mainSt.THRESH) * 100);
+      $('stabBar').style.width = pct + '%';
+      $('stabLbl').textContent = g.name;
+
+      if (mainSt.stable >= mainSt.THRESH && !mainSt.held) {
+        mainSt.held = true;
+        mainSt.hist.push(g.type);
+        mainSt.stats[g.type] = (mainSt.stats[g.type] || 0) + 1;
+        updateSentBox();
+        $('dSaved').textContent = mainSt.hist.length;
+        speak(g.name);
+        toast(`✅ ${GESTURES[g.type].emoji} ${g.name}`, 's');
+      }
+    } else {
+      $('gDisplay').textContent = '?';
+      $('gName').textContent = 'Gesture tidak dikenal';
+    }
+  } else {
+    wrap.className = wrap.className.replace(/cam-\w+/, 'cam-active');
+    badge.classList.add('hidden'); ov.classList.add('hidden');
+    $('gName').textContent = 'Tidak ada tangan terdeteksi';
+    $('confBar').style.width = '0%';
+    $('confTxt').textContent = 'Confidence: –';
+    $('stabBar').style.width = '0%';
+    $('stabLbl').textContent = '–';
+    mainSt.lastType = null; mainSt.stable = 0; mainSt.held = false;
+  }
+}
+
+async function startMain() {
+  const btn = $('btnStart'); btn.disabled = true;
+  $('camLoad').style.display = 'flex';
+  $('camPH').classList.add('hidden');
+  try {
+    if (!handsMain) handsMain = await mkHands(onMain);
+    if (!camMain) camMain = new Camera(vidMain, {
+      onFrame: async () => { if (handsMain && detectingMain) await handsMain.send({image: vidMain}); },
+      width: 1280, height: 720
+    });
+    await camMain.start();
+    detectingMain = true; mainSt.sessStart = Date.now();
+    $('camLoad').style.display = 'none';
+    $('camWrap').className = $('camWrap').className.replace(/cam-\w+/, 'cam-active');
+    $('btnStop').disabled = false;
+    $('btnSS').disabled   = false;
+    timerMain = setInterval(() => {
+      $('sessTime').textContent = Math.floor((Date.now() - mainSt.sessStart) / 1000) + 's';
+    }, 1000);
+    toast('📷 Kamera aktif! Tunjukkan tangan Anda', 's');
+  } catch(e) {
+    $('camLoad').style.display = 'none';
+    $('camPH').classList.remove('hidden');
+    btn.disabled = false;
+    toast('❌ Gagal: ' + e.message, 'e');
+    console.error(e);
+  }
+}
+
+async function stopMain() {
+  detectingMain = false; clearInterval(timerMain);
+  try { if (camMain) await camMain.stop(); } catch(e){}
+  cvsMain.getContext('2d').clearRect(0, 0, cvsMain.width, cvsMain.height);
+  $('btnStart').disabled = false;
+  $('btnStop').disabled  = true;
+  $('btnSS').disabled    = true;
+  $('camPH').classList.remove('hidden');
+  $('fpsBadge').classList.add('hidden');
+  $('handBadge').classList.add('hidden');
+  $('camWrap').className = $('camWrap').className.replace(/cam-\w+/, 'cam-idle');
+  toast('⏹ Kamera dihentikan', 'i');
+}
+
+function doScreenshot() {
+  const a = document.createElement('a');
+  a.download = 'gestureflow-' + Date.now() + '.png';
+  a.href = cvsMain.toDataURL('image/png');
+  a.click();
+  toast('📸 Screenshot tersimpan!', 's');
+}
+
+function updateSentBox() {
+  const el = $('sentBox');
+  el.textContent = mainSt.hist.length
+    ? mainSt.hist.map(t => GESTURES[t]?.emoji || '?').join(' ')
+    : '(gesture akan muncul di sini)';
+}
+function clearSent() { mainSt.hist = []; updateSentBox(); toast('🗑 Kalimat dihapus', 'i'); }
+function copySent() {
+  const t = mainSt.hist.map(x => GESTURES[x]?.emoji || '').join(' ');
+  if (!t) { toast('Sentence kosong', 'w'); return; }
+  navigator.clipboard.writeText(t).then(() => toast('📋 Disalin!', 's'));
+}
+function speakSent() {
+  const n = mainSt.hist.map(t => GESTURES[t]?.name || '').filter(Boolean).join(', ');
+  if (!n) { toast('Sentence kosong', 'w'); return; }
+  speak(n, true);
+}
+
+// ═══════════════════════════════════════════════
+// TAB: A–Z TRAINING
+// ═══════════════════════════════════════════════
+let handsAZ = null;
+const azSt = {
+  running:false, learnMode:true,
+  letters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+  idx:0, correct:0, total:0, streak:0, best:0,
+  prog:{}, stable:0, THRESH:20, held:false, cam:null
+};
+const vidAZ = document.getElementById('vidAZ');
+const cvsAZ = document.getElementById('cvsAZ');
+
+function onAZ(res) {
+  const ctx = cvsAZ.getContext('2d');
+  drawFrame(ctx, vidAZ, cvsAZ);
+  if (!azSt.running) return;
+  if (res.multiHandLandmarks?.length) {
+    const lm = res.multiHandLandmarks[0];
+    drawSkeleton(ctx, lm, cvsAZ, '#7c3aed', '#ddd6fe');
+    $('azHandBadge').classList.remove('hidden');
+    $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-detect');
+
+    const det = detectASL(lm);
+    const tgt = azSt.letters[azSt.idx];
+    const live = $('azLive');
+    live.textContent = det || '–';
+    live.style.color = det === tgt ? 'var(--neon)' : det ? '#f87171' : 'var(--neon3)';
+    $('azStabLbl').textContent = det || '–';
+
+    if (det === tgt) azSt.stable++;
+    else { azSt.stable = 0; azSt.held = false; }
+
+    $('azStabBar').style.width = Math.min(100, (azSt.stable / azSt.THRESH) * 100) + '%';
+
+    if (azSt.stable >= azSt.THRESH && !azSt.held) {
+      azSt.held = true;
+      azCorrect(tgt);
+    }
+  } else {
+    $('azHandBadge').classList.add('hidden');
+    $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-active');
+    azSt.stable = 0; azSt.held = false;
+    $('azStabBar').style.width = '0%';
+    $('azStabLbl').textContent = '–';
+    const l = $('azLive'); l.textContent = '–'; l.style.color = 'var(--neon3)';
+  }
+}
+
+function azCorrect(letter) {
+  azSt.correct++; azSt.total++; azSt.streak++;
+  if (azSt.streak > azSt.best) azSt.best = azSt.streak;
+  azSt.prog[letter] = 'done';
+  updateAZUI(); renderAZGrid();
+  $('dAZ').textContent = azSt.correct;
+  showResultOverlay('azResOv', 'azResEmoji', 'azResTxt', '✅', `${letter} Benar!`, 'var(--neon)');
+  speak(letter + ', benar!');
+  setTimeout(() => { hideResultOverlay('azResOv'); nextAZ(); }, 1100);
+}
+
+function nextAZ() {
+  if (azSt.idx < azSt.letters.length - 1) {
+    azSt.idx++; azSt.stable = 0; azSt.held = false;
+    $('azStabBar').style.width = '0%';
+    updateAZCurrent();
+  } else {
+    showResultOverlay('azResOv','azResEmoji','azResTxt','🎉',`Selesai! ${azSt.correct}/26`,'var(--neon)');
+    speak('Selamat! Kamu menyelesaikan semua huruf alfabet!', true);
+    toast('🎉 A–Z selesai!', 's');
+    setTimeout(() => { hideResultOverlay('azResOv'); stopAZ(); }, 2500);
+  }
+}
+
+function updateAZCurrent() {
+  const l = azSt.letters[azSt.idx], info = ASL[l];
+  $('azTargLet').textContent  = l;
+  $('azCurLet').textContent   = l;
+  $('azCurDesc').textContent  = info?.desc  || '';
+  $('azCurHint').textContent  = info?.hint  || '';
+  $('azTargOv').classList.remove('hidden');
+  speak('Tunjukkan huruf ' + l);
+}
+
+function updateAZUI() {
+  $('azCorrNum').textContent = azSt.correct;
+  $('azTotNum').textContent  = azSt.total;
+  $('azStreak').textContent  = azSt.streak;
+  $('azBest').textContent    = azSt.best;
+  const pct = Math.round((azSt.correct / 26) * 100);
+  $('azPct').textContent     = pct + '%';
+  $('azPRing').style.strokeDashoffset = 163.4 * (1 - pct / 100);
+}
+
+function renderAZGrid() {
+  const g = $('azGrid'); g.innerHTML = '';
+  azSt.letters.forEach((l, i) => {
+    const isDone = azSt.prog[l] === 'done';
+    const isCur  = i === azSt.idx && azSt.running;
+    const cls    = isDone ? 'done' : isCur ? 'cur' : '';
+    g.innerHTML += `<div class="cell ${cls} w-7 h-7 text-xs">${l}</div>`;
+  });
+}
+
+function toggleAZMode() {
+  azSt.learnMode = !azSt.learnMode;
+  $('azModeBtn').textContent = 'Mode: ' + (azSt.learnMode ? 'Belajar' : 'Test');
+}
+
+function skipAZ() { azSt.total++; azSt.streak = 0; updateAZUI(); nextAZ(); }
+
+async function startAZ() {
+  $('azBtnStart').disabled = true;
+  if (!handsAZ) handsAZ = await mkHands(onAZ);
+  if (!azSt.cam) azSt.cam = new Camera(vidAZ, {
+    onFrame: async () => { if (handsAZ && azSt.running) await handsAZ.send({image: vidAZ}); },
+    width: 1280, height: 720
+  });
+  await azSt.cam.start();
+  azSt.running = true; azSt.idx = 0; azSt.correct = 0; azSt.total = 0;
+  azSt.streak = 0; azSt.prog = {}; azSt.stable = 0; azSt.held = false;
+  $('azPH').classList.add('hidden');
+  $('azBtnStop').disabled  = false;
+  $('azBtnSkip').disabled  = false;
+  $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-active');
+  updateAZCurrent(); updateAZUI(); renderAZGrid();
+  toast('🔤 A–Z Training dimulai!', 'i');
+}
+
+async function stopAZ() {
+  azSt.running = false;
+  if (azSt.cam) { try { await azSt.cam.stop(); } catch(e){} azSt.cam = null; }
+  $('azBtnStart').disabled = false;
+  $('azBtnStop').disabled  = true;
+  $('azBtnSkip').disabled  = true;
+  $('azTargOv').classList.add('hidden');
+  $('azPH').classList.remove('hidden');
+  $('azHandBadge').classList.add('hidden');
+  $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-idle');
+  cvsAZ.getContext('2d').clearRect(0, 0, cvsAZ.width, cvsAZ.height);
+}
+
+// ═══════════════════════════════════════════════
+// TAB: NUMERIC 0–9
+// ═══════════════════════════════════════════════
+let handsNum = null;
+const numSt = {
+  running:false,
+  nums: ['0','1','2','3','4','5','6','7','8','9'],
+  idx:0, correct:0, total:0, streak:0, best:0,
+  prog:{}, stable:0, THRESH:20, held:false, cam:null
+};
+const vidNum = document.getElementById('vidNum');
+const cvsNum = document.getElementById('cvsNum');
+
+function onNum(res) {
+  const ctx = cvsNum.getContext('2d');
+  drawFrame(ctx, vidNum, cvsNum);
+  if (!numSt.running) return;
+  if (res.multiHandLandmarks?.length) {
+    const lm = res.multiHandLandmarks[0];
+    drawSkeleton(ctx, lm, cvsNum, '#0e7490', '#a5f3fc');
+    $('numHandBadge').classList.remove('hidden');
+    $('numCamWrap').className = $('numCamWrap').className.replace(/cam-\w+/, 'cam-detect');
+
+    const det = detectNumber(lm);
+    const tgt = numSt.nums[numSt.idx];
+    const live = $('numLive');
+    live.textContent = det || '–';
+    live.style.color = det === tgt ? 'var(--neon)' : det ? '#f87171' : 'var(--neon3)';
+    $('numStabLbl').textContent = det || '–';
+
+    if (det === tgt) numSt.stable++;
+    else { numSt.stable = 0; numSt.held = false; }
+
+    $('numStabBar').style.width = Math.min(100, (numSt.stable / numSt.THRESH) * 100) + '%';
+
+    if (numSt.stable >= numSt.THRESH && !numSt.held) {
+      numSt.held = true;
+      numCorrect(tgt);
+    }
+  } else {
+    $('numHandBadge').classList.add('hidden');
+    $('numCamWrap').className = $('numCamWrap').className.replace(/cam-\w+/, 'cam-active');
+    numSt.stable = 0; numSt.held = false;
+    $('numStabBar').style.width = '0%';
+    $('numStabLbl').textContent = '–';
+    const l = $('numLive'); l.textContent = '–'; l.style.color = 'var(--neon3)';
+  }
+}
+
+function numCorrect(n) {
+  numSt.correct++; numSt.total++; numSt.streak++;
+  if (numSt.streak > numSt.best) numSt.best = numSt.streak;
+  numSt.prog[n] = 'done';
+  updateNumUI(); renderNumGrid();
+  showResultOverlay('numResOv','numResEmoji','numResTxt','✅',`Angka ${n} Benar!`,'var(--neon3)');
+  speak('Angka ' + n + ', benar!');
+  setTimeout(() => { hideResultOverlay('numResOv'); nextNum(); }, 1100);
+}
+
+function nextNum() {
+  if (numSt.idx < numSt.nums.length - 1) {
+    numSt.idx++; numSt.stable = 0; numSt.held = false;
+    $('numStabBar').style.width = '0%';
+    updateNumCurrent();
+  } else {
+    showResultOverlay('numResOv','numResEmoji','numResTxt','🎉',`Selesai! ${numSt.correct}/10`,'var(--neon)');
+    speak('Selamat! Kamu menyelesaikan semua angka!', true);
+    toast('🎉 0–9 selesai!', 's');
+    setTimeout(() => { hideResultOverlay('numResOv'); stopNum(); }, 2500);
+  }
+}
+
+function updateNumCurrent() {
+  const n = numSt.nums[numSt.idx], info = NUMBERS[parseInt(n)];
+  $('numTargNum').textContent = n;
+  $('numCurNum').textContent  = n;
+  $('numCurHint').textContent = (info?.desc || '') + ' — ' + (info?.hint || '');
+  $('numTargOv').classList.remove('hidden');
+  speak('Tunjukkan angka ' + n);
+}
+
+function updateNumUI() {
+  $('numCorrNum').textContent = numSt.correct;
+  $('numTotNum').textContent  = numSt.total;
+  $('numStreak').textContent  = numSt.streak;
+  $('numBest').textContent    = numSt.best;
+  const pct = Math.round((numSt.correct / 10) * 100);
+  $('numPct').textContent     = pct + '%';
+  $('numPRing').style.strokeDashoffset = 163.4 * (1 - pct / 100);
+}
+
+function renderNumGrid() {
+  const g = $('numGrid'); g.innerHTML = '';
+  numSt.nums.forEach((n, i) => {
+    const isDone = numSt.prog[n] === 'done';
+    const isCur  = i === numSt.idx && numSt.running;
+    const cls    = isDone ? 'done' : isCur ? 'cur-c' : '';
+    g.innerHTML += `<div class="cell ${cls} aspect-square text-xl">${n}</div>`;
+  });
+}
+
+function skipNum() { numSt.total++; numSt.streak = 0; updateNumUI(); nextNum(); }
+
+async function startNum() {
+  $('numBtnStart').disabled = true;
+  if (!handsNum) handsNum = await mkHands(onNum);
+  if (!numSt.cam) numSt.cam = new Camera(vidNum, {
+    onFrame: async () => { if (handsNum && numSt.running) await handsNum.send({image: vidNum}); },
+    width: 1280, height: 720
+  });
+  await numSt.cam.start();
+  numSt.running = true; numSt.idx = 0; numSt.correct = 0; numSt.total = 0;
+  numSt.streak = 0; numSt.prog = {}; numSt.stable = 0; numSt.held = false;
+  $('numPH').classList.add('hidden');
+  $('numBtnStop').disabled  = false;
+  $('numBtnSkip').disabled  = false;
+  $('numCamWrap').className = $('numCamWrap').className.replace(/cam-\w+/, 'cam-active');
+  updateNumCurrent(); updateNumUI(); renderNumGrid();
+  toast('🔢 Latihan angka dimulai!', 'i');
+}
+
+async function stopNum() {
+  numSt.running = false;
+  if (numSt.cam) { try { await numSt.cam.stop(); } catch(e){} numSt.cam = null; }
+  $('numBtnStart').disabled = false;
+  $('numBtnStop').disabled  = true;
+  $('numBtnSkip').disabled  = true;
+  $('numTargOv').classList.add('hidden');
+  $('numPH').classList.remove('hidden');
+  $('numHandBadge').classList.add('hidden');
+  $('numCamWrap').className = $('numCamWrap').className.replace(/cam-\w+/, 'cam-idle');
+  cvsNum.getContext('2d').clearRect(0, 0, cvsNum.width, cvsNum.height);
+}
+
+// ═══════════════════════════════════════════════
+// TAB: GAME & KUIS
+// ═══════════════════════════════════════════════
+let handsGame = null;
+const gameSt = {
+  running:false, mode:'az',
+  pool:[], idx:0, score:0, correct:0, wrong:0, streak:0, bestStreak:0,
+  totalSess:0, bestScore:0, allAcc:[],
+  stable:0, THRESH:16, held:false, cam:null,
+  roundTimer:null, timeLeft:10, TIME_MAX:10,
+  elTimer:null, elapsed:0
+};
+const vidGame = document.getElementById('vidGame');
+const cvsGame = document.getElementById('cvsGame');
+
+function setGameMode(mode) {
+  gameSt.mode = mode;
+  // Reset button styles
+  ['gameModeAZ','gameModeNum','gameModeGest'].forEach(id => {
+    $$(id).style.color = '#6b7280';
+    $$(id).style.background = 'transparent';
+    $$(id).style.borderColor = 'rgba(255,255,255,.1)';
+  });
+  const map = {az:'gameModeAZ', num:'gameModeNum', gest:'gameModeGest'};
+  const colors = {az:'var(--neon)', num:'var(--neon3)', gest:'var(--neon2)'};
+  const bgs    = {az:'rgba(0,255,136,.1)', num:'rgba(34,211,238,.1)', gest:'rgba(168,85,247,.1)'};
+  const bcs    = {az:'var(--neon)', num:'var(--neon3)', gest:'var(--neon2)'};
+  const el = $$(map[mode]);
+  el.style.color = colors[mode]; el.style.background = bgs[mode]; el.style.borderColor = bcs[mode];
+  const labels = {az:'Mode: A–Z Alfabet', num:'Mode: 0–9 Angka', gest:'Mode: Gesture'};
+  toast(labels[mode], 'i');
+}
+
+function buildPool() {
+  let arr;
+  if (gameSt.mode === 'az')   arr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  else if (gameSt.mode === 'num') arr = '0123456789'.split('');
+  else arr = Object.keys(GESTURES);
+  // shuffle
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function onGame(res) {
+  const ctx = cvsGame.getContext('2d');
+  drawFrame(ctx, vidGame, cvsGame);
+  if (!gameSt.running) return;
+
+  if (res.multiHandLandmarks?.length) {
+    const lm = res.multiHandLandmarks[0];
+    drawSkeleton(ctx, lm, cvsGame, '#059669', '#6ee7b7');
+    $('gameHandBadge').classList.remove('hidden');
+
+    let det = null;
+    if (gameSt.mode === 'az')   det = detectASL(lm);
+    else if (gameSt.mode === 'num') det = detectNumber(lm);
+    else {
+      const g = detectGesture(lm);
+      det = g ? g.type : null;
+    }
+
+    const tgt = gameSt.pool[gameSt.idx];
+    const live = $('gameLive');
+    const dispDet = gameSt.mode === 'gest' ? (GESTURES[det]?.emoji || '–') : (det || '–');
+    live.textContent = dispDet;
+    live.style.color = det === tgt ? 'var(--neon)' : det ? '#f87171' : 'var(--neon)';
+    $('gameStabLbl').textContent = dispDet;
+
+    if (det === tgt) gameSt.stable++;
+    else { gameSt.stable = 0; gameSt.held = false; }
+
+    $('gameStabBar').style.width = Math.min(100, (gameSt.stable / gameSt.THRESH) * 100) + '%';
+
+    if (gameSt.stable >= gameSt.THRESH && !gameSt.held) {
+      gameSt.held = true;
+      gameHit();
+    }
+  } else {
+    $('gameHandBadge').classList.add('hidden');
+    gameSt.stable = 0; gameSt.held = false;
+    $('gameStabBar').style.width = '0%';
+    $('gameStabLbl').textContent = '–';
+    const l = $('gameLive'); l.textContent = '–'; l.style.color = 'var(--neon)';
+  }
+}
+
+function gameHit() {
+  clearInterval(gameSt.roundTimer);
+  const bonus = Math.ceil(gameSt.timeLeft * 5);
+  gameSt.score += 10 + bonus;
+  gameSt.correct++; gameSt.streak++;
+  if (gameSt.streak > gameSt.bestStreak) gameSt.bestStreak = gameSt.streak;
+  if (gameSt.score > gameSt.bestScore)   gameSt.bestScore  = gameSt.score;
+  updateGameUI();
+  showGameFlash('✅');
+  speak(gameSt.pool[gameSt.idx] + (gameSt.mode === 'gest' ? ', bagus!' : ', benar!'));
+  toast(`+${10+bonus} poin! 🎯`, 's');
+  setTimeout(() => { hideGameFlash(); nextGame(); }, 650);
+}
+
+function gameMiss() {
+  gameSt.wrong++; gameSt.streak = 0;
+  updateGameUI();
+  showGameFlash('❌');
+  speak('Waktu habis!', true);
+  toast('⏰ Waktu habis!', 'w');
+  setTimeout(() => { hideGameFlash(); nextGame(); }, 650);
+}
+
+function nextGame() {
+  gameSt.stable = 0; gameSt.held = false;
+  $('gameStabBar').style.width = '0%';
+  if (gameSt.idx < gameSt.pool.length - 1) {
+    gameSt.idx++;
+    startRoundTimer();
+    updateGameTarget();
+  } else {
+    endGame();
+  }
+}
+
+function endGame() {
+  gameSt.running = false;
+  clearInterval(gameSt.roundTimer);
+  clearInterval(gameSt.elTimer);
+  const total = gameSt.correct + gameSt.wrong;
+  const acc   = total > 0 ? Math.round((gameSt.correct / total) * 100) : 0;
+  gameSt.allAcc.push(acc);
+  gameSt.totalSess++;
+  const avgAcc = Math.round(gameSt.allAcc.reduce((a,b) => a+b,0) / gameSt.allAcc.length);
+  $('gameBestScore').textContent  = gameSt.bestScore;
+  $('gameBestStreak').textContent = gameSt.bestStreak;
+  $('gameTotalSess').textContent  = gameSt.totalSess;
+  $('gameAvgAcc').textContent     = avgAcc + '%';
+  $('dGame').textContent          = gameSt.bestScore;
+  showGameFlash('🏆');
+  speak(`Game selesai! Skor kamu ${gameSt.score} poin! Akurasi ${acc} persen.`, true);
+  toast(`🏆 Game selesai! Skor: ${gameSt.score}`, 's');
+  setTimeout(() => { hideGameFlash(); stopGame(); }, 2200);
+}
+
+function startRoundTimer() {
+  gameSt.timeLeft = gameSt.TIME_MAX;
+  clearInterval(gameSt.roundTimer);
+  updateTimerRing(1);
+  gameSt.roundTimer = setInterval(() => {
+    gameSt.timeLeft = Math.max(0, gameSt.timeLeft - 0.1);
+    updateTimerRing(gameSt.timeLeft / gameSt.TIME_MAX);
+    $('gameTimerTxt').textContent = Math.ceil(gameSt.timeLeft);
+    if (gameSt.timeLeft <= 0) {
+      clearInterval(gameSt.roundTimer);
+      if (gameSt.running) gameMiss();
+    }
+  }, 100);
+}
+
+function updateTimerRing(pct) {
+  const offset = 138.2 * (1 - pct);
+  $('gameRingPath').style.strokeDashoffset = offset;
+  const col = pct > 0.5 ? 'var(--neon)' : pct > 0.25 ? 'var(--gold)' : '#f87171';
+  $('gameRingPath').style.stroke = col;
+  $('gameTimerTxt').style.color  = col;
+}
+
+function updateGameTarget() {
+  const tgt = gameSt.pool[gameSt.idx];
+  let displayTgt = tgt;
+  let hint = '';
+  if (gameSt.mode === 'az') {
+    hint = ASL[tgt]?.hint || '';
+  } else if (gameSt.mode === 'num') {
+    hint = NUMBERS[parseInt(tgt)]?.hint || '';
+  } else {
+    displayTgt = GESTURES[tgt]?.emoji || tgt;
+    hint = GESTURES[tgt]?.desc || '';
+  }
+  $('gameTargTxt').textContent  = displayTgt;
+  $('gameCurTgt').textContent   = displayTgt;
+  $('gameCurHint').textContent  = hint;
+  speak('Tunjukkan ' + (gameSt.mode === 'gest' ? GESTURES[tgt]?.name || tgt : tgt));
+}
+
+function updateGameUI() {
+  $('gameScore').textContent   = gameSt.score;
+  $('gameCorrect').textContent = gameSt.correct;
+  $('gameWrong').textContent   = gameSt.wrong;
+  $('gameStreak').textContent  = gameSt.streak;
+  // Level bars (1 level per 40 pts)
+  const lvl = Math.min(5, Math.floor(gameSt.score / 40) + 1);
+  const labels = ['Pemula','Menengah','Mahir','Expert','Master'];
+  $('gameLevelTxt').textContent = labels[lvl - 1] || 'Pemula';
+  for (let i = 1; i <= 5; i++) {
+    $(`lv${i}`).style.background = i <= lvl ? 'var(--neon)' : 'rgba(255,255,255,.07)';
+  }
+}
+
+function showGameFlash(em) {
+  const fi = $('gameFlashInner');
+  fi.textContent = em;
+  fi.classList.remove('score-pop');
+  void fi.offsetWidth; // force reflow
+  fi.classList.add('score-pop');
+  $('gameFlash').style.display = 'flex';
+}
+function hideGameFlash() { $('gameFlash').style.display = 'none'; }
+
+function skipGame() {
+  if (!gameSt.running) return;
+  clearInterval(gameSt.roundTimer);
+  gameSt.wrong++; gameSt.streak = 0;
+  updateGameUI(); nextGame();
+}
+
+async function startGame() {
+  $('gameBtnStart').disabled = true;
+  if (!handsGame) handsGame = await mkHands(onGame);
+  if (!gameSt.cam) gameSt.cam = new Camera(vidGame, {
+    onFrame: async () => { if (handsGame && gameSt.running) await handsGame.send({image: vidGame}); },
+    width: 1280, height: 720
+  });
+  await gameSt.cam.start();
+  gameSt.running = true;
+  gameSt.pool    = buildPool();
+  gameSt.idx     = 0; gameSt.score  = 0;
+  gameSt.correct = 0; gameSt.wrong  = 0;
+  gameSt.streak  = 0; gameSt.stable = 0; gameSt.held = false;
+  gameSt.elapsed = 0;
+
+  $('gamePH').classList.add('hidden');
+  $('gameTargOv').classList.remove('hidden');
+  $('gameTimerOv').classList.remove('hidden');
+  $('gameBtnStop').disabled  = false;
+  $('gameBtnSkip').disabled  = false;
+
+  updateGameUI(); updateGameTarget(); startRoundTimer();
+
+  clearInterval(gameSt.elTimer);
+  gameSt.elTimer = setInterval(() => {
+    gameSt.elapsed++;
+    $('gameElapsed').textContent = gameSt.elapsed + 's';
+  }, 1000);
+
+  toast('🎮 Game dimulai! Tunjukkan gesture!', 's');
+}
+
+async function stopGame() {
+  gameSt.running = false;
+  clearInterval(gameSt.roundTimer); clearInterval(gameSt.elTimer);
+  if (gameSt.cam) { try { await gameSt.cam.stop(); } catch(e){} gameSt.cam = null; }
+  $('gameBtnStart').disabled = false;
+  $('gameBtnStop').disabled  = true;
+  $('gameBtnSkip').disabled  = true;
+  $('gamePH').classList.remove('hidden');
+  $('gameTargOv').classList.add('hidden');
+  $('gameTimerOv').classList.add('hidden');
+  $('gameHandBadge').classList.add('hidden');
+  $('gameStabBar').style.width = '0%';
+  cvsGame.getContext('2d').clearRect(0, 0, cvsGame.width, cvsGame.height);
+}
+
+// ═══════════════════════════════════════════════
+// SHARED RESULT OVERLAY HELPERS
+// ═══════════════════════════════════════════════
+function showResultOverlay(ovId, emId, txtId, emoji, text, color) {
+  $(emId).textContent      = emoji;
+  $(txtId).textContent     = text;
+  $(txtId).style.color     = color;
+  const ov = $(ovId);
+  ov.classList.remove('hidden');
+  ov.style.display = 'flex';
+  // Re-trigger pop animation
+  const inner = ov.querySelector('[class*="pop-in"]');
+  if (inner) { inner.classList.remove('pop-in'); void inner.offsetWidth; inner.classList.add('pop-in'); }
+}
+function hideResultOverlay(id) { $(id).style.display = 'none'; $(id).classList.add('hidden'); }
+
+// ═══════════════════════════════════════════════
+// POPULATE STATIC CONTENT
+// ═══════════════════════════════════════════════
+function renderGestRef() {
+  $('gestRef').innerHTML = Object.entries(GESTURES).map(([k,g]) =>
+    `<div class="hov glass text-center p-3 rounded-xl cursor-pointer" onclick="speak('${g.name}')">
+      <div class="text-3xl mb-1">${g.emoji}</div>
+      <p class="text-xs font-semibold text-gray-300">${g.name}</p>
+    </div>`).join('');
+}
+
+function renderLearnCards() {
+  $('learnCards').innerHTML = Object.entries(GESTURES).map(([k,g]) =>
+    `<div class="hov glass rounded-2xl p-5 cursor-pointer" onclick="speak('${g.desc}', true)">
+      <div class="text-5xl mb-3">${g.emoji}</div>
+      <h3 class="font-bold text-base mb-1">${g.name}</h3>
+      <p class="text-gray-500 text-sm leading-snug">${g.desc}</p>
+      <button class="mt-3 text-xs nt2 hover:underline">🔊 Dengar deskripsi</button>
+    </div>`).join('');
+}
+
+function renderAZRef() {
+  $('azRef').innerHTML = Object.entries(ASL).map(([l, info]) =>
+    `<div class="hov cell cursor-pointer p-2 flex-col gap-0.5 text-center" style="height:auto" onclick="speak('${info.hint}', true)" title="${info.desc}">
+      <div class="text-base nt2">${l}</div>
+      <div class="text-xs text-gray-600 leading-tight" style="font-family:inherit;font-weight:400">${info.hint.split(' ').slice(0,3).join(' ')}</div>
+    </div>`).join('');
+}
+
+function renderNumRef() {
+  $('numRef').innerHTML = Object.entries(NUMBERS).map(([n, info]) =>
+    `<div class="hov cursor-pointer rounded-2xl p-4 text-center border border-gray-800/50 bg-black/30 hover:border-cyan-500/40 transition" onclick="speak('${info.hint}', true)">
+      <div class="text-3xl font-black font-mono nt3 mb-1">${n}</div>
+      <div class="text-xs font-semibold text-gray-400 mb-0.5">${info.desc}</div>
+      <div class="text-xs text-gray-600 leading-snug">${info.hint}</div>
+    </div>`).join('');
+}
+
+function renderBreakdown() {
+  const el = $('breakdown');
+  const entries = Object.entries(mainSt.stats);
+  if (!entries.length) { el.innerHTML = '<p class="text-gray-700 text-sm">Belum ada data deteksi gestur.</p>'; return; }
+  const total = entries.reduce((s,[,v]) => s+v, 0) || 1;
+  el.innerHTML = entries
+    .sort(([,a],[,b]) => b - a)
+    .map(([type, count]) => {
+      const pct = Math.round((count / total) * 100);
+      return `<div class="flex items-center gap-3">
+        <span class="text-lg w-8 text-center">${GESTURES[type]?.emoji}</span>
+        <span class="text-sm text-gray-400 w-24">${GESTURES[type]?.name}</span>
+        <div class="flex-1 bg-gray-900 rounded-full h-2 overflow-hidden">
+          <div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,var(--neon2),#e879f9)"></div>
+        </div>
+        <span class="text-xs font-mono text-gray-600 w-10 text-right">${count}×</span>
+      </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════
+const TABS = ['gesture','alphabet','numeric','game','learn','dashboard'];
+document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const mode = btn.dataset.mode;
-    document.getElementById('gestureMode').classList.toggle('hidden', mode!=='gesture');
-    document.getElementById('learnMode').classList.toggle('hidden', mode!=='learn');
-    document.getElementById('alphabetMode').classList.toggle('hidden', mode!=='alphabet');
-    document.getElementById('dashboardMode').classList.toggle('hidden', mode!=='dashboard');
-    if (mode === 'dashboard') updateGestureBreakdown();
+    const t = btn.dataset.tab;
+    TABS.forEach(id => {
+      const el = document.getElementById('tab-' + id);
+      if (el) { el.classList.toggle('hidden', id !== t); el.classList.remove('fade-up'); void el.offsetWidth; if (id === t) el.classList.add('fade-up'); }
+    });
+    if (t === 'dashboard') renderBreakdown();
   });
 });
 
-// ══════════════════════════════════════════════
-// EVENT LISTENERS
-// ══════════════════════════════════════════════
-document.getElementById('startCameraBtn').addEventListener('click', startCamera);
-document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
-document.getElementById('screenshotBtn').addEventListener('click', takeScreenshot);
-document.getElementById('azStartBtn').addEventListener('click', startAZ);
-document.getElementById('azStopBtn').addEventListener('click', stopAZ);
-document.getElementById('azSkipBtn').addEventListener('click', ()=>{
-  azState.totalAttempts++;
-  azState.streak = 0;
-  updateAZUI();
-  nextAZLetter();
-});
+// helpers already defined at top
 
-document.getElementById('clearSentenceBtn').addEventListener('click', ()=>{
-  appState.sentenceHistory = [];
-  updateSentenceBuilder();
-  showNotification('Sentence dihapus', 'info');
-});
-document.getElementById('copySentenceBtn').addEventListener('click', ()=>{
-  const text = appState.sentenceHistory.map(t=>GESTURES[t]?.emoji).join(' ');
-  if (!text){ showNotification('Sentence kosong', 'info'); return; }
-  navigator.clipboard.writeText(text).then(()=>showNotification('Disalin!', 'success'));
-});
-document.getElementById('speakSentenceBtn').addEventListener('click', ()=>{
-  const names = appState.sentenceHistory.map(t=>GESTURES[t]?.name||'').join(', ');
-  if (!names){ showNotification('Sentence kosong', 'info'); return; }
-  const utt = new SpeechSynthesisUtterance(names);
-  utt.lang = 'id-ID';
-  speechSynthesis.speak(utt);
-});
-document.getElementById('darkModeToggle').addEventListener('click', ()=>{
-  document.body.classList.toggle('bg-slate-950');
-  document.body.classList.toggle('bg-gray-100');
-  document.body.classList.toggle('text-white');
-  document.body.classList.toggle('text-gray-900');
-});
-
-// ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // INIT
-// ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-  populateGestureGuide();
-  populateLearnMode();
-  populateAZReference();
-  updateAZLetterGrid();
-  updateGestureBreakdown();
-  handsMain = await initHands(onResultsMain);
-  showNotification('GestureFlow siap! Klik Start Camera.', 'info');
+  renderGestRef();
+  renderLearnCards();
+  renderAZRef();
+  renderNumRef();
+  renderAZGrid();
+  renderNumGrid();
+  renderBreakdown();
+
+  // Deep-link from landing page (tab stored in localStorage)
+  const savedTab = localStorage.getItem('gf_tab');
+  if (savedTab && TABS.includes(savedTab)) {
+    localStorage.removeItem('gf_tab');
+    const btn = document.querySelector(`.tab[data-tab="${savedTab}"]`);
+    if (btn) btn.click();
+  }
+
+  // Pre-warm main model quietly
+  try { handsMain = await mkHands(onMain); } catch(e){ console.warn('Hands init:', e); }
+
+  // Game mode default
+  setGameMode('az');
+
+  toast('GestureFlow v3.0 siap! ✅', 's');
+  speak('Selamat datang di GestureFlow versi tiga titik nol.', false);
 });
 </script>
 </body>

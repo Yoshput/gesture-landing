@@ -85,16 +85,16 @@
                     
                     <div class="flex gap-8 mt-12">
                         <div>
-                            <div class="text-3xl font-bold gradient-text">35+</div>
-                            <div class="text-gray-400">Gesture Dikenali</div>
+                            <div class="text-3xl font-bold gradient-text">42+</div>
+                            <div class="text-gray-400">Gesture & Huruf</div>
                         </div>
                         <div>
-                            <div class="text-3xl font-bold gradient-text">99%</div>
-                            <div class="text-gray-400">Akurasi AI</div>
+                            <div class="text-3xl font-bold gradient-text">6</div>
+                            <div class="text-gray-400">Mode Latihan</div>
                         </div>
                         <div>
-                            <div class="text-3xl font-bold gradient-text">Realtime</div>
-                            <div class="text-gray-400">Browser Based</div>
+                            <div class="text-3xl font-bold gradient-text">v3.0</div>
+                            <div class="text-gray-400">Final Release</div>
                         </div>
                     </div>
                 </div>
@@ -131,35 +131,41 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <!-- App Feature -->
-                <a href="./app.html" class="group glass-dark rounded-xl p-6 border border-purple-400/30 hover:border-purple-400/60 transition transform hover:-translate-y-2">
+                <a href="./app.html#gesture" class="group glass-dark rounded-xl p-6 border border-purple-400/30 hover:border-purple-400/60 transition transform hover:-translate-y-2">
                     <div class="text-4xl mb-3">🎯</div>
-                    <h3 class="font-semibold text-lg mb-2">Gesture Recognition</h3>
-                    <p class="text-sm text-gray-400 mb-4">Deteksi & analisis gesture realtime</p>
-                    <div class="text-blue-400 text-sm font-semibold group-hover:translate-x-1 transition">Buka App →</div>
+                    <h3 class="font-semibold text-lg mb-2">Gesture Mode</h3>
+                    <p class="text-sm text-gray-400 mb-4">Deteksi & analisis gesture realtime + sentence builder</p>
+                    <div class="text-blue-400 text-sm font-semibold group-hover:translate-x-1 transition">Buka →</div>
                 </a>
                 
-                <!-- Custom Gesture -->
-                <a href="./custom-gesture.html" class="group glass-dark rounded-xl p-6 border border-purple-400/30 hover:border-purple-400/60 transition transform hover:-translate-y-2">
-                    <div class="text-4xl mb-3">🎬</div>
-                    <h3 class="font-semibold text-lg mb-2">Custom Gesture</h3>
-                    <p class="text-sm text-gray-400 mb-4">Buat presentasi gesture sendiri</p>
-                    <div class="text-purple-400 text-sm font-semibold group-hover:translate-x-1 transition">Mulai →</div>
+                <!-- AZ Training -->
+                <a href="./app.html" onclick="localStorage.setItem('gf_tab','alphabet')" class="group glass-dark rounded-xl p-6 border border-purple-400/30 hover:border-purple-400/60 transition transform hover:-translate-y-2">
+                    <div class="text-4xl mb-3">🔤</div>
+                    <h3 class="font-semibold text-lg mb-2">A–Z Training</h3>
+                    <p class="text-sm text-gray-400 mb-4">Latihan 26 huruf ASL dengan progress & streak</p>
+                    <div class="text-purple-400 text-sm font-semibold group-hover:translate-x-1 transition">Latihan →</div>
                 </a>
                 
-                <!-- Dashboard -->
-                <a href="./dashboard.html" class="group glass-dark rounded-xl p-6 border border-green-400/30 hover:border-green-400/60 transition transform hover:-translate-y-2">
-                    <div class="text-4xl mb-3">📊</div>
-                    <h3 class="font-semibold text-lg mb-2">Dashboard</h3>
-                    <p class="text-sm text-gray-400 mb-4">Statistik & progress tracking</p>
-                    <div class="text-green-400 text-sm font-semibold group-hover:translate-x-1 transition">Lihat →</div>
+                <!-- Numeric NEW -->
+                <a href="./app.html" onclick="localStorage.setItem('gf_tab','numeric')" class="group glass-dark rounded-xl p-6 border border-cyan-400/30 hover:border-cyan-400/60 transition transform hover:-translate-y-2">
+                    <div class="text-4xl mb-3">🔢</div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <h3 class="font-semibold text-lg">0–9 Angka</h3>
+                        <span class="text-xs px-1 py-0.5 rounded text-cyan-400 font-bold" style="background:rgba(34,211,238,.15);border:1px solid rgba(34,211,238,.3)">NEW</span>
+                    </div>
+                    <p class="text-sm text-gray-400 mb-4">Kenali angka ASL 0–9 dengan model khusus numerik</p>
+                    <div class="text-cyan-400 text-sm font-semibold group-hover:translate-x-1 transition">Coba →</div>
                 </a>
                 
-                <!-- Home -->
-                <a href="../index.html" class="group glass-dark rounded-xl p-6 border border-orange-400/30 hover:border-orange-400/60 transition transform hover:-translate-y-2">
-                    <div class="text-4xl mb-3">🏠</div>
-                    <h3 class="font-semibold text-lg mb-2">Kembali Home</h3>
-                    <p class="text-sm text-gray-400 mb-4">Halaman utama GestureFlow</p>
-                    <div class="text-orange-400 text-sm font-semibold group-hover:translate-x-1 transition">Home →</div>
+                <!-- Game NEW -->
+                <a href="./app.html" onclick="localStorage.setItem('gf_tab','game')" class="group glass-dark rounded-xl p-6 border border-green-400/30 hover:border-green-400/60 transition transform hover:-translate-y-2">
+                    <div class="text-4xl mb-3">🎮</div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <h3 class="font-semibold text-lg">Game & Kuis</h3>
+                        <span class="text-xs px-1 py-0.5 rounded text-green-400 font-bold" style="background:rgba(0,255,136,.15);border:1px solid rgba(0,255,136,.3)">NEW</span>
+                    </div>
+                    <p class="text-sm text-gray-400 mb-4">Tantangan gesture dengan skor, timer, dan level</p>
+                    <div class="text-green-400 text-sm font-semibold group-hover:translate-x-1 transition">Main →</div>
                 </a>
             </div>
         </div>
@@ -193,22 +199,35 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12M8 11h12M8 15h12M3 7h.01M3 11h.01M3 15h.01"></path>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold mb-2">Sentence Builder</h3>
-                    <p class="text-gray-400">Susun kalimat otomatis dari gesture yang dideteksi dengan spacing yang benar</p>
+                    <h3 class="text-xl font-semibold mb-2">A–Z Alphabet Training</h3>
+                    <p class="text-gray-400">Latihan 26 huruf ASL lengkap dengan progress tracker, streak, dan feedback suara real-time</p>
                 </div>
                 
-                <!-- Feature 3 -->
-                <div class="glass-dark rounded-xl p-8 hover:border-purple-400/50 transition group">
-                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 15.464a5 5 0 10-7.072 0m7.072 0l-1.414-1.414m0 0L21 3m-9.172 9.172L3 21"></path>
-                        </svg>
+                <!-- Feature 3 NEW -->
+                <div class="glass-dark rounded-xl p-8 hover:border-cyan-400/50 transition group border border-cyan-400/20">
+                    <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                        <span class="text-2xl">🔢</span>
                     </div>
-                    <h3 class="text-xl font-semibold mb-2">Translator Mode</h3>
-                    <p class="text-gray-400">Mode translator canggih untuk gesture ↔ text dengan history lengkap</p>
+                    <div class="flex items-center gap-2 mb-2">
+                        <h3 class="text-xl font-semibold">Pengenalan Angka 0–9</h3>
+                        <span class="text-xs px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">NEW</span>
+                    </div>
+                    <p class="text-gray-400">Deteksi angka 0–9 berbasis koordinat tangan ASL. Dataset gesture numerik tersendiri</p>
                 </div>
                 
-                <!-- Feature 4 -->
+                <!-- Feature 4 NEW -->
+                <div class="glass-dark rounded-xl p-8 hover:border-green-400/50 transition group border border-green-400/20">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                        <span class="text-2xl">🎮</span>
+                    </div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <h3 class="text-xl font-semibold">Game & Kuis Interaktif</h3>
+                        <span class="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-bold border border-green-500/30">NEW</span>
+                    </div>
+                    <p class="text-gray-400">Tantangan gesture real-time dengan skor, timer, streak, level, dan 3 mode: A–Z, 0–9, Gesture</p>
+                </div>
+                
+                <!-- Feature 5 -->
                 <div class="glass-dark rounded-xl p-8 hover:border-orange-400/50 transition group">
                     <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,18 +235,7 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Text-to-Speech</h3>
-                    <p class="text-gray-400">Gesture otomatis diucapkan dengan suara natural dalam Bahasa Indonesia</p>
-                </div>
-                
-                <!-- Feature 5 -->
-                <div class="glass-dark rounded-xl p-8 hover:border-pink-400/50 transition group">
-                    <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Mode Belajar Interaktif</h3>
-                    <p class="text-gray-400">Quiz, level, achievement, dan gamification untuk pengalaman belajar yang menyenangkan</p>
+                    <p class="text-gray-400">Gesture otomatis diucapkan dengan suara natural. Queue-based TTS tanpa overlap</p>
                 </div>
                 
                 <!-- Feature 6 -->
@@ -238,7 +246,7 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-semibold mb-2">Dashboard Analytics</h3>
-                    <p class="text-gray-400">Dashboard canggih dengan chart, statistik real-time, dan progress tracking</p>
+                    <p class="text-gray-400">Statistik sesi, breakdown gesture, roadmap pengembangan, dan status modul lengkap</p>
                 </div>
             </div>
         </div>
@@ -368,21 +376,25 @@
                     </div>
                     <div class="text-center pt-4">
                         <div class="text-5xl mb-4">✨</div>
-                        <h3 class="text-2xl font-bold mb-2">app.html</h3>
-                        <p class="text-purple-300 font-semibold mb-3">Versi Terbaru</p>
-                        <p class="text-gray-400 text-sm mb-4">Dalam tahap pengembangan dengan fitur-fitur baru yang lebih canggih dan akurat</p>
+                        <h3 class="text-2xl font-bold mb-2">app.html <span class="text-sm font-mono text-purple-400">v3.0 Final</span></h3>
+                        <p class="text-purple-300 font-semibold mb-3">Versi Final — Semua Modul Aktif</span></p>
+                        <p class="text-gray-400 text-sm mb-4">Versi final dengan semua modul lengkap: Game & Kuis, Pengenalan Angka 0–9, A–Z Training, dan UI King-Class</p>
                         <div class="space-y-2 mb-6 text-sm text-gray-400">
                             <div class="flex items-center justify-center gap-2">
                                 <span class="text-green-400">✓</span>
-                                <span>Text-to-Speech Improved</span>
+                                <span>Game & Kuis Interaktif (A–Z, 0–9, Gesture)</span>
                             </div>
                             <div class="flex items-center justify-center gap-2">
                                 <span class="text-green-400">✓</span>
-                                <span>Real-time Gesture Meanings</span>
+                                <span>Pengenalan Angka 0–9 (NEW)</span>
                             </div>
                             <div class="flex items-center justify-center gap-2">
                                 <span class="text-green-400">✓</span>
-                                <span>Enhanced UI/UX</span>
+                                <span>Text-to-Speech Queue — No Overlap</span>
+                            </div>
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="text-green-400">✓</span>
+                                <span>UI Final — King-Class Dark Theme</span>
                             </div>
                         </div>
                         <a href="./app.html" class="inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-purple-500 px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition">
@@ -424,6 +436,50 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                             </svg>
                         </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap Section -->
+    <section class="py-20 px-4 bg-slate-950 border-t border-purple-500/20">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-14">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">🗺️ Roadmap Pengembangan</h2>
+                <p class="text-gray-400">Status progress setiap tahap development</p>
+            </div>
+            <div class="relative">
+                <!-- Timeline line -->
+                <div class="hidden md:block absolute left-0 right-0 top-[28px] h-0.5" style="background:linear-gradient(90deg,#00ff88,#a855f7,#22d3ee,rgba(251,191,36,.4))"></div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+                    <!-- Phase 1 -->
+                    <div class="text-center">
+                        <div class="w-6 h-6 rounded-full mx-auto mb-5 ring-4 ring-green-500/20" style="background:#00ff88;box-shadow:0 0 18px #00ff88"></div>
+                        <div class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-3" style="background:rgba(0,255,136,.1);color:#00ff88;border:1px solid rgba(0,255,136,.3)">✅ Tahap 1 — Selesai</div>
+                        <h4 class="font-semibold text-white mb-2">Game & Kuis Interaktif</h4>
+                        <p class="text-gray-500 text-sm leading-snug">Sistem evaluasi gesture A–Z di browser, score, timer, streak, level</p>
+                    </div>
+                    <!-- Phase 2 -->
+                    <div class="text-center">
+                        <div class="w-6 h-6 rounded-full mx-auto mb-5 ring-4 ring-purple-500/20" style="background:#a855f7;box-shadow:0 0 18px #a855f7"></div>
+                        <div class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-3" style="background:rgba(168,85,247,.1);color:#a855f7;border:1px solid rgba(168,85,247,.3)">✅ Tahap 2 — Selesai</div>
+                        <h4 class="font-semibold text-white mb-2">Pengenalan Angka 0–9</h4>
+                        <p class="text-gray-500 text-sm leading-snug">Pemetaan koordinat tangan untuk angka, model numerik ASL tersendiri</p>
+                    </div>
+                    <!-- Phase 3 -->
+                    <div class="text-center">
+                        <div class="w-6 h-6 rounded-full mx-auto mb-5 ring-4 ring-cyan-500/20" style="background:#22d3ee;box-shadow:0 0 18px #22d3ee"></div>
+                        <div class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-3" style="background:rgba(34,211,238,.1);color:#22d3ee;border:1px solid rgba(34,211,238,.3)">✅ Tahap 3 — Selesai</div>
+                        <h4 class="font-semibold text-white mb-2">UI King-Class Final</h4>
+                        <p class="text-gray-500 text-sm leading-snug">CSS dark-theme premium, animasi smooth, responsive semua perangkat</p>
+                    </div>
+                    <!-- Phase 4 -->
+                    <div class="text-center">
+                        <div class="w-6 h-6 rounded-full mx-auto mb-5 border-2 ring-4 ring-yellow-500/10" style="border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.05)"></div>
+                        <div class="inline-block px-3 py-1 rounded-full text-xs font-bold mb-3" style="background:rgba(251,191,36,.08);color:#fbbf24;border:1px solid rgba(251,191,36,.3)">🔜 Tahap 4 — Upcoming</div>
+                        <h4 class="font-semibold text-white mb-2">Beta Testing PWA</h4>
+                        <p class="text-gray-500 text-sm leading-snug">Uji performa di berbagai smartphone, install sebagai PWA di Android/iOS</p>
                     </div>
                 </div>
             </div>
