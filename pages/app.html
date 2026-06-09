@@ -313,8 +313,12 @@ canvas { display: block; width: 100%; height: 100%; }
 
   <!-- Gesture Reference Grid -->
   <div class="glass p-5">
-    <h3 class="font-bold text-sm mb-4 text-gray-300">📖 Referensi Gesture</h3>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-sm text-gray-300">📖 Referensi Gesture — Bahasa Isyarat</h3>
+      <span class="text-xs text-gray-700">Klik untuk dengar</span>
+    </div>
     <div id="gestRef" class="grid grid-cols-3 sm:grid-cols-6 gap-3"></div>
+    <p class="text-xs text-gray-700 mt-3">💡 Tahan gesture 1.5 detik agar terbaca. Pastikan pencahayaan baik & tangan terlihat jelas.</p>
   </div>
 </section>
 
@@ -795,12 +799,48 @@ const $$ = id => document.getElementById(id); // alias
 // DATA DEFINITIONS
 // ═══════════════════════════════════════════════
 const GESTURES = {
-  open_hand: { name:'Open Hand',  emoji:'🖐️', desc:'Buka semua jari, telapak menghadap kamera.' },
-  peace:     { name:'Peace',      emoji:'✌️', desc:'Angkat telunjuk & jari tengah.' },
-  thumbs_up: { name:'Thumbs Up',  emoji:'👍', desc:'Acungkan jempol ke atas.' },
-  ok:        { name:'OK Sign',    emoji:'👌', desc:'Satukan jempol & telunjuk membentuk O.' },
-  fist:      { name:'Fist',       emoji:'✊', desc:'Kepalan tangan semua jari.' },
-  pointing:  { name:'Pointing',   emoji:'☝️', desc:'Hanya telunjuk terangkat, sisanya tertutup.' },
+  open_hand: {
+    name:  'Halo / Hai',
+    emoji: '🖐️',
+    label: 'Halo',
+    desc:  'Telapak terbuka menghadap kamera — salam perkenalan "Halo!" atau "Hai!"',
+    contoh:'Halo, nama saya ...',
+  },
+  peace: {
+    name:  'Dua / Damai',
+    emoji: '✌️',
+    label: 'Dua',
+    desc:  'Telunjuk & jari tengah membentuk V — berarti angka dua atau simbol damai',
+    contoh:'Ada dua orang di sana.',
+  },
+  thumbs_up: {
+    name:  'Bagus / Setuju',
+    emoji: '👍',
+    label: 'Bagus',
+    desc:  'Jempol ke atas — ekspresi persetujuan atau pujian "Bagus sekali!"',
+    contoh:'Bagus! Kamu hebat.',
+  },
+  ok: {
+    name:  'Oke / Baik',
+    emoji: '👌',
+    label: 'Oke',
+    desc:  'Jempol & telunjuk membentuk O — tanda setuju atau konfirmasi "Oke!"',
+    contoh:'Oke, saya mengerti.',
+  },
+  fist: {
+    name:  'Aku / Saya',
+    emoji: '✊',
+    label: 'Aku',
+    desc:  'Kepalan tangan — merujuk pada diri sendiri, "Aku" atau "Saya"',
+    contoh:'Aku senang bertemu kamu.',
+  },
+  pointing: {
+    name:  'Kamu / Itu',
+    emoji: '☝️',
+    label: 'Kamu',
+    desc:  'Telunjuk lurus ke depan — menunjuk orang lain atau objek, "Kamu" atau "Itu"',
+    contoh:'Kamu sangat baik.',
+  },
 };
 
 const ASL = {
@@ -935,14 +975,14 @@ function detectGesture(lm) {
   const thumbHigh = lm[4].y < lm[0].y - hs * 0.28;
   const t2i = nd(lm, 4, 8);
 
-  if (thumbHigh && f.Ic && f.Mc && f.Rc && f.Pc) return {type:'thumbs_up', name:'Thumbs Up', conf:0.93};
-  if (f.Ic && f.Mc && f.Rc && f.Pc && f.Tc)      return {type:'fist',      name:'Fist',      conf:0.91};
-  if (f.T && f.I && f.M && f.R && f.P)            return {type:'open_hand', name:'Open Hand', conf:0.93};
-  if (t2i < 0.35 && f.M && f.R && f.P)            return {type:'ok',        name:'OK Sign',   conf:0.88};
-  if (!f.T && f.I && f.M && f.Rc && f.Pc)         return {type:'peace',     name:'Peace',     conf:0.87};
-  if (f.I && f.Mc && f.Rc && f.Pc)                return {type:'pointing',  name:'Pointing',  conf:0.86};
+  if (thumbHigh && f.Ic && f.Mc && f.Rc && f.Pc) return {type:'thumbs_up', name:'Bagus / Setuju', conf:0.93};
+  if (f.Ic && f.Mc && f.Rc && f.Pc && f.Tc)      return {type:'fist',      name:'Aku / Saya',    conf:0.91};
+  if (f.T && f.I && f.M && f.R && f.P)            return {type:'open_hand', name:'Halo / Hai',    conf:0.93};
+  if (t2i < 0.35 && f.M && f.R && f.P)            return {type:'ok',        name:'Oke / Baik',    conf:0.88};
+  if (!f.T && f.I && f.M && f.Rc && f.Pc)         return {type:'peace',     name:'Dua / Damai',   conf:0.87};
+  if (f.I && f.Mc && f.Rc && f.Pc)                return {type:'pointing',  name:'Kamu / Itu',    conf:0.86};
   const ext = [f.T,f.I,f.M,f.R,f.P].filter(Boolean).length;
-  if (ext >= 4) return {type:'open_hand', name:'Open Hand', conf:0.65};
+  if (ext >= 4) return {type:'open_hand', name:'Halo / Hai', conf:0.65};
   return null;
 }
 
@@ -1077,12 +1117,14 @@ function onMain(res) {
 
     const g = detectGesture(lm);
     if (g) {
-      $('gDisplay').textContent    = GESTURES[g.type]?.emoji || '?';
-      $('gName').textContent       = g.name;
+      const gInfo = GESTURES[g.type];
+      const displayName = gInfo?.label || g.name;
+      $('gDisplay').textContent    = gInfo?.emoji || '?';
+      $('gName').textContent       = displayName + (gInfo ? ` — ${gInfo.name}` : '');
       $('confBar').style.width     = (g.conf * 100) + '%';
       $('confTxt').textContent     = `Confidence: ${Math.round(g.conf*100)}%`;
-      $('gOvEmoji').textContent    = GESTURES[g.type]?.emoji || '';
-      $('gOvName').textContent     = g.name;
+      $('gOvEmoji').textContent    = gInfo?.emoji || '';
+      $('gOvName').textContent     = displayName;
       ov.classList.remove('hidden');
 
       if (g.type === mainSt.lastType) mainSt.stable++;
@@ -1090,7 +1132,7 @@ function onMain(res) {
 
       const pct = Math.min(100, (mainSt.stable / mainSt.THRESH) * 100);
       $('stabBar').style.width = pct + '%';
-      $('stabLbl').textContent = g.name;
+      $('stabLbl').textContent = displayName;
 
       if (mainSt.stable >= mainSt.THRESH && !mainSt.held) {
         mainSt.held = true;
@@ -1098,8 +1140,8 @@ function onMain(res) {
         mainSt.stats[g.type] = (mainSt.stats[g.type] || 0) + 1;
         updateSentBox();
         $('dSaved').textContent = mainSt.hist.length;
-        speak(g.name);
-        toast(`✅ ${GESTURES[g.type].emoji} ${g.name}`, 's');
+        speak(displayName);
+        toast(`✅ ${gInfo?.emoji} ${displayName}`, 's');
       }
     } else {
       $('gDisplay').textContent = '?';
@@ -1170,18 +1212,23 @@ function doScreenshot() {
 
 function updateSentBox() {
   const el = $('sentBox');
-  el.textContent = mainSt.hist.length
-    ? mainSt.hist.map(t => GESTURES[t]?.emoji || '?').join(' ')
-    : '(gesture akan muncul di sini)';
+  if (!mainSt.hist.length) {
+    el.textContent = '(gesture akan muncul di sini)';
+    return;
+  }
+  el.innerHTML = mainSt.hist.map(t => {
+    const g = GESTURES[t];
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg mr-1 mb-1 text-sm" style="background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.25)">${g?.emoji} <span class="font-semibold text-gray-200">${g?.label || t}</span></span>`;
+  }).join('');
 }
 function clearSent() { mainSt.hist = []; updateSentBox(); toast('🗑 Kalimat dihapus', 'i'); }
 function copySent() {
-  const t = mainSt.hist.map(x => GESTURES[x]?.emoji || '').join(' ');
+  const t = mainSt.hist.map(x => GESTURES[x]?.label || x).join(' ');
   if (!t) { toast('Sentence kosong', 'w'); return; }
-  navigator.clipboard.writeText(t).then(() => toast('📋 Disalin!', 's'));
+  navigator.clipboard.writeText(t).then(() => toast('📋 Disalin: ' + t, 's'));
 }
 function speakSent() {
-  const n = mainSt.hist.map(t => GESTURES[t]?.name || '').filter(Boolean).join(', ');
+  const n = mainSt.hist.map(t => GESTURES[t]?.label || '').filter(Boolean).join(', ');
   if (!n) { toast('Sentence kosong', 'w'); return; }
   speak(n, true);
 }
@@ -1559,7 +1606,7 @@ function gameHit() {
   if (gameSt.score > gameSt.bestScore)   gameSt.bestScore  = gameSt.score;
   updateGameUI();
   showGameFlash('✅');
-  speak(gameSt.pool[gameSt.idx] + (gameSt.mode === 'gest' ? ', bagus!' : ', benar!'));
+  speak(gameSt.pool[gameSt.idx] + (gameSt.mode === 'gest' ? (', ' + (GESTURES[gameSt.pool[gameSt.idx]]?.label || '') + ', benar!') : ', benar!'));
   toast(`+${10+bonus} poin! 🎯`, 's');
   setTimeout(() => { hideGameFlash(); nextGame(); }, 650);
 }
@@ -1637,13 +1684,14 @@ function updateGameTarget() {
   } else if (gameSt.mode === 'num') {
     hint = NUMBERS[parseInt(tgt)]?.hint || '';
   } else {
-    displayTgt = GESTURES[tgt]?.emoji || tgt;
+    // gesture mode — show Indonesian label
+    displayTgt = (GESTURES[tgt]?.emoji || '') + ' ' + (GESTURES[tgt]?.label || tgt);
     hint = GESTURES[tgt]?.desc || '';
   }
-  $('gameTargTxt').textContent  = displayTgt;
-  $('gameCurTgt').textContent   = displayTgt;
+  $('gameTargTxt').textContent  = gameSt.mode === 'gest' ? GESTURES[tgt]?.emoji || tgt : tgt;
+  $('gameCurTgt').textContent   = gameSt.mode === 'gest' ? (GESTURES[tgt]?.emoji + ' ' + GESTURES[tgt]?.label) : tgt;
   $('gameCurHint').textContent  = hint;
-  speak('Tunjukkan ' + (gameSt.mode === 'gest' ? GESTURES[tgt]?.name || tgt : tgt));
+  speak('Tunjukkan ' + (gameSt.mode === 'gest' ? GESTURES[tgt]?.label || tgt : tgt));
 }
 
 function updateGameUI() {
@@ -1745,19 +1793,27 @@ function hideResultOverlay(id) { $(id).style.display = 'none'; $(id).classList.a
 // ═══════════════════════════════════════════════
 function renderGestRef() {
   $('gestRef').innerHTML = Object.entries(GESTURES).map(([k,g]) =>
-    `<div class="hov glass text-center p-3 rounded-xl cursor-pointer" onclick="speak('${g.name}')">
+    `<div class="hov glass text-center p-3 rounded-xl cursor-pointer" onclick="speak('${g.label}', true)" title="${g.desc}">
       <div class="text-3xl mb-1">${g.emoji}</div>
-      <p class="text-xs font-semibold text-gray-300">${g.name}</p>
+      <p class="text-xs font-bold text-gray-200">${g.label}</p>
+      <p class="text-xs text-gray-600 mt-0.5 leading-tight">${g.desc.split('—')[0].trim()}</p>
     </div>`).join('');
 }
 
 function renderLearnCards() {
   $('learnCards').innerHTML = Object.entries(GESTURES).map(([k,g]) =>
-    `<div class="hov glass rounded-2xl p-5 cursor-pointer" onclick="speak('${g.desc}', true)">
+    `<div class="hov glass rounded-2xl p-5 cursor-pointer" onclick="speak('${g.label}. ${g.contoh}', true)">
       <div class="text-5xl mb-3">${g.emoji}</div>
-      <h3 class="font-bold text-base mb-1">${g.name}</h3>
-      <p class="text-gray-500 text-sm leading-snug">${g.desc}</p>
-      <button class="mt-3 text-xs nt2 hover:underline">🔊 Dengar deskripsi</button>
+      <div class="flex items-center gap-2 mb-1">
+        <h3 class="font-bold text-base">${g.label}</h3>
+        <span class="text-xs px-1.5 py-0.5 rounded font-mono" style="background:rgba(0,255,136,.1);color:var(--neon);border:1px solid rgba(0,255,136,.2)">${g.name}</span>
+      </div>
+      <p class="text-gray-500 text-sm leading-snug mb-3">${g.desc}</p>
+      <div class="rounded-lg p-2.5 text-sm" style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2)">
+        <span class="text-gray-600 text-xs">Contoh kalimat:</span>
+        <p class="text-gray-300 text-sm mt-0.5 italic">"${g.contoh}"</p>
+      </div>
+      <button class="mt-3 text-xs nt2 hover:underline">🔊 Dengar contoh</button>
     </div>`).join('');
 }
 
@@ -1787,9 +1843,11 @@ function renderBreakdown() {
     .sort(([,a],[,b]) => b - a)
     .map(([type, count]) => {
       const pct = Math.round((count / total) * 100);
+      const g   = GESTURES[type];
       return `<div class="flex items-center gap-3">
-        <span class="text-lg w-8 text-center">${GESTURES[type]?.emoji}</span>
-        <span class="text-sm text-gray-400 w-24">${GESTURES[type]?.name}</span>
+        <span class="text-lg w-8 text-center">${g?.emoji}</span>
+        <span class="text-sm text-gray-400 w-28">${g?.label || type}</span>
+        <span class="text-xs text-gray-700 w-20 hidden sm:inline">${g?.name || ''}</span>
         <div class="flex-1 bg-gray-900 rounded-full h-2 overflow-hidden">
           <div class="h-full rounded-full" style="width:${pct}%;background:linear-gradient(90deg,var(--neon2),#e879f9)"></div>
         </div>
