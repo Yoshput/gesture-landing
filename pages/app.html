@@ -314,11 +314,13 @@ canvas { display: block; width: 100%; height: 100%; }
   <!-- Gesture Reference Grid -->
   <div class="glass p-5">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-bold text-sm text-gray-300">📖 Referensi Gesture — Bahasa Isyarat</h3>
-      <span class="text-xs text-gray-700">Klik untuk dengar</span>
+      <h3 class="font-bold text-sm text-gray-300">📖 Referensi Gesture — Bahasa Isyarat (klik untuk dengar)</h3>
+      <span class="text-xs px-2 py-1 rounded-lg" style="background:rgba(0,255,136,.08);color:var(--neon);border:1px solid rgba(0,255,136,.15)">tahan 0.8 detik</span>
     </div>
-    <div id="gestRef" class="grid grid-cols-3 sm:grid-cols-6 gap-3"></div>
-    <p class="text-xs text-gray-700 mt-3">💡 Tahan gesture 1.5 detik agar terbaca. Pastikan pencahayaan baik & tangan terlihat jelas.</p>
+    <div id="gestRef" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3"></div>
+    <div class="mt-3 p-2.5 rounded-xl text-xs text-gray-600" style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05)">
+      💡 <strong class="text-gray-500">Tips:</strong> Pastikan telapak menghadap kamera, pencahayaan cukup, dan tangan terlihat penuh dalam frame.
+    </div>
   </div>
 </section>
 
@@ -419,6 +421,11 @@ canvas { display: block; width: 100%; height: 100%; }
   <!-- AZ Reference -->
   <div class="glass p-5">
     <h3 class="font-bold text-sm mb-3 text-gray-300">📖 Referensi ASL A–Z</h3>
+    <!-- Quick visual guide using SVG hand diagrams -->
+    <div class="mb-4 p-3 rounded-xl text-xs" style="background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.15)">
+      <p class="font-bold text-gray-400 mb-3">🖼️ Panduan Visual Posisi Tangan (klik untuk dengar)</p>
+      <div id="azVisualGuide" class="grid grid-cols-4 sm:grid-cols-7 md:grid-cols-9 gap-2"></div>
+    </div>
     <!-- Disambiguation tips for confusable letters -->
     <div class="mb-4 p-3 rounded-xl text-xs" style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2)">
       <p class="font-bold text-yellow-400 mb-2">⚠️ Huruf yang sering tertukar — baca bedanya:</p>
@@ -534,7 +541,8 @@ canvas { display: block; width: 100%; height: 100%; }
 
   <!-- Number Reference -->
   <div class="glass glass-cyan p-5">
-    <h3 class="font-bold text-sm mb-4 text-gray-300">📖 Referensi ASL 0–9</h3>
+    <h3 class="font-bold text-sm mb-3 text-gray-300">📖 Referensi Angka 0–9 (klik untuk dengar)</h3>
+    <div id="numVisualGuide" class="grid grid-cols-5 sm:grid-cols-10 gap-3 mb-4"></div>
     <div id="numRef" class="grid grid-cols-5 sm:grid-cols-10 gap-3"></div>
   </div>
 </section>
@@ -966,28 +974,56 @@ const dist  = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, (a.z||0) - (b.z||0));
 const hSize = (lm)   => Math.max(dist(lm[0], lm[9]), 0.01);
 const nd    = (lm,a,b) => dist(lm[a], lm[b]) / hSize(lm);
 
-function isCurled(lm, tip, mcp) {
-  return dist(lm[0], lm[tip]) < dist(lm[0], lm[mcp]) * 1.15;
+// Palm facing check: z-coordinate of wrist vs middle MCP
+// If palm faces camera, wrist z > middle MCP z (MediaPipe convention)
+// Returns true if palm is likely facing the camera
+function isPalmFacing(lm) {
+  // Check using cross-product of hand plane vectors
+  // Vector A: wrist → index MCP (lm[0]→lm[5])
+  // Vector B: wrist → pinky MCP (lm[0]→lm[17])
+  const ax = lm[5].x - lm[0].x, ay = lm[5].y - lm[0].y, az = (lm[5].z||0) - (lm[0].z||0);
+  const bx = lm[17].x - lm[0].x, by = lm[17].y - lm[0].y, bz = (lm[17].z||0) - (lm[0].z||0);
+  // Cross product z-component — positive = palm facing camera (in mirrored view)
+  const crossZ = ax * by - ay * bx;
+  return crossZ > 0;   // mirrored canvas: positive = facing camera
 }
-function isExtended(lm, tip, mcp) {
-  return dist(lm[0], lm[tip]) > dist(lm[0], lm[mcp]) * 1.30;
+
+// PIP-based curl: compare tip-to-MCP vs PIP-to-MCP (robust to hand tilt)
+function fingerCurl(lm, tip, pip, mcp) {
+  // Extended: tip is further from MCP than PIP is, AND tip above PIP in y
+  const tipDist = dist(lm[tip], lm[mcp]);
+  const pipDist = dist(lm[pip], lm[mcp]);
+  return tipDist < pipDist * 1.0;  // tip closer to MCP than PIP → curled
+}
+function fingerOpen(lm, tip, pip, mcp) {
+  const tipDist = dist(lm[tip], lm[mcp]);
+  const pipDist = dist(lm[pip], lm[mcp]);
+  return tipDist > pipDist * 1.1;  // tip farther than PIP → extended
 }
 
 function fingers(lm) {
   const hs = hSize(lm);
+  // Thumb: lateral extension vs tucked — use x-distance from thumb MCP
+  const thumbExt  = dist(lm[4], lm[2]) > hs * 0.75;
+  const thumbCurl = dist(lm[4], lm[2]) < hs * 0.55;
   return {
-    T:  dist(lm[4], lm[2]) > hs * 0.80,   // thumb extended
-    I:  isExtended(lm, 8,  5),
-    M:  isExtended(lm, 12, 9),
-    R:  isExtended(lm, 16, 13),
-    P:  isExtended(lm, 20, 17),
-    Tc: isCurled(lm,  4,  2),
-    Ic: isCurled(lm,  8,  5),
-    Mc: isCurled(lm,  12, 9),
-    Rc: isCurled(lm,  16, 13),
-    Pc: isCurled(lm,  20, 17),
+    T:  thumbExt,
+    Tc: thumbCurl,
+    // Index: tip(8), PIP(7) — wait, PIP is 6, DIP is 7
+    // MediaPipe: MCP=5, PIP=6, DIP=7, TIP=8
+    I:  fingerOpen(lm,  8,  6, 5),
+    M:  fingerOpen(lm, 12, 10, 9),
+    R:  fingerOpen(lm, 16, 14, 13),
+    P:  fingerOpen(lm, 20, 18, 17),
+    Ic: fingerCurl(lm,  8,  6, 5),
+    Mc: fingerCurl(lm, 12, 10, 9),
+    Rc: fingerCurl(lm, 16, 14, 13),
+    Pc: fingerCurl(lm, 20, 18, 17),
   };
 }
+
+// Tip-to-palm using MCP as palm proxy (more stable than wrist)
+function tipDist(lm, tip, mcp) { return dist(lm[tip], lm[mcp]) / hSize(lm); }
 
 // ─── Gesture Mode Detection ──────────────────
 function detectGesture(lm) {
@@ -1008,185 +1044,193 @@ function detectGesture(lm) {
   return null;
 }
 
-// ─── ASL Letter Detection (v2 — improved disambiguation) ──
+// ─── ASL Letter Detection v3 — PIP-based, photo-calibrated ──────
+// Reference: ASL chart photo (image 19)
+// Landmark map: WRIST=0, THUMB(CMC=1,MCP=2,IP=3,TIP=4)
+//   INDEX(MCP=5,PIP=6,DIP=7,TIP=8), MIDDLE(9,10,11,12)
+//   RING(13,14,15,16), PINKY(17,18,19,20)
 function detectASL(lm) {
   if (!lm || lm.length < 21) return null;
-  const f   = fingers(lm);
-  const hs  = hSize(lm);
+  const f  = fingers(lm);
+  const hs = hSize(lm);
 
-  // ── Normalised distances ──
-  const t2i = nd(lm, 4, 8);   // thumb tip → index tip
-  const t2m = nd(lm, 4, 12);  // thumb tip → middle tip
-  const t2r = nd(lm, 4, 16);  // thumb tip → ring tip
-  const t2p = nd(lm, 4, 20);  // thumb tip → pinky tip
+  // Normalised tip-to-tip distances (scale-invariant)
+  const t2i = nd(lm, 4, 8);    // thumb → index tip
+  const t2m = nd(lm, 4, 12);   // thumb → middle tip
+  const t2r = nd(lm, 4, 16);   // thumb → ring tip
+  const t2p = nd(lm, 4, 20);   // thumb → pinky tip
+  const i2m = nd(lm, 8, 12);   // index → middle tip (spread)
 
-  // ── Spread / position helpers ──
-  const iSpread   = Math.abs(lm[8].x  - lm[12].x) / hs;  // index-middle spread
-  const thumbSide = Math.abs(lm[4].x  - lm[5].x)  / hs;  // thumb side distance
+  // Tip heights (y smaller = higher on screen in mirrored view)
+  const tipY  = i => lm[i].y;
+  const wrist = lm[0].y;
+  const i8up  = tipY(8)  < tipY(6);   // index tip above its PIP
+  const m12up = tipY(12) < tipY(10);
+  const r16up = tipY(16) < tipY(14);
+  const p20up = tipY(20) < tipY(18);
 
-  // ── Knuckle-to-tip distances for curl depth ──
-  const iDip = nd(lm, 7, 8);   // index DIP-to-tip (tight curl = small)
-  const mDip = nd(lm, 11, 12);
-  const rDip = nd(lm, 15, 16);
-
-  // ── Thumb tip height relative to wrist ──
-  const thumbAboveWrist = lm[4].y < lm[0].y - hs * 0.20;
-  const thumbAboveIndex = lm[4].y < lm[5].y;
-
-  // ── ALL four curled flag ──
+  // Lateral thumb position vs index MCP
+  const thumbLat  = Math.abs(lm[4].x - lm[2].x) / hs;  // thumb tip vs thumb MCP
+  const thumbFwd  = nd(lm, 4, 5);   // thumb tip vs index MCP distance
   const a4c = f.Ic && f.Mc && f.Rc && f.Pc;
 
-  // ── Tip-to-palm distances ──
-  const iDist = dist(lm[0], lm[8])  / hs;
-  const mDist = dist(lm[0], lm[12]) / hs;
-  const rDist = dist(lm[0], lm[16]) / hs;
-  const pDist = dist(lm[0], lm[20]) / hs;
-  const tDist = dist(lm[0], lm[4])  / hs;
+  // ═══ LETTERS WITH FINGERS UP — checked first, most reliable ═══
 
-  // ══ PRIORITY: fingers UP first ══════════════════════
+  // Y: thumb + pinky open, rest closed  ✓ confirmed chart
+  if (f.T && !f.I && !f.M && !f.R && f.P) return 'Y';
 
-  // Y — thumb + pinky open, rest closed
-  if (f.T && !f.I && !f.M && !f.R && f.P && t2p > 0.85) return 'Y';
+  // B: 4 fingers straight up, thumb tucked across palm  ✓
+  if (f.I && f.M && f.R && f.P && f.Tc) return 'B';
 
-  // B — 4 fingers up, thumb STRICTLY curled inside
-  if (f.I && f.M && f.R && f.P && f.Tc && !f.T) return 'B';
-
-  // W — index + middle + ring up, pinky closed
+  // W: index + middle + ring up, pinky closed, no thumb  ✓
   if (f.I && f.M && f.R && f.Pc && !f.T) return 'W';
 
-  // L — thumb + index up, rest closed
-  if (f.T && f.I && f.Mc && f.Rc && f.Pc && t2i > 0.65) return 'L';
+  // L: thumb out + index up, rest curl  ✓
+  if (f.T && f.I && f.Mc && f.Rc && f.Pc) return 'L';
 
-  // I — only pinky up
+  // I: only pinky up  ✓
   if (f.P && f.Ic && f.Mc && f.Rc && !f.T) return 'I';
 
-  // V or U — index + middle up, rest closed
-  if (f.I && f.M && f.Rc && f.Pc && !f.T) return iSpread > 0.14 ? 'V' : 'U';
+  // K: index + middle up + thumb pointing between them  ✓
+  if (f.I && f.M && f.Rc && f.Pc && f.T && t2m < 0.55) return 'K';
 
-  // K — index + middle + thumb, specific angle
-  if (f.I && f.M && f.Rc && f.Pc && f.T) {
-    return nd(lm, 4, 10) < 0.28 ? 'K' : 'V';
+  // V/U: index + middle up, rest closed — spread determines V vs U  ✓
+  if (f.I && f.M && f.Rc && f.Pc && !f.T) {
+    return i2m > 0.35 ? 'V' : 'U';
   }
 
-  // D — index only + others curl to make O-shape
-  if (f.I && f.Mc && f.Rc && f.Pc) return t2m < 0.33 ? 'D' : 'G';
+  // R: index + middle up but CROSSED — tips close, x-positions swapped  ✓
+  if (f.I && f.M && f.Rc && f.Pc && !f.T && i2m < 0.25) return 'R';
 
-  // R — index + middle crossed (very close together)
-  if (f.I && f.M && f.Rc && f.Pc && iSpread < 0.07) return 'R';
+  // D: index up + others curl toward thumb  ✓
+  // G: index pointing sideways + thumb (both near horizontal)
+  if (f.I && !f.M && f.Rc && f.Pc && !f.T) {
+    // D: index tip well above its MCP (pointing up)
+    const indexVertical = lm[8].y < lm[5].y - hs * 0.2;
+    return indexVertical ? 'D' : 'G';
+  }
 
-  // F — OK pinch (thumb+index touch) + 3 fingers up
-  if (t2i < 0.25 && f.M && f.R && f.P) return 'F';
+  // F: OK pinch (thumb+index touch) + middle+ring+pinky up  ✓
+  if (t2i < 0.30 && f.M && f.R && f.P && !f.I) return 'F';
 
-  // ══ All 4 curled — distinguish A / S / E / O ════════
+  // H: index + middle pointing sideways (horizontal)  ✓
+  if (f.I && f.M && f.Rc && f.Pc && !f.T) {
+    const indexHoriz = Math.abs(lm[8].x - lm[5].x) > Math.abs(lm[8].y - lm[5].y);
+    if (indexHoriz) return 'H';
+  }
 
+  // ═══ ALL 4 FINGERS CURLED — distinguish A/E/O/S  ═══
   if (a4c) {
-    // O — thumb AND index tips very close, fingers forming round shape
-    // Key: thumb tip close to index tip but NOT close to base
-    // O has rounded shape → each fingertip roughly equidistant from palm
-    const avgTipDist = (iDist + mDist + rDist + pDist) / 4;
-    const roundShape = iDist > 0.55 && mDist > 0.55 && rDist > 0.55 && pDist > 0.55;
-    if (roundShape && t2i < 0.40 && t2m < 0.55 && thumbAboveIndex) return 'O';
+    // Use PIP-joint tip distances for curl depth
+    const iTip = tipDist(lm, 8,  5);  // index tip to its MCP
+    const mTip = tipDist(lm, 12, 9);
+    const rTip = tipDist(lm, 16, 13);
+    const pTip = tipDist(lm, 20, 17);
+    const avgTip = (iTip + mTip + rTip + pTip) / 4;
 
-    // E — fingers tightly curled DOWN toward palm, fingertips close to palm
-    // Key feature: fingertip-to-palm distances are SMALL (tight curl)
-    // Thumb is to the side or slightly in front, NOT touching index tip closely
-    const tightCurl = iDist < 0.65 && mDist < 0.65 && rDist < 0.65 && pDist < 0.65;
-    const thumbNotTouchingIndex = t2i > 0.30;
-    if (tightCurl && thumbNotTouchingIndex) return 'E';
+    // O: fingertips form a round shape — tips at medium distance from MCPs
+    //    thumb tip close to index tip — both making a circle  ✓
+    if (avgTip > 0.55 && t2i < 0.45) return 'O';
 
-    // A — fist but thumb on SIDE (not over fingers), visible from outside
-    // Thumb is lateral: thumbSide is larger than in S
-    if (thumbSide > 0.15 && !f.Tc) return 'A';
+    // A: fist with thumb on the SIDE — thumb tip near index MCP level  ✓
+    //    thumb NOT over fingers (not Tc), sits on side
+    if (thumbLat > 0.18 && !f.Tc) return 'A';
 
-    // S — fist with thumb OVER / across fingers
-    if (f.Tc || thumbSide <= 0.15) return 'S';
+    // S: fist with thumb wrapped OVER fingers  ✓
+    if (f.Tc || thumbFwd < 0.45) return 'S';
 
-    return 'E'; // fallback for all-curled
+    // E: fingertips curl tightly DOWN — all tips near MCPs  ✓
+    return 'E';
   }
 
-  // C — curved open hand (like holding a ball)
+  // C: curved open hand, fingers half-bent  ✓
   {
-    const cr = v => v > 1.05 && v < 2.10;
-    if (cr(iDist) && cr(mDist) && cr(rDist) && cr(pDist) && cr(tDist)
-        && t2i > 0.30 && t2i < 0.90) return 'C';
+    const iTip = tipDist(lm, 8,  5);
+    const mTip = tipDist(lm, 12, 9);
+    const rTip = tipDist(lm, 16, 13);
+    const pTip = tipDist(lm, 20, 17);
+    const cr = v => v > 0.55 && v < 1.10;
+    if (cr(iTip) && cr(mTip) && cr(rTip) && cr(pTip) && t2i > 0.35 && t2i < 1.0) return 'C';
   }
 
-  // M — 3 fingers over thumb (thumb tucked, 3 down)
-  // N — 2 fingers over thumb
-  // T — thumb between index and middle
-  // (complex motions — approximate with curl depth)
+  // P: like K but pointing down — index + thumb, hand inverted
+  // Q: like G but pointing down — not easily detectable; map to G
+  // M: 3 fingers over tucked thumb
+  // N: 2 fingers over tucked thumb  (M/N approximate — very similar)
   if (f.Ic && f.Mc && f.Rc && !f.Pc && !f.T) {
-    // T has thumb peeking between index and middle
-    const thumbBetween = lm[4].x > Math.min(lm[5].x, lm[9].x) &&
-                         lm[4].x < Math.max(lm[5].x, lm[9].x);
-    if (thumbBetween) return 'T';
-    return nd(lm, 4, 9) < 0.35 ? 'M' : 'N';
+    // thumb position: T sits between index and middle for T, below for M/N
+    const tBetweenIM = lm[4].y > lm[6].y && lm[4].y < lm[10].y;
+    if (tBetweenIM) return 'T';
+    const threeDown = nd(lm,4,9) < 0.55;
+    return threeDown ? 'M' : 'N';
   }
 
-  // X — index hook (bent but not fully extended)
-  if (!f.I && f.Ic && f.Mc && f.Rc && f.Pc && !f.T) {
-    const indexHook = iDip < 0.25 && iDist > 0.40 && iDist < 0.85;
-    if (indexHook) return 'X';
+  // X: index hook (semi-bent, like a fish hook)  ✓
+  {
+    const iTip = tipDist(lm, 8, 5);
+    if (!f.I && !f.Ic && f.Mc && f.Rc && f.Pc && iTip > 0.45 && iTip < 0.90) return 'X';
   }
+
+  // Z/J: motion letters — approximate by static position
+  // Z: index pointing, treated as G with upward motion not detectable
+  // J: pinky pointing upward — same as I
 
   return null;
 }
 
-// ─── Number Detection v2 — clear separation from letters ──
+// ─── Number Detection v3 — calibrated to standard finger-count gestures ──
+// Reference: standard Indonesian/international finger-count (image 20)
+// 0=O-shape, 1=index, 2=index+middle, 3=thumb+index+middle,
+// 4=four fingers, 5=open, 6=pinky+thumb, 7=ring+thumb, 8=middle+thumb, 9=OK
 function detectNumber(lm) {
   if (!lm || lm.length < 21) return null;
-  const f   = fingers(lm);
-  const hs  = hSize(lm);
+  const f  = fingers(lm);
+  const hs = hSize(lm);
 
   const t2i = nd(lm, 4, 8);
   const t2m = nd(lm, 4, 12);
   const t2r = nd(lm, 4, 16);
   const t2p = nd(lm, 4, 20);
-  const iSpread  = Math.abs(lm[8].x - lm[12].x) / hs;
+  const i2m = nd(lm, 8, 12);
 
-  // Tip-to-palm distances
-  const iDist = dist(lm[0], lm[8])  / hs;
-  const mDist = dist(lm[0], lm[12]) / hs;
-  const rDist = dist(lm[0], lm[16]) / hs;
-  const pDist = dist(lm[0], lm[20]) / hs;
   const a4c = f.Ic && f.Mc && f.Rc && f.Pc;
 
-  // 5 — all 5 fingers open
+  // 5 — all 5 fingers fully open  ✓ easiest
   if (f.T && f.I && f.M && f.R && f.P) return '5';
 
-  // 4 — 4 fingers up, thumb strictly in
-  if (f.I && f.M && f.R && f.P && !f.T && f.Tc) return '4';
+  // 4 — four fingers up, thumb tucked  ✓
+  if (f.I && f.M && f.R && f.P && f.Tc) return '4';
 
-  // 0 — round O shape: all curled, tips form near-equal circle
-  // Key: all fingertips at medium distance from palm (not tight like E)
-  //      thumb tip close to index tip
+  // 0 — all fingers curled into O shape  ✓
   if (a4c) {
-    const roundish = iDist > 0.55 && mDist > 0.55 && rDist > 0.55 && pDist > 0.55;
-    if (roundish && t2i < 0.38) return '0';
-    // If tight curl → NOT a number 0 (could be E in ASL, but in numeric mode still return null)
-    return null;
+    const iTip = tipDist(lm, 8,  5);
+    const mTip = tipDist(lm, 12, 9);
+    const avgTip = (iTip + mTip) / 2;
+    // O-shape: tips at medium distance + thumb close to index tip
+    if (avgTip > 0.50 && t2i < 0.50) return '0';
+    return null;  // tight fist = not a number
   }
 
-  // 9 — OK pinch (thumb+index) rest curled
-  if (t2i < 0.28 && f.Mc && f.Rc && f.Pc && !f.M && !f.R && !f.P) return '9';
-
-  // 1 — only index finger up
+  // 1 — only index finger up  ✓
   if (f.I && f.Mc && f.Rc && f.Pc && !f.T) return '1';
 
-  // 2 — index + middle up, spread
-  if (f.I && f.M && f.Rc && f.Pc && !f.T && iSpread > 0.11) return '2';
+  // 2 — index + middle up  ✓
+  if (f.I && f.M && f.Rc && f.Pc && !f.T) return '2';
 
-  // 3 — thumb + index + middle up
+  // 3 — thumb + index + middle up  ✓
   if (f.T && f.I && f.M && f.Rc && f.Pc) return '3';
 
-  // 6 — pinky + thumb touch, 3 middle up
-  if (f.I && f.M && f.R && !f.P && !f.T && t2p < 0.40) return '6';
+  // 9 — thumb + index tip pinch (like OK but rest curled)  ✓
+  if (t2i < 0.32 && f.Mc && f.Rc && f.Pc) return '9';
 
-  // 7 — ring + thumb touch
-  if (f.I && f.M && !f.R && f.P && !f.T && t2r < 0.40) return '7';
+  // 6 — thumb + pinky touching, 3 middle fingers up  ✓
+  if (f.I && f.M && f.R && !f.P && t2p < 0.45 && !f.T) return '6';
 
-  // 8 — middle + thumb touch
-  if (f.I && !f.M && f.R && f.P && !f.T && t2m < 0.35) return '8';
+  // 7 — thumb + ring touching, index+middle+pinky up  ✓
+  if (f.I && f.M && !f.R && f.P && t2r < 0.45 && !f.T) return '7';
+
+  // 8 — thumb + middle touching, index+ring+pinky up  ✓
+  if (f.I && !f.M && f.R && f.P && t2m < 0.45 && !f.T) return '8';
 
   return null;
 }
@@ -1201,6 +1245,39 @@ async function mkHands(cb, complexity = 1) {
   return h;
 }
 
+// ═══════════════════════════════════════════════
+// TEMPORAL SMOOTHING — 3-frame majority vote
+// Prevents single bad frame from resetting stability
+// ═══════════════════════════════════════════════
+class Smoother {
+  constructor(size = 3) { this.buf = []; this.size = size; }
+  push(val) {
+    this.buf.push(val);
+    if (this.buf.length > this.size) this.buf.shift();
+  }
+  get() {
+    if (!this.buf.length) return null;
+    // Count occurrences
+    const counts = {};
+    for (const v of this.buf) {
+      if (v === null) continue;
+      counts[v] = (counts[v] || 0) + 1;
+    }
+    // Return most common if it appears >= half the time
+    let best = null, bestN = 0;
+    for (const [v, n] of Object.entries(counts)) {
+      if (n > bestN) { best = v; bestN = n; }
+    }
+    return bestN >= Math.ceil(this.size / 2) ? best : null;
+  }
+  reset() { this.buf = []; }
+}
+
+const smAZ   = new Smoother(3);
+const smNum  = new Smoother(3);
+const smGame = new Smoother(3);
+const smMain = new Smoother(3);
+
 function drawSkeleton(ctx, lm, canvas, cc, pc) {
   ctx.save();
   ctx.scale(-1, 1);
@@ -1211,23 +1288,36 @@ function drawSkeleton(ctx, lm, canvas, cc, pc) {
 }
 
 function drawFrame(ctx, vid, cvs) {
-  cvs.width  = vid.videoWidth  || 640;
-  cvs.height = vid.videoHeight || 480;
+  // Only resize if changed (avoids context reset every frame)
+  const w = vid.videoWidth || 640, h = vid.videoHeight || 480;
+  if (cvs.width !== w || cvs.height !== h) { cvs.width = w; cvs.height = h; }
   ctx.save();
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  ctx.clearRect(0, 0, w, h);
   ctx.scale(-1, 1);
-  ctx.translate(-cvs.width, 0);
-  ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
+  ctx.translate(-w, 0);
+  ctx.drawImage(vid, 0, 0, w, h);
   ctx.restore();
 }
 
 // ═══════════════════════════════════════════════
 // TAB: GESTURE MODE
 // ═══════════════════════════════════════════════
+// ── Shared MediaPipe Hands instance (saves ~24MB RAM) ──
+let _sharedHands = null;
+let _sharedHandsCb = null;   // current active callback
+async function getSharedHands() {
+  if (_sharedHands) return _sharedHands;
+  _sharedHands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+  _sharedHands.setOptions({ maxNumHands:1, modelComplexity:1, minDetectionConfidence:0.65, minTrackingConfidence:0.65 });
+  _sharedHands.onResults(res => { if (_sharedHandsCb) _sharedHandsCb(res); });
+  return _sharedHands;
+}
+
 let handsMain = null, camMain = null, detectingMain = false, timerMain = null;
+const HOLD_MS = 800;   // ms to hold gesture for confirmation
 const mainSt = {
   totalDet:0, hist:[], stats:{}, lastType:null,
-  stable:0, THRESH:27, held:false,
+  stableStart:0, held:false,
   fps:[], fts:0, sessStart:null
 };
 const vidMain = document.getElementById('vidMain');
@@ -1262,7 +1352,10 @@ function onMain(res) {
     $('totalDet').textContent = mainSt.totalDet;
     $('dTot').textContent = mainSt.totalDet;
 
-    const g = detectGesture(lm);
+    smMain.push(detectGesture(lm)?.type || null);
+    const rawG = detectGesture(lm);
+    const smoothedType = smMain.get();
+    const g = smoothedType ? (rawG?.type === smoothedType ? rawG : {type:smoothedType, name:GESTURES[smoothedType]?.name||smoothedType, conf:0.82}) : null;
     if (g) {
       const gInfo = GESTURES[g.type];
       const displayName = gInfo?.label || g.name;
@@ -1274,14 +1367,14 @@ function onMain(res) {
       $('gOvName').textContent     = displayName;
       ov.classList.remove('hidden');
 
-      if (g.type === mainSt.lastType) mainSt.stable++;
-      else { mainSt.lastType = g.type; mainSt.stable = 1; mainSt.held = false; }
-
-      const pct = Math.min(100, (mainSt.stable / mainSt.THRESH) * 100);
+      const nowMs = performance.now();
+      if (g.type !== mainSt.lastType) { mainSt.lastType = g.type; mainSt.stableStart = nowMs; mainSt.held = false; }
+      const elapsed = nowMs - mainSt.stableStart;
+      const pct = Math.min(100, (elapsed / HOLD_MS) * 100);
       $('stabBar').style.width = pct + '%';
       $('stabLbl').textContent = displayName;
 
-      if (mainSt.stable >= mainSt.THRESH && !mainSt.held) {
+      if (elapsed >= HOLD_MS && !mainSt.held) {
         mainSt.held = true;
         mainSt.hist.push(g.type);
         mainSt.stats[g.type] = (mainSt.stats[g.type] || 0) + 1;
@@ -1302,7 +1395,7 @@ function onMain(res) {
     $('confTxt').textContent = 'Confidence: –';
     $('stabBar').style.width = '0%';
     $('stabLbl').textContent = '–';
-    mainSt.lastType = null; mainSt.stable = 0; mainSt.held = false;
+    mainSt.lastType = null; mainSt.stableStart = 0; mainSt.held = false; smMain.reset();
   }
 }
 
@@ -1311,10 +1404,11 @@ async function startMain() {
   $('camLoad').style.display = 'flex';
   $('camPH').classList.add('hidden');
   try {
-    if (!handsMain) handsMain = await mkHands(onMain);
+    handsMain = await getSharedHands(); _sharedHandsCb = onMain;
+    const isMobile = window.innerWidth < 768;
     if (!camMain) camMain = new Camera(vidMain, {
-      onFrame: async () => { if (handsMain && detectingMain) await handsMain.send({image: vidMain}); },
-      width: 1280, height: 720
+      onFrame: async () => { if (handsMain && detectingMain) await _sharedHands.send({image: vidMain}); },
+      width: isMobile ? 640 : 1280, height: isMobile ? 480 : 720
     });
     await camMain.start();
     detectingMain = true; mainSt.sessStart = Date.now();
@@ -1388,7 +1482,7 @@ const azSt = {
   running:false, learnMode:true,
   letters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
   idx:0, correct:0, total:0, streak:0, best:0,
-  prog:{}, stable:0, THRESH:20, held:false, cam:null
+  prog:{}, stableStart:0, held:false, cam:null
 };
 const vidAZ = document.getElementById('vidAZ');
 const cvsAZ = document.getElementById('cvsAZ');
@@ -1403,26 +1497,28 @@ function onAZ(res) {
     $('azHandBadge').classList.remove('hidden');
     $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-detect');
 
-    const det = detectASL(lm);
+    smAZ.push(detectASL(lm));
+    const det = smAZ.get();
     const tgt = azSt.letters[azSt.idx];
     const live = $('azLive');
     live.textContent = det || '–';
     live.style.color = det === tgt ? 'var(--neon)' : det ? '#f87171' : 'var(--neon3)';
     $('azStabLbl').textContent = det || '–';
 
-    if (det === tgt) azSt.stable++;
-    else { azSt.stable = 0; azSt.held = false; }
+    const azNow = performance.now();
+    if (det !== tgt) { azSt.stableStart = azNow; azSt.held = false; }
+    else if (azSt.stableStart === 0) azSt.stableStart = azNow;
+    const azElapsed = det === tgt ? azNow - azSt.stableStart : 0;
+    $('azStabBar').style.width = Math.min(100, (azElapsed / HOLD_MS) * 100) + '%';
 
-    $('azStabBar').style.width = Math.min(100, (azSt.stable / azSt.THRESH) * 100) + '%';
-
-    if (azSt.stable >= azSt.THRESH && !azSt.held) {
+    if (azElapsed >= HOLD_MS && !azSt.held) {
       azSt.held = true;
       azCorrect(tgt);
     }
   } else {
     $('azHandBadge').classList.add('hidden');
     $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-active');
-    azSt.stable = 0; azSt.held = false;
+    azSt.stableStart = 0; azSt.held = false; smAZ.reset();
     $('azStabBar').style.width = '0%';
     $('azStabLbl').textContent = '–';
     const l = $('azLive'); l.textContent = '–'; l.style.color = 'var(--neon3)';
@@ -1442,7 +1538,7 @@ function azCorrect(letter) {
 
 function nextAZ() {
   if (azSt.idx < azSt.letters.length - 1) {
-    azSt.idx++; azSt.stable = 0; azSt.held = false;
+    azSt.idx++; azSt.stableStart = 0; azSt.held = false;
     $('azStabBar').style.width = '0%';
     updateAZCurrent();
   } else {
@@ -1465,27 +1561,61 @@ const CONFUSABLE = {
   G: '⚠️ Berbeda dari D! Telunjuk+jempol menunjuk ke SAMPING.',
   B: '💡 Pastikan jempol benar-benar TERSEMBUNYI di dalam telapak.',
   I: '💡 Hanya KELINGKING yang terangkat, jari lain tertutup penuh.',
-  R: '💡 Silangkan telunjuk+tengah seperti tanda silang.',
-  T: '💡 Jempol harus TERLIHAT di antara telunjuk dan jari tengah.',
+  R: '💡 Silangkan telunjuk+tengah seperti tanda silang (X di antara 2 jari).',
+  T: '💡 Jempol harus TERLIHAT keluar di antara telunjuk dan jari tengah.',
+  K: '💡 Telunjuk+tengah tegak, jempol menyentuh SISI jari tengah.',
+  F: '💡 Jempol+telunjuk membentuk lingkaran OK, 3 jari lain tegak.',
+  X: '💡 Bengkokkan telunjuk ke bawah seperti kail / tanda tanya.',
+  J: '🎬 Huruf J butuh GERAKAN. Mulai posisi I (kelingking tegak), lalu gambar J ke bawah.',
+  Z: '🎬 Huruf Z butuh GERAKAN. Gambar Z di udara dengan telunjuk.',
+  P: '💡 Seperti K tapi tangan MENGHADAP BAWAH — menantang!',
+  Q: '💡 Seperti G tapi menunjuk ke BAWAH — jarang digunakan.',
+  M: '💡 Tekuk 3 jari (telunjuk-tengah-manis) MENUTUPI jempol yang terlipat.',
+  N: '💡 Tekuk 2 jari (telunjuk-tengah) MENUTUPI jempol yang terlipat.',
 };
+
+// Letters that require motion — can't be detected from single frame
+const MOTION_LETTERS = new Set(['J', 'Z']);
+// Letters that are very difficult with 2D camera
+const HARD_LETTERS   = new Set(['P', 'Q', 'M', 'N', 'T']);
 
 function updateAZCurrent() {
   const l = azSt.letters[azSt.idx], info = ASL[l];
+  const isMotion = MOTION_LETTERS.has(l);
+  const isHard   = HARD_LETTERS.has(l);
+
   $('azTargLet').textContent  = l;
   $('azCurLet').textContent   = l;
+
+  // Show badge for motion/hard letters
+  let badge = '';
+  if (isMotion) badge = ' <span style="font-size:10px;background:rgba(251,191,36,.2);color:#fbbf24;padding:2px 6px;border-radius:99px;border:1px solid rgba(251,191,36,.4)">🎬 Gerakan</span>';
+  else if (isHard) badge = ' <span style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;padding:2px 6px;border-radius:99px;border:1px solid rgba(239,68,68,.3)">⚡ Sulit</span>';
+  $('azCurLet').innerHTML = l + badge;
+
   $('azCurDesc').textContent  = info?.desc  || '';
 
-  // Show confusion warning if applicable
   const warn = CONFUSABLE[l];
   if (warn) {
-    $('azCurHint').textContent = warn;
-    $('azCurHint').style.color = warn.startsWith('⚠️') ? '#fbbf24' : 'var(--neon3)';
+    $('azCurHint').innerHTML = warn;
+    const col = warn.startsWith('⚠️') ? '#fbbf24' : warn.startsWith('🎬') ? '#fb923c' : 'var(--neon3)';
+    $('azCurHint').style.color = col;
   } else {
     $('azCurHint').textContent = '💡 ' + (info?.hint || '');
     $('azCurHint').style.color = '';
   }
   $('azTargOv').classList.remove('hidden');
-  speak('Tunjukkan huruf ' + l);
+
+  // Motion letters: speak warning, don't expect detection
+  if (isMotion) {
+    speak('Huruf ' + l + ' membutuhkan gerakan. Tekan Skip untuk lanjut.');
+    $('azBtnSkip').style.background = 'linear-gradient(135deg,#92400e,#d97706)';
+    $('azBtnSkip').textContent = '⏭ Skip (Gerakan)';
+  } else {
+    speak('Tunjukkan huruf ' + l);
+    $('azBtnSkip').style.background = '';
+    $('azBtnSkip').textContent = '⏭ Skip';
+  }
 }
 
 function updateAZUI() {
@@ -1516,11 +1646,12 @@ function toggleAZMode() {
 function skipAZ() { azSt.total++; azSt.streak = 0; updateAZUI(); nextAZ(); }
 
 async function startAZ() {
+  const isMobile = window.innerWidth < 768;
   $('azBtnStart').disabled = true;
-  if (!handsAZ) handsAZ = await mkHands(onAZ);
+  handsAZ = await getSharedHands(); _sharedHandsCb = onAZ;
   if (!azSt.cam) azSt.cam = new Camera(vidAZ, {
-    onFrame: async () => { if (handsAZ && azSt.running) await handsAZ.send({image: vidAZ}); },
-    width: 1280, height: 720
+    onFrame: async () => { if (handsAZ && azSt.running) await _sharedHands.send({image: vidAZ}); },
+    width: (window.innerWidth < 768 ? 640 : 1280), height: (window.innerWidth < 768 ? 480 : 720)
   });
   await azSt.cam.start();
   azSt.running = true; azSt.idx = 0; azSt.correct = 0; azSt.total = 0;
@@ -1554,7 +1685,7 @@ const numSt = {
   running:false,
   nums: ['0','1','2','3','4','5','6','7','8','9'],
   idx:0, correct:0, total:0, streak:0, best:0,
-  prog:{}, stable:0, THRESH:20, held:false, cam:null
+  prog:{}, stableStart:0, held:false, cam:null
 };
 const vidNum = document.getElementById('vidNum');
 const cvsNum = document.getElementById('cvsNum');
@@ -1569,26 +1700,28 @@ function onNum(res) {
     $('numHandBadge').classList.remove('hidden');
     $('numCamWrap').className = $('numCamWrap').className.replace(/cam-\w+/, 'cam-detect');
 
-    const det = detectNumber(lm);
+    smNum.push(detectNumber(lm));
+    const det = smNum.get();
     const tgt = numSt.nums[numSt.idx];
     const live = $('numLive');
     live.textContent = det || '–';
     live.style.color = det === tgt ? 'var(--neon)' : det ? '#f87171' : 'var(--neon3)';
     $('numStabLbl').textContent = det || '–';
 
-    if (det === tgt) numSt.stable++;
-    else { numSt.stable = 0; numSt.held = false; }
+    const numNow = performance.now();
+    if (det !== tgt) { numSt.stableStart = numNow; numSt.held = false; }
+    else if (numSt.stableStart === 0) numSt.stableStart = numNow;
+    const numElapsed = det === tgt ? numNow - numSt.stableStart : 0;
+    $('numStabBar').style.width = Math.min(100, (numElapsed / HOLD_MS) * 100) + '%';
 
-    $('numStabBar').style.width = Math.min(100, (numSt.stable / numSt.THRESH) * 100) + '%';
-
-    if (numSt.stable >= numSt.THRESH && !numSt.held) {
+    if (numElapsed >= HOLD_MS && !numSt.held) {
       numSt.held = true;
       numCorrect(tgt);
     }
   } else {
     $('numHandBadge').classList.add('hidden');
     $('numCamWrap').className = $('numCamWrap').className.replace(/cam-\w+/, 'cam-active');
-    numSt.stable = 0; numSt.held = false;
+    numSt.stableStart = 0; numSt.held = false; smNum.reset();
     $('numStabBar').style.width = '0%';
     $('numStabLbl').textContent = '–';
     const l = $('numLive'); l.textContent = '–'; l.style.color = 'var(--neon3)';
@@ -1607,7 +1740,7 @@ function numCorrect(n) {
 
 function nextNum() {
   if (numSt.idx < numSt.nums.length - 1) {
-    numSt.idx++; numSt.stable = 0; numSt.held = false;
+    numSt.idx++; numSt.stableStart = 0; numSt.held = false;
     $('numStabBar').style.width = '0%';
     updateNumCurrent();
   } else {
@@ -1650,11 +1783,12 @@ function renderNumGrid() {
 function skipNum() { numSt.total++; numSt.streak = 0; updateNumUI(); nextNum(); }
 
 async function startNum() {
+  const isMobile = window.innerWidth < 768;
   $('numBtnStart').disabled = true;
-  if (!handsNum) handsNum = await mkHands(onNum);
+  handsNum = await getSharedHands(); _sharedHandsCb = onNum;
   if (!numSt.cam) numSt.cam = new Camera(vidNum, {
-    onFrame: async () => { if (handsNum && numSt.running) await handsNum.send({image: vidNum}); },
-    width: 1280, height: 720
+    onFrame: async () => { if (handsNum && numSt.running) await _sharedHands.send({image: vidNum}); },
+    width: (window.innerWidth < 768 ? 640 : 1280), height: (window.innerWidth < 768 ? 480 : 720)
   });
   await numSt.cam.start();
   numSt.running = true; numSt.idx = 0; numSt.correct = 0; numSt.total = 0;
@@ -1688,7 +1822,7 @@ const gameSt = {
   running:false, mode:'az',
   pool:[], idx:0, score:0, correct:0, wrong:0, streak:0, bestStreak:0,
   totalSess:0, bestScore:0, allAcc:[],
-  stable:0, THRESH:16, held:false, cam:null,
+  stableStart:0, held:false, cam:null,
   roundTimer:null, timeLeft:10, TIME_MAX:10,
   elTimer:null, elapsed:0
 };
@@ -1736,13 +1870,12 @@ function onGame(res) {
     drawSkeleton(ctx, lm, cvsGame, '#059669', '#6ee7b7');
     $('gameHandBadge').classList.remove('hidden');
 
-    let det = null;
-    if (gameSt.mode === 'az')   det = detectASL(lm);
-    else if (gameSt.mode === 'num') det = detectNumber(lm);
-    else {
-      const g = detectGesture(lm);
-      det = g ? g.type : null;
-    }
+    let rawDet = null;
+    if (gameSt.mode === 'az')   rawDet = detectASL(lm);
+    else if (gameSt.mode === 'num') rawDet = detectNumber(lm);
+    else { const g = detectGesture(lm); rawDet = g ? g.type : null; }
+    smGame.push(rawDet);
+    let det = smGame.get();
 
     const tgt = gameSt.pool[gameSt.idx];
     const live = $('gameLive');
@@ -1751,18 +1884,19 @@ function onGame(res) {
     live.style.color = det === tgt ? 'var(--neon)' : det ? '#f87171' : 'var(--neon)';
     $('gameStabLbl').textContent = dispDet;
 
-    if (det === tgt) gameSt.stable++;
-    else { gameSt.stable = 0; gameSt.held = false; }
+    const gNow = performance.now();
+    if (det !== tgt) { gameSt.stableStart = gNow; gameSt.held = false; }
+    else if (gameSt.stableStart === 0) gameSt.stableStart = gNow;
+    const gElapsed = det === tgt ? gNow - gameSt.stableStart : 0;
+    $('gameStabBar').style.width = Math.min(100, (gElapsed / (HOLD_MS * 0.7)) * 100) + '%';
 
-    $('gameStabBar').style.width = Math.min(100, (gameSt.stable / gameSt.THRESH) * 100) + '%';
-
-    if (gameSt.stable >= gameSt.THRESH && !gameSt.held) {
+    if (!_gameDeadZone && gElapsed >= HOLD_MS * 0.7 && !gameSt.held) {
       gameSt.held = true;
       gameHit();
     }
   } else {
     $('gameHandBadge').classList.add('hidden');
-    gameSt.stable = 0; gameSt.held = false;
+    gameSt.stableStart = 0; gameSt.held = false; smGame.reset();
     $('gameStabBar').style.width = '0%';
     $('gameStabLbl').textContent = '–';
     const l = $('gameLive'); l.textContent = '–'; l.style.color = 'var(--neon)';
@@ -1777,6 +1911,7 @@ function gameHit() {
   if (gameSt.streak > gameSt.bestStreak) gameSt.bestStreak = gameSt.streak;
   if (gameSt.score > gameSt.bestScore)   gameSt.bestScore  = gameSt.score;
   updateGameUI();
+  setGameDeadZone();
   showGameFlash('✅');
   speak(gameSt.pool[gameSt.idx] + (gameSt.mode === 'gest' ? (', ' + (GESTURES[gameSt.pool[gameSt.idx]]?.label || '') + ', benar!') : ', benar!'));
   toast(`+${10+bonus} poin! 🎯`, 's');
@@ -1786,6 +1921,7 @@ function gameHit() {
 function gameMiss() {
   gameSt.wrong++; gameSt.streak = 0;
   updateGameUI();
+  setGameDeadZone();
   showGameFlash('❌');
   speak('Waktu habis!', true);
   toast('⏰ Waktu habis!', 'w');
@@ -1793,7 +1929,7 @@ function gameMiss() {
 }
 
 function nextGame() {
-  gameSt.stable = 0; gameSt.held = false;
+  gameSt.stableStart = 0; gameSt.held = false;
   $('gameStabBar').style.width = '0%';
   if (gameSt.idx < gameSt.pool.length - 1) {
     gameSt.idx++;
@@ -1898,11 +2034,12 @@ function skipGame() {
 }
 
 async function startGame() {
+  const isMobile = window.innerWidth < 768;
   $('gameBtnStart').disabled = true;
-  if (!handsGame) handsGame = await mkHands(onGame);
+  handsGame = await getSharedHands(); _sharedHandsCb = onGame;
   if (!gameSt.cam) gameSt.cam = new Camera(vidGame, {
-    onFrame: async () => { if (handsGame && gameSt.running) await handsGame.send({image: vidGame}); },
-    width: 1280, height: 720
+    onFrame: async () => { if (handsGame && gameSt.running) await _sharedHands.send({image: vidGame}); },
+    width: (window.innerWidth < 768 ? 640 : 1280), height: (window.innerWidth < 768 ? 480 : 720)
   });
   await gameSt.cam.start();
   gameSt.running = true;
@@ -1963,13 +2100,166 @@ function hideResultOverlay(id) { $(id).style.display = 'none'; $(id).classList.a
 // ═══════════════════════════════════════════════
 // POPULATE STATIC CONTENT
 // ═══════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════
+// SVG HAND DIAGRAMS — inline visual reference
+// ═══════════════════════════════════════════════
+
+// Draw a simple SVG hand showing which fingers are up/down
+// fingers: {T, I, M, R, P} = true(up) false(down)
+// special: 'O'=circle shape, 'hook'=index hook, 'cross'=crossed
+function svgHand(cfg, label, color='#a855f7') {
+  const {T=false, I=false, M=false, R=false, P=false, special=null} = cfg;
+  const fc = color;
+  const dc = '#1e293b';  // dark/curled color
+  const wc = '#0f172a';  // wrist
+  const s = 80;  // viewBox size
+
+  // Finger positions [x, tipY-up, tipY-down, baseY]
+  const fdata = [
+    // Pinky
+    {x:14, uy:8,  dy:38, by:50},
+    // Ring
+    {x:26, uy:5,  dy:35, by:48},
+    // Middle
+    {x:38, uy:2,  dy:32, by:46},
+    // Index
+    {x:50, uy:5,  dy:35, by:48},
+  ];
+  const states = [P, R, M, I];
+
+  let paths = '';
+
+  if (special === 'O') {
+    // O shape: circle of finger tips
+    paths += `<ellipse cx="40" cy="35" rx="18" ry="16" fill="none" stroke="${fc}" stroke-width="3.5" stroke-linecap="round"/>`;
+    paths += `<circle cx="40" cy="35" r="6" fill="${fc}" opacity="0.15"/>`;
+    // Small wrist
+    paths += `<rect x="28" y="58" width="24" height="14" rx="6" fill="${wc}" stroke="${fc}" stroke-width="1.5"/>`;
+  } else if (special === 'C') {
+    paths += `<path d="M 58 22 Q 62 38 58 52 Q 50 62 38 62 Q 26 62 20 52 Q 16 44 18 36" fill="none" stroke="${fc}" stroke-width="3.5" stroke-linecap="round"/>`;
+    paths += `<rect x="28" y="60" width="24" height="12" rx="6" fill="${wc}" stroke="${fc}" stroke-width="1.5"/>`;
+  } else {
+    // Draw palm
+    paths += `<rect x="22" y="44" width="36" height="22" rx="8" fill="${wc}" stroke="${fc}" stroke-width="1.5"/>`;
+    // Draw 4 fingers
+    fdata.forEach((fd, idx) => {
+      const up = states[idx];
+      const ty = up ? fd.uy : fd.dy;
+      const col = up ? fc : dc;
+      const sc = up ? fc : '#334155';
+      paths += `<rect x="${fd.x-4}" y="${ty}" width="8" height="${fd.by-ty}" rx="4" fill="${col}" stroke="${sc}" stroke-width="1"/>`;
+    });
+    // Thumb
+    const tx = T ? 8 : 18, ty2 = T ? 36 : 44;
+    const tcol = T ? fc : dc;
+    paths += `<rect x="${tx}" y="${ty2}" width="8" height="18" rx="4" fill="${tcol}" stroke="${T?fc:'#334155'}" stroke-width="1" transform="rotate(${T?-25:-10}, ${tx+4}, ${ty2+9})"/>`;
+    // Hook for X
+    if (special === 'hook') {
+      paths += `<path d="M 50 35 Q 52 42 48 46 Q 44 50 44 44" fill="none" stroke="${fc}" stroke-width="3" stroke-linecap="round"/>`;
+    }
+    // Cross for R
+    if (special === 'cross') {
+      paths += `<line x1="46" y1="8" x2="52" y2="36" stroke="${fc}" stroke-width="2.5" stroke-linecap="round"/>`;
+      paths += `<line x1="54" y1="8" x2="48" y2="36" stroke="${fc}" stroke-width="2.5" stroke-linecap="round"/>`;
+    }
+  }
+
+  return `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${paths}</svg>`;
+}
+
+// Config for each ASL letter
+const ASL_SVG = {
+  A: {T:false,I:false,M:false,R:false,P:false, note:'Tinju, jempol di sisi'},
+  B: {T:false,I:true, M:true, R:true, P:true,  note:'4 jari tegak, jempol dalam'},
+  C: {special:'C',                              note:'Tangan melengkung C'},
+  D: {T:false,I:true, M:false,R:false,P:false, note:'Telunjuk tegak, sisanya O'},
+  E: {T:false,I:false,M:false,R:false,P:false, note:'Semua jari tekuk rapat'},
+  F: {T:false,I:false,M:true, R:true, P:true,  note:'OK pinch + 3 jari tegak'},
+  G: {T:true, I:true, M:false,R:false,P:false, note:'Menunjuk ke samping'},
+  H: {T:false,I:true, M:true, R:false,P:false, note:'2 jari horizontal'},
+  I: {T:false,I:false,M:false,R:false,P:true,  note:'Kelingking tegak'},
+  J: {T:false,I:false,M:false,R:false,P:true,  note:'Kelingking + gambar J'},
+  K: {T:true, I:true, M:true, R:false,P:false, note:'V + jempol di tengah'},
+  L: {T:true, I:true, M:false,R:false,P:false, note:'Jempol+telunjuk = L'},
+  M: {T:false,I:false,M:false,R:false,P:false, note:'3 jari tutup jempol'},
+  N: {T:false,I:false,M:false,R:false,P:false, note:'2 jari tutup jempol'},
+  O: {special:'O',                              note:'Semua jari bentuk O'},
+  P: {T:true, I:true, M:true, R:false,P:false, note:'K menghadap bawah'},
+  Q: {T:true, I:true, M:false,R:false,P:false, note:'G menghadap bawah'},
+  R: {T:false,I:true, M:true, R:false,P:false, special:'cross', note:'Dua jari silang'},
+  S: {T:false,I:false,M:false,R:false,P:false, note:'Tinju, jempol di depan'},
+  T: {T:false,I:false,M:false,R:false,P:false, note:'Jempol di antara jari'},
+  U: {T:false,I:true, M:true, R:false,P:false, note:'2 jari rapat tegak'},
+  V: {T:false,I:true, M:true, R:false,P:false, note:'2 jari spread V'},
+  W: {T:false,I:true, M:true, R:true, P:false, note:'3 jari tengah tegak'},
+  X: {T:false,I:false,M:false,R:false,P:false, special:'hook', note:'Telunjuk kait'},
+  Y: {T:true, I:false,M:false,R:false,P:true,  note:'Jempol+kelingking = Y'},
+  Z: {T:false,I:true, M:false,R:false,P:false, note:'Telunjuk gambar Z'},
+};
+
+// Config for numbers
+const NUM_SVG = {
+  '0': {special:'O',                              note:'Semua jari bentuk O'},
+  '1': {T:false,I:true, M:false,R:false,P:false, note:'Hanya telunjuk'},
+  '2': {T:false,I:true, M:true, R:false,P:false, note:'2 jari V'},
+  '3': {T:true, I:true, M:true, R:false,P:false, note:'Jempol+2 jari'},
+  '4': {T:false,I:true, M:true, R:true, P:true,  note:'4 jari tegak'},
+  '5': {T:true, I:true, M:true, R:true, P:true,  note:'Semua terbuka'},
+  '6': {T:false,I:true, M:true, R:true, P:false, note:'Kelingking ke jempol'},
+  '7': {T:false,I:true, M:true, R:false,P:true,  note:'Manis ke jempol'},
+  '8': {T:false,I:true, M:false,R:true, P:true,  note:'Tengah ke jempol'},
+  '9': {T:false,I:false,M:false,R:false,P:false, special:'O', note:'OK pinch'},
+};
+
+function renderAZVisualGuide() {
+  const el = $('azVisualGuide');
+  if (!el) return;
+  el.innerHTML = Object.entries(ASL_SVG).map(([l, cfg]) => {
+    const info = ASL[l];
+    const svg  = svgHand(cfg, l);
+    return `<div class="cursor-pointer rounded-xl p-2 text-center border border-gray-800/50 bg-black/20 hover:border-purple-500/60 transition"
+                 onclick="speak('Huruf ${l}. ${cfg.note}', true)" title="${info?.desc||''}">
+      <div class="mb-1">${svg}</div>
+      <div class="text-sm font-black nt2">${l}</div>
+      <div class="text-xs text-gray-600 leading-tight mt-0.5" style="font-size:10px">${cfg.note}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderNumVisualGuide() {
+  const el = $('numVisualGuide');
+  if (!el) return;
+  el.innerHTML = Object.entries(NUM_SVG).map(([n, cfg]) => {
+    const svg = svgHand(cfg, n, '#22d3ee');
+    return `<div class="cursor-pointer rounded-xl p-2 text-center border border-gray-800/50 bg-black/20 hover:border-cyan-500/60 transition"
+                 onclick="speak('Angka ${n}. ${cfg.note}', true)" title="${NUM_SVG[n]?.note||''}">
+      <div class="mb-1">${svg}</div>
+      <div class="text-2xl font-black nt3 font-mono">${n}</div>
+      <div class="text-xs text-gray-600 leading-tight mt-0.5" style="font-size:10px">${cfg.note}</div>
+    </div>`;
+  }).join('');
+}
+
+const GEST_SVG_CFG = {
+  open_hand: {T:true, I:true,  M:true,  R:true,  P:true},
+  peace:     {T:false,I:true,  M:true,  R:false, P:false},
+  thumbs_up: {T:true, I:false, M:false, R:false, P:false},
+  ok:        {T:false,I:false, M:true,  R:true,  P:true,  special:'O'},
+  fist:      {T:false,I:false, M:false, R:false, P:false},
+  pointing:  {T:false,I:true,  M:false, R:false, P:false},
+};
 function renderGestRef() {
-  $('gestRef').innerHTML = Object.entries(GESTURES).map(([k,g]) =>
-    `<div class="hov glass text-center p-3 rounded-xl cursor-pointer" onclick="speak('${g.label}', true)" title="${g.desc}">
-      <div class="text-3xl mb-1">${g.emoji}</div>
-      <p class="text-xs font-bold text-gray-200">${g.label}</p>
-      <p class="text-xs text-gray-600 mt-0.5 leading-tight">${g.desc.split('—')[0].trim()}</p>
-    </div>`).join('');
+  $('gestRef').innerHTML = Object.entries(GESTURES).map(([k,g]) => {
+    const cfg = GEST_SVG_CFG[k] || {};
+    const svg = svgHand(cfg, k, '#a855f7');
+    return `<div class="hov glass text-center p-3 rounded-xl cursor-pointer" onclick="speak('${g.label}. ${g.contoh}', true)" title="${g.desc}">
+      <div class="mb-1 mx-auto" style="max-width:72px">${svg}</div>
+      <div class="text-2xl mb-0.5">${g.emoji}</div>
+      <p class="text-xs font-bold text-white">${g.label}</p>
+      <p class="text-xs leading-tight mt-0.5" style="color:var(--neon3)">${g.name}</p>
+    </div>`;
+  }).join('');
 }
 
 function renderLearnCards() {
@@ -1989,20 +2279,41 @@ function renderLearnCards() {
     </div>`).join('');
 }
 
+// Visual finger diagram for each ASL letter
+const ASL_VISUAL = {
+  A:'✊🔹', B:'🖐️↕', C:'🤏↔', D:'☝️⭕', E:'🤜⬇',
+  F:'👌⬆', G:'👈↔', H:'✌️↔', I:'🤙☝', J:'🤙↩',
+  K:'✌️👍', L:'👆👍', M:'✊×3', N:'✊×2', O:'⭕🤏',
+  P:'✌️⬇', Q:'👈⬇', R:'✌️✕', S:'✊👍⬆', T:'✊👍间',
+  U:'✌️⬆‖', V:'✌️⬆V', W:'🤟⬆', X:'☝️🪝', Y:'🤙',
+  Z:'☝️Z',
+};
+
 function renderAZRef() {
   $('azRef').innerHTML = Object.entries(ASL).map(([l, info]) =>
-    `<div class="hov cell cursor-pointer p-2 flex-col gap-0.5 text-center" style="height:auto" onclick="speak('${info.hint}', true)" title="${info.desc}">
-      <div class="text-base nt2">${l}</div>
-      <div class="text-xs text-gray-600 leading-tight" style="font-family:inherit;font-weight:400">${info.hint.split(' ').slice(0,3).join(' ')}</div>
+    `<div class="hov cursor-pointer rounded-xl p-2 text-center border border-gray-800/60 bg-black/30 hover:border-purple-500/50 transition"
+         onclick="speak('${l}. ${info.hint}', true)" title="${info.desc}">
+      <div class="text-xl font-black nt2 mb-0.5">${l}</div>
+      <div class="text-xs text-gray-500 leading-tight">${info.hint.split('—')[0].trim().split(',')[0]}</div>
     </div>`).join('');
 }
 
+// Finger emoji representations per number
+const NUM_VISUAL = {
+  0:'⭕', 1:'☝️', 2:'✌️', 3:'🤟', 4:'🖐️⁻¹', 5:'🖐️',
+  6:'🤙', 7:'🤘', 8:'🤏', 9:'👌',
+};
+const NUM_EMOJI = {
+  0:'⭕', 1:'1️⃣', 2:'2️⃣', 3:'3️⃣', 4:'4️⃣', 5:'5️⃣',
+  6:'6️⃣', 7:'7️⃣', 8:'8️⃣', 9:'9️⃣',
+};
+
 function renderNumRef() {
   $('numRef').innerHTML = Object.entries(NUMBERS).map(([n, info]) =>
-    `<div class="hov cursor-pointer rounded-2xl p-4 text-center border border-gray-800/50 bg-black/30 hover:border-cyan-500/40 transition" onclick="speak('${info.hint}', true)">
-      <div class="text-3xl font-black font-mono nt3 mb-1">${n}</div>
-      <div class="text-xs font-semibold text-gray-400 mb-0.5">${info.desc}</div>
-      <div class="text-xs text-gray-600 leading-snug">${info.hint}</div>
+    `<div class="hov cursor-pointer rounded-2xl p-3 text-center border border-gray-800/50 bg-black/30 hover:border-cyan-500/50 transition" onclick="speak('Angka ${n}. ${info.hint}', true)">
+      <div class="text-4xl font-black font-mono nt3 leading-none mb-1">${n}</div>
+      <div class="text-xs text-gray-400 leading-snug mb-1">${info.desc.split('.')[0]}</div>
+      <div class="text-xs text-gray-600 leading-tight">${info.hint}</div>
     </div>`).join('');
 }
 
@@ -2033,15 +2344,29 @@ function renderBreakdown() {
 // ═══════════════════════════════════════════════
 const TABS = ['gesture','alphabet','numeric','game','learn','dashboard'];
 document.querySelectorAll('.tab').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const t = btn.dataset.tab;
+    // Auto-stop active cameras when switching away
+    const tabMap = { gesture:'Main', alphabet:'AZ', numeric:'Num', game:'Game' };
+    for (const [tabId, suffix] of Object.entries(tabMap)) {
+      if (tabId !== t) {
+        // pause detection (camera stays alive but stops sending frames)
+        if (tabId === 'gesture' && detectingMain) { /* keep camera, just pause send */ }
+        // Stop AZ/Num/Game cameras if running
+        if (tabId === 'alphabet' && azSt.running)  { await stopAZ().catch(()=>{}); }
+        if (tabId === 'numeric'  && numSt.running)  { await stopNum().catch(()=>{}); }
+        if (tabId === 'game'     && gameSt.running) { await stopGame().catch(()=>{}); }
+      }
+    }
     TABS.forEach(id => {
       const el = document.getElementById('tab-' + id);
       if (el) { el.classList.toggle('hidden', id !== t); el.classList.remove('fade-up'); void el.offsetWidth; if (id === t) el.classList.add('fade-up'); }
     });
     if (t === 'dashboard') renderBreakdown();
+    if (t === 'alphabet')  renderAZVisualGuide();
+    if (t === 'numeric')   renderNumVisualGuide();
   });
 });
 
@@ -2050,6 +2375,26 @@ document.querySelectorAll('.tab').forEach(btn => {
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
+// iOS Safari TTS unlock — must run from direct user gesture
+let _ttsUnlocked = false;
+function unlockTTS() {
+  if (_ttsUnlocked) return;
+  _ttsUnlocked = true;
+  const u = new SpeechSynthesisUtterance('');
+  u.volume = 0;
+  window.speechSynthesis.speak(u);
+}
+document.addEventListener('click', unlockTTS, { once: true });
+document.addEventListener('touchstart', unlockTTS, { once: true });
+
+// Game dead-zone: prevent instant re-trigger after answer
+let _gameDeadZone = false;
+function setGameDeadZone() {
+  _gameDeadZone = true;
+  gameSt.stableStart = 0; gameSt.held = false;
+  setTimeout(() => { _gameDeadZone = false; }, 500);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   renderGestRef();
   renderLearnCards();
@@ -2058,6 +2403,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderAZGrid();
   renderNumGrid();
   renderBreakdown();
+  renderAZVisualGuide();
+  renderNumVisualGuide();
 
   // Deep-link from landing page (tab stored in localStorage)
   const savedTab = localStorage.getItem('gf_tab');
@@ -2068,7 +2415,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Pre-warm main model quietly
-  try { handsMain = await mkHands(onMain); } catch(e){ console.warn('Hands init:', e); }
+  try { await getSharedHands(); console.log('MediaPipe Hands ready'); } catch(e){ console.warn('Hands init:', e); }
 
   // Game mode default
   setGameMode('az');
