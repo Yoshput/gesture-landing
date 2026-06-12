@@ -1646,8 +1646,8 @@ function onMain(res) {
     document.getElementById('fpsBadge').classList.remove('hidden');
 
     mainSt.totalDet++;
-    $('totalDet').textContent = mainSt.totalDet;
-    $('dTot').textContent = mainSt.totalDet;
+    if ($('totalDet')) $('totalDet').textContent = mainSt.totalDet;
+    if ($('dTot')) $('dTot').textContent = mainSt.totalDet;
 
     smMain.push(detectGesture(lm)?.type || null);
     const rawG = detectGesture(lm);
@@ -1676,7 +1676,7 @@ function onMain(res) {
         mainSt.hist.push(g.type);
         mainSt.stats[g.type] = (mainSt.stats[g.type] || 0) + 1;
         updateSentBox();
-        $('dSaved').textContent = mainSt.hist.length;
+        if ($('dSaved')) $('dSaved').textContent = mainSt.hist.length;
         speak(displayName);
         toast(`✅ ${gInfo?.emoji} ${displayName}`, 's');
       }
