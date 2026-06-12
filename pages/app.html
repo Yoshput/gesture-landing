@@ -1144,7 +1144,8 @@ function fingerCurl(lm, tip, pip, mcp) {
 function fingerOpen(lm, tip, pip, mcp) {
   const tipDist2 = dist(lm[tip], lm[mcp]);
   const pipDist2 = dist(lm[pip], lm[mcp]);
-  return tipDist2 > pipDist2 * 1.15;  // tip farther than PIP → extended
+  const hs = hSize(lm);
+  return tipDist2 > pipDist2 * 1.15 && (tipDist2 / hs) > 0.50;  // tip farther than PIP and extended relative to palm
 }
 // Partial/hook: tip is between curled and open (for X)
 function fingerHook(lm, tip, pip, mcp) {
@@ -1251,6 +1252,7 @@ function detectASL(lm) {
   const thumbLat = Math.abs(lm[4].x - lm[2].x) / hs;
   const thumbFwd = nd(lm, 4, 5);
   const a4c = f.Ic && f.Mc && f.Rc && f.Pc;
+  const handFacingDown = lm[0].y < lm[5].y;  // wrist higher than index MCP in y
 
   // ── Geometry helpers ──
   // Is index finger pointing more horizontally than vertically?
@@ -1275,8 +1277,8 @@ function detectASL(lm) {
   // W: 3 fingers (index+middle+ring) + no pinky + no thumb
   if (f.I && f.M && f.R && f.Pc && !f.T && !f.P) return 'W';
 
-  // L: thumb OUT + index UP only
-  if (f.T && f.I && f.Mc && f.Rc && f.Pc && !f.M) return 'L';
+  // L: thumb OUT + index UP only (only if hand is NOT pointing down)
+  if (f.T && f.I && f.Mc && f.Rc && f.Pc && !f.M && !handFacingDown) return 'L';
 
   // ═══════════════════════════════════════════
   // GROUP 2: Only pinky or kelingking
@@ -1287,26 +1289,23 @@ function detectASL(lm) {
 
   // ═══════════════════════════════════════════
   // GROUP 3: index + middle up — most complex group
-  // Must distinguish: K, H, R, V, U in strict order
+  // Must distinguish: P, K, H, R, V, U in strict order
   // ═══════════════════════════════════════════
-
   if (f.I && f.M && f.Rc && f.Pc) {
-    const handFacingDown = lm[0].y < lm[5].y;
     // P: like K but pointing down (wrist above index MCP)
     if (handFacingDown) return 'P';
 
-    // K: thumb is also up AND touching between index+middle
-    if (f.T && t2m < 0.55) return 'K';
+    // K: thumb is close to middle finger (touching or very near it)
+    if (t2m < 0.58) return 'K';
 
-    // H: index+middle pointing SIDEWAYS (horizontal) — no thumb
-    if (!f.T && indexAngleH) return 'H';
+    // H: index+middle pointing SIDEWAYS (horizontal)
+    if (indexAngleH) return 'H';
 
     // R: index+middle up but tips are VERY CLOSE horizontally (crossed)
-    // Key: actual x-distance between tip 8 and tip 12 is tiny
-    if (!f.T && tipsXSwap && i2m < 0.30) return 'R';
+    if (tipsXSwap && i2m < 0.30) return 'R';
 
     // V vs U: spread determines it — V opens wide, U stays together
-    if (!f.T) return i2m > 0.32 ? 'V' : 'U';
+    return i2m > 0.32 ? 'V' : 'U';
   }
 
   // ═══════════════════════════════════════════
@@ -1314,8 +1313,6 @@ function detectASL(lm) {
   // Must distinguish: D (up), G (sideways), X (hook), Q (down)
   // ═══════════════════════════════════════════
   if (f.Mc && f.Rc && f.Pc) {
-    const handFacingDown = lm[0].y < lm[5].y;
-
     // Q: index pointing DOWNWARD, middle/ring/pinky curled
     if (handFacingDown && (f.I || fingerHook(lm, 8, 6, 5))) return 'Q';
 
@@ -1335,7 +1332,7 @@ function detectASL(lm) {
   if (t2i < 0.32 && f.M && f.R && f.P && !f.I) return 'F';
 
   // ═══════════════════════════════════════════
-  // GROUP 6: All 4 fingers curled — A / E / O / S
+  // GROUP 6: All 4 fingers curled — A / E / O / S / T / N / M
   // ═══════════════════════════════════════════
   if (a4c) {
     const iTip = tipDist(lm, 8,  5);
@@ -1346,6 +1343,26 @@ function detectASL(lm) {
 
     // O: round shape, all tips at medium dist from MCPs, thumb meets index
     if (avgTip > 0.52 && t2i < 0.48) return 'O';
+
+    // Projection of thumb tip onto index-pinky knuckle line to find tucked position
+    const dxK = lm[17].x - lm[5].x;
+    const dyK = lm[17].y - lm[5].y;
+    const lenK2 = dxK * dxK + dyK * dyK;
+    const tProj = lenK2 > 0.0001 ? ((lm[4].x - lm[5].x) * dxK + (lm[4].y - lm[5].y) * dyK) / lenK2 : 0.5;
+
+    const t2idxMcp = nd(lm, 4, 5);
+    const t2midMcp = nd(lm, 4, 9);
+    const t2rngMcp = nd(lm, 4, 13);
+    const t2pnkMcp = nd(lm, 4, 17);
+
+    // T: thumb tucked between index & middle
+    if (tProj > 0.05 && tProj < 0.38 && t2idxMcp < 0.50 && t2midMcp < 0.50) return 'T';
+
+    // N: thumb tucked between middle & ring
+    if (tProj >= 0.38 && tProj < 0.70 && t2midMcp < 0.50 && t2rngMcp < 0.50) return 'N';
+
+    // M: thumb tucked between ring & pinky
+    if (tProj >= 0.70 && tProj < 1.05 && t2rngMcp < 0.55 && t2pnkMcp < 0.55) return 'M';
 
     // A: fist, thumb clearly on the SIDE (lateral)
     if (thumbLat > 0.20 && !f.Tc) return 'A';
@@ -1369,26 +1386,6 @@ function detectASL(lm) {
     if (cr(iTip) && cr(mTip) && cr(rTip) && cr(pTip) && t2i > 0.30 && t2i < 1.05) return 'C';
   }
 
-  // ═══════════════════════════════════════════
-  // GROUP 8: Complex close-hand letters M / N / T
-  // All 3 fingers partly curled, thumb involved
-  // ═══════════════════════════════════════════
-  {
-    const partCurl = f.Ic && f.Mc && f.Rc && !f.Pc;
-    if (partCurl) {
-      // T: thumb peeks between index and middle knuckles
-      const tBetween = lm[4].y > lm[6].y && lm[4].y < lm[10].y
-                    && lm[4].x > Math.min(lm[5].x, lm[9].x) - hs*0.1
-                    && lm[4].x < Math.max(lm[5].x, lm[9].x) + hs*0.1;
-      if (tBetween) return 'T';
-      // M vs N: M has 3 fingers over thumb, N has 2
-      // Use distance from thumb to middle vs ring MCP
-      const t2mid = nd(lm, 4, 9);
-      return t2mid < 0.50 ? 'M' : 'N';
-    }
-  }
-
-  // J and Z: handled via trajectory buffer below (motionDetect)
   return null;
 }
 
