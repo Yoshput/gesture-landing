@@ -331,6 +331,7 @@ canvas { display: block; width: 100%; height: 100%; }
     <button class="tab" data-tab="learn">📚 Belajar</button>
     <button class="tab" data-tab="text2gest">✏️ Teks→Gestur</button>
     <button class="tab" data-tab="dashboard">📊 Dashboard</button>
+    <button class="tab" data-tab="photobooth">📸 Photobooth</button>
   </div>
 </div>
 
@@ -957,7 +958,280 @@ canvas { display: block; width: 100%; height: 100%; }
           <p class="text-xs font-semibold mt-2" style="color:var(--tx)">Beta PWA</p>
           <p class="text-xs mt-1" style="color:var(--tx3)">Multi-device testing</p>
         </div>
+  </div>
+</section>
+
+<!-- ════════════ TAB: PHOTOBOOTH ════════════ -->
+<section id="tab-photobooth" class="hidden space-y-4 fade-up">
+  <style>
+    /* Custom styles for photobooth frame selection in glassmorphism dark mode */
+    .pb-frame-btn {
+      border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
+      background: rgba(255, 255, 255, 0.03) !important;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .pb-frame-btn:hover {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border-color: rgba(255, 255, 255, 0.2) !important;
+      transform: translateY(-1px);
+    }
+    .pb-frame-btn.active {
+      border-color: #00f0ff !important;
+      background: rgba(0, 240, 255, 0.06) !important;
+      transform: translateY(-3px);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.25) !important;
+    }
+    .pb-filter-btn {
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      background: rgba(255, 255, 255, 0.03) !important;
+      color: #94a3b8 !important;
+      transition: all 0.2s ease !important;
+    }
+    .pb-filter-btn:hover {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: #FFFFFF !important;
+    }
+    .pb-filter-btn.active {
+      border-color: #00f0ff !important;
+      background: rgba(0, 240, 255, 0.1) !important;
+      color: #00f0ff !important;
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.2) !important;
+    }
+    @keyframes pb-flash {
+      0% { opacity: 0; }
+      15% { opacity: 0.95; }
+      100% { opacity: 0; }
+    }
+    .flash-active {
+      animation: pb-flash 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+  </style>
+  <div class="grid md:grid-cols-3 gap-6">
+    <!-- Camera Preview Area (Left Column - Span 2) -->
+    <div class="md:col-span-2 flex flex-col gap-4">
+      <div class="card p-4 relative overflow-hidden flex flex-col items-center justify-center" style="min-height: 480px; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(16px); border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 24px; box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.35);">
+        <!-- Loading State -->
+        <div id="pbLoad" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-20 hidden">
+          <div class="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin mb-3"></div>
+          <p class="text-sm font-semibold text-white">Menghubungkan Kamera...</p>
+        </div>
+        
+        <!-- Webcam Canvas Rendering -->
+        <div class="relative w-full max-w-2xl aspect-[4/3] rounded-xl overflow-hidden shadow-lg border border-slate-700 bg-slate-950 flex items-center justify-center">
+          <!-- Hidden Video Feed -->
+          <video id="vidPB" autoplay playsinline muted style="display:none;"></video>
+          <!-- Drawing Canvas -->
+          <canvas id="cvsPB" class="w-full h-full object-cover"></canvas>
+          
+          <!-- Countdown Visual Overlay -->
+          <div id="pbCountdown" class="absolute inset-0 flex items-center justify-center z-30 hidden" style="background: rgba(0,0,0,0.35);">
+            <span id="pbCountdownNum" class="text-white text-8xl font-black drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">3</span>
+          </div>
+          
+          <!-- Screen Flash Effect (white overlay) -->
+          <div id="pbFlash" class="absolute inset-0 bg-white z-40 opacity-0 pointer-events-none"></div>
+          
+          <!-- Watermark Preview badge -->
+          <div class="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 rounded-full px-3 py-1 flex items-center gap-1.5 text-xs text-white pointer-events-none select-none z-10">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="pbStatusBadge">Deteksi Aktif</span>
+          </div>
+
+          <!-- Hand count indicator -->
+          <div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md border border-white/10 rounded-full px-3 py-1 flex items-center gap-1.5 text-xs text-white pointer-events-none select-none z-10">
+            <span>👋</span>
+            <span id="pbHandCount">0 Tangan</span>
+          </div>
+        </div>
+
+        <!-- Camera Placeholder (when camera is idle) -->
+        <div id="pbPH" class="absolute inset-0 flex flex-col items-center justify-center bg-[#070913]" style="z-index:30;">
+          <div class="w-20 h-20 rounded-full flex items-center justify-center text-4xl mb-4 border border-slate-800/80 shadow-lg" style="background: rgba(255,255,255,0.03); box-shadow: 0 0 20px rgba(189, 0, 255, 0.15); border-color: rgba(189, 0, 255, 0.25);">📸</div>
+          <h3 class="text-lg font-bold text-white mb-1" style="font-family: 'Outfit', sans-serif;">Aesthetic Photobooth</h3>
+          <p class="text-xs text-slate-400 max-w-sm text-center px-6 leading-relaxed">Berpose sendiri atau bersama temanmu! Dilengkapi deteksi skeleton tangan instan, gesture trigger, dan watermark Gen Z keren.</p>
+          <button onclick="startPhotobooth()" class="mt-6 px-6 py-3 rounded-xl font-bold text-sm transition" style="background: linear-gradient(135deg, #bd00ff 0%, #00f0ff 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(189, 0, 255, 0.4); position:relative; z-index:31;">
+            📷 Mulai Kamera
+          </button>
+        </div>
       </div>
+      
+      <!-- Capture Mode Info (Helper text) -->
+      <div id="pbHelpText" class="card p-3.5 bg-slate-900 border-slate-800 flex items-center gap-3">
+        <span class="text-xl">✨</span>
+        <p class="text-xs text-slate-300 leading-normal font-medium">
+          <b>AI Gesture Shutter:</b> Angkat tanganmu ke kamera dan buat pose <b>Peace (✌️)</b> selama 1.5 detik untuk mengambil foto secara otomatis tanpa menyentuh tombol!
+        </p>
+      </div>
+    </div>
+
+    <!-- Control Panel (Right Column - Span 1) -->
+    <div class="card p-6 flex flex-col justify-between" style="background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(20px); border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 24px; box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45); color: #FFFFFF;">
+      <div class="space-y-6">
+        <div>
+          <h2 class="font-bold text-xl text-white flex items-center gap-2" style="font-family: 'Outfit', sans-serif; letter-spacing: -0.5px;">
+            <span style="filter: drop-shadow(0 0 8px #bd00ff)">🎨</span> Editor & Bingkai
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Sesuaikan filter dan template photostrip kamu</p>
+        </div>
+
+        <!-- Frame Template Selector -->
+        <div class="space-y-3">
+          <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">1. Pilih Bingkai (Template)</label>
+          <div class="grid grid-cols-2 gap-2.5" id="pbFrameSelect">
+            <button class="pb-frame-btn active rounded-xl p-2.5 text-left transition" data-frame="white">
+              <div class="w-full h-8 bg-white border border-slate-300 rounded mb-1.5 shadow-inner"></div>
+              <p class="text-xs font-bold text-white">Classic Polaroid</p>
+              <p class="text-[9px] text-slate-400 truncate">Vibe bersih & polaroid</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="retro-polaroid">
+              <div class="w-full h-8 border border-amber-900/50 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background-color:#FCF9F2; color:#D2143A;">🎞️</div>
+              <p class="text-xs font-bold text-white">Polaroid 1970</p>
+              <p class="text-[9px] text-slate-400 truncate">Warm analog vibes</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="arcade-neon">
+              <div class="w-full h-8 bg-[#06011A] border border-pink-500/50 rounded mb-1.5 flex items-center justify-center text-[10px] text-yellow-400">👾</div>
+              <p class="text-xs font-bold text-white">BAMBEAR Gamers</p>
+              <p class="text-[9px] text-slate-400 truncate">Retro neon arcade</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="manga-speed">
+              <div class="w-full h-8 bg-white border border-black rounded mb-1.5 flex items-center justify-center text-[10px] text-black font-extrabold">💥</div>
+              <p class="text-xs font-bold text-white">Manga Speedlines</p>
+              <p class="text-[9px] text-slate-400 truncate">Action panel mode</p>
+            </button>
+            <button class="pb-frame-btn col-span-2 rounded-xl p-2.5 text-left transition" data-frame="flow-neon">
+              <div class="w-full h-8 rounded mb-1.5" style="background: linear-gradient(135deg, #bd00ff 0%, #00f0ff 100%); opacity: 0.85;"></div>
+              <p class="text-xs font-bold text-white">GestureFlow Neon</p>
+              <p class="text-[9px] text-slate-400 truncate">Exclusive holographic</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Selector -->
+        <div class="space-y-3">
+          <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">2. Pilih Filter Kamera</label>
+          <div class="grid grid-cols-3 gap-1.5" id="pbFilterSelect">
+            <button class="pb-filter-btn active text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="normal">Normal</button>
+            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="bright">☀️ Cerah</button>
+            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="dark">🌙 Gelap</button>
+            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="grayscale">🎬 B&W</button>
+            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="cyan">🌐 Cyan</button>
+            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="amber">🍂 Amber</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-2.5 mt-6 pt-4 border-t border-slate-800">
+        <div class="flex gap-2">
+          <button id="pbBtnSingle" onclick="takePhoto('single')" disabled class="flex-1 flex flex-col items-center justify-center gap-0.5 py-3 rounded-xl transition" style="background: linear-gradient(135deg, #bd00ff 0%, #ff007a 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(189, 0, 255, 0.35);">
+            <span class="text-xs font-bold">📸 Foto Tunggal</span>
+            <span class="text-[9px] font-normal opacity-85">1 Jepretan Kartu</span>
+          </button>
+          <button id="pbBtnStrip" onclick="takePhoto('strip')" disabled class="flex-1 flex flex-col items-center justify-center gap-0.5 py-3 rounded-xl transition" style="background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);">
+            <span class="text-xs font-bold">🎞️ Photostrip</span>
+            <span class="text-[9px] font-normal opacity-85">4 Jepretan Strip</span>
+          </button>
+        </div>
+        
+        <button id="pbBtnStop" onclick="stopPhotobooth()" disabled class="w-full py-2.5 rounded-xl transition font-semibold text-xs mt-2" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.3); color: #f87171; cursor: pointer;">
+          ⏹️ Hentikan Kamera
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Riwayat Foto (localStorage History Gallery) ── -->
+  <div id="pbHistorySection" class="card p-4 mt-2" style="display:none;">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">🗂️</span>
+        <h4 class="font-bold text-slate-700 text-sm">Riwayat Foto Terakhir</h4>
+        <span id="pbHistoryCount" class="text-xs bg-violet-100 text-violet-600 font-bold px-2 py-0.5 rounded-full">0</span>
+      </div>
+      <button onclick="clearPhotoHistory()" class="text-xs text-red-400 hover:text-red-600 font-semibold transition-colors">🗑️ Hapus Semua</button>
+    </div>
+    <div id="pbHistoryGrid" class="flex gap-3 overflow-x-auto pb-2" style="-webkit-overflow-scrolling:touch; scrollbar-width:thin;">
+      <!-- Thumbnails injected by JS -->
+    </div>
+  </div>
+
+  <!-- Compiled Output Preview Modal/Overlay (Hidden by default) -->
+  <div id="pbPreviewModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/85 backdrop-blur-md hidden" style="animation: none;">
+    <div id="pbModalCard" class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl flex flex-col" style="max-height:96vh; opacity:0; transform:translateY(32px) scale(0.96); transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34,1.56,0.64,1);">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📸</span>
+          <div>
+            <h3 class="font-black text-slate-800 text-base leading-tight">Hasil Photobooth Kamu!</h3>
+            <p class="text-xs text-slate-400 font-medium">Tap foto buat zoom 🔍 • Siap di-share ke IG Story 🔥</p>
+          </div>
+        </div>
+        <button onclick="closePbPreview()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors font-bold text-sm">✕</button>
+      </div>
+
+      <!-- Photo Preview: constrained height, scrollable on very tall canvases -->
+      <div class="flex-1 overflow-y-auto px-5 py-4 min-h-0" style="-webkit-overflow-scrolling:touch;">
+        <div id="pbPhotoWrapper" class="w-full flex flex-col items-center gap-2"
+             style="opacity:0; transform:translateY(16px); transition:opacity 0.5s ease 0.15s, transform 0.5s ease 0.15s;">
+          <!-- Canvas constrained to fit modal, but aspect ratio kept -->
+          <canvas id="cvsFinal"
+                  onclick="openPhotoZoom()"
+                  title="Tap/klik untuk zoom"
+                  class="rounded-2xl shadow-xl border-4 border-white cursor-zoom-in"
+                  style="max-width:100%; max-height:50vh; width:auto; height:auto; display:block;"></canvas>
+          <p class="text-xs text-slate-400 flex items-center gap-1">
+            <span>🔍</span> Tap foto untuk melihat ukuran penuh
+          </p>
+          <!-- Individual photo carousel (strip mode) -->
+          <div id="pbCarouselWrap" class="w-full" style="display:none;">
+            <p class="text-xs font-semibold text-slate-500 mb-1.5">📸 Foto Individual:</p>
+            <div id="pbCarouselTrack" class="flex gap-2.5 overflow-x-auto pb-1" style="-webkit-overflow-scrolling:touch; scrollbar-width:thin;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons Panel -->
+      <div id="pbActionPanel" class="px-5 pb-5 pt-3 border-t border-slate-100 flex-shrink-0 space-y-2.5"
+           style="opacity:0; transform:translateY(8px); transition:opacity 0.4s ease 0.35s, transform 0.4s ease 0.35s;">
+        <!-- Row 1: Download + Retake -->
+        <div class="flex gap-2.5">
+          <button onclick="downloadFinal()"
+                  class="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-colors shadow-sm">
+            💾 Unduh PNG
+          </button>
+          <button onclick="retakePhoto()"
+                  class="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+            🔄 Retake
+          </button>
+        </div>
+        <!-- Row 2: Share IG Story -->
+        <button onclick="shareToIG()"
+                id="pbShareBtn"
+                class="w-full flex items-center justify-center gap-2 text-sm font-bold py-3 px-4 rounded-xl text-white transition-all shadow-md active:scale-95"
+                style="background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          Share ke Instagram Story
+        </button>
+        <!-- Hint text -->
+        <p class="text-center text-xs text-slate-400 font-medium">
+          Tag <b class="text-violet-600">@GestureFlow</b> biar makin hits! 😎✨
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zoom Lightbox (full-screen photo viewer) -->
+  <div id="pbZoomOverlay"
+       onclick="closePhotoZoom()"
+       class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/95 backdrop-blur-sm cursor-zoom-out"
+       style="display:none;">
+    <div class="relative w-full h-full flex items-center justify-center p-4" id="pbZoomInner">
+      <img id="pbZoomImg" src="" alt="Foto Photobooth" draggable="false"
+           style="max-width:100%; max-height:100%; object-fit:contain; border-radius:12px; box-shadow:0 0 60px rgba(0,0,0,0.8); user-select:none;"/>
+      <button onclick="closePhotoZoom()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:white;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">✕</button>
+      <p style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.5);font-size:12px;white-space:nowrap;">Tap di luar atau klik ✕ untuk tutup</p>
     </div>
   </div>
 </section>
@@ -2685,22 +2959,23 @@ function renderBreakdown() {
 // ═══════════════════════════════════════════════
 // TAB SWITCHING
 // ═══════════════════════════════════════════════
-const TABS = ['gesture','alphabet','numeric','game','learn','dashboard'];
+const TABS = ['gesture','alphabet','numeric','game','learn','dashboard','photobooth'];
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', async () => {
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const t = btn.dataset.tab;
     // Auto-stop active cameras when switching away
-    const tabMap = { gesture:'Main', alphabet:'AZ', numeric:'Num', game:'Game' };
+    const tabMap = { gesture:'Main', alphabet:'AZ', numeric:'Num', game:'Game', photobooth:'PB' };
     for (const [tabId, suffix] of Object.entries(tabMap)) {
       if (tabId !== t) {
         // pause detection (camera stays alive but stops sending frames)
         if (tabId === 'gesture' && detectingMain) { /* keep camera, just pause send */ }
-        // Stop AZ/Num/Game cameras if running
+        // Stop AZ/Num/Game/Photobooth cameras if running
         if (tabId === 'alphabet' && azSt.running)  { await stopAZ().catch(()=>{}); }
         if (tabId === 'numeric'  && numSt.running)  { await stopNum().catch(()=>{}); }
         if (tabId === 'game'     && gameSt.running) { await stopGame().catch(()=>{}); }
+        if (tabId === 'photobooth' && typeof pbSt !== 'undefined' && pbSt.running) { await stopPhotobooth().catch(()=>{}); }
       }
     }
     TABS.forEach(id => {
@@ -3263,4 +3538,1386 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
-</script></body></html>
+</script>
+
+<!-- ════════════ SCRIPT: PHOTOBOOTH SYSTEM ════════════ -->
+<script>
+'use strict';
+
+// ── State ─────────────────────────────────────
+const pbSt = {
+  running: false,
+  detecting: false,
+  cam: null,
+  hands: null,
+  photos: [],
+  mode: 'single', // 'single' | 'strip'
+  filter: 'normal',
+  frame: 'white',
+  countdownActive: false,
+  handCount: 0,
+  gestureStartTime: null
+};
+
+// ── Web Audio Beep & Buzz Synthesizer ─────────
+let printAudioCtx = null;
+let printOsc = null;
+let printGain = null;
+
+function playBeep(freq, ms) {
+  const muted = typeof _sMuted !== 'undefined' ? _sMuted : false;
+  if (muted) return;
+  
+  try {
+    const actx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, actx.currentTime);
+    gain.gain.setValueAtTime(0.15, actx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + ms/1000);
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.start();
+    osc.stop(actx.currentTime + ms/1000);
+  } catch(e) {
+    console.warn('AudioContext error:', e);
+  }
+}
+
+function startPrintSound() {
+  const muted = typeof _sMuted !== 'undefined' ? _sMuted : false;
+  if (muted) return;
+  
+  try {
+    printAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    printOsc = printAudioCtx.createOscillator();
+    printGain = printAudioCtx.createGain();
+    
+    printOsc.type = 'sawtooth';
+    printOsc.frequency.setValueAtTime(85, printAudioCtx.currentTime); // low motor buzz
+    printGain.gain.setValueAtTime(0.03, printAudioCtx.currentTime); // quiet buzz
+    
+    printOsc.connect(printGain);
+    printGain.connect(printAudioCtx.destination);
+    
+    printOsc.start();
+  } catch(e) {
+    console.warn('AudioContext error:', e);
+  }
+}
+
+function stopPrintSound() {
+  try {
+    if (printOsc) { printOsc.stop(); printOsc.disconnect(); }
+    if (printGain) { printGain.disconnect(); }
+    if (printAudioCtx) { printAudioCtx.close(); }
+  } catch(e) {}
+  printOsc = null;
+  printGain = null;
+  printAudioCtx = null;
+}
+
+// ── Sleep Helper ──────────────────────────────
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// ── Start Photobooth ──────────────────────────
+async function startPhotobooth() {
+  if (pbSt.running) return;
+  
+  const btnSingle = document.getElementById('pbBtnSingle');
+  const btnStrip = document.getElementById('pbBtnStrip');
+  const btnStop = document.getElementById('pbBtnStop');
+  const pbLoad = document.getElementById('pbLoad');
+  const pbPH = document.getElementById('pbPH');
+  
+  pbLoad.classList.remove('hidden');
+  pbPH.classList.add('hidden');
+  
+  try {
+    // Lazy initialize Hands instance
+    if (!pbSt.hands) {
+      pbSt.hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+      pbSt.hands.setOptions({
+        maxNumHands: 4,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.65,
+        minTrackingConfidence: 0.65
+      });
+      pbSt.hands.onResults(onPhotoboothResults);
+    }
+    
+    pbSt.detecting = true;
+    const isMobile = window.innerWidth < 768;
+    const vidPB = document.getElementById('vidPB');
+    const cvsPB = document.getElementById('cvsPB');
+    
+    if (!pbSt.cam) {
+      pbSt.cam = new Camera(vidPB, {
+        onFrame: async () => {
+          if (pbSt.hands && pbSt.detecting && pbSt.running) {
+            await pbSt.hands.send({ image: vidPB });
+          }
+        },
+        width: isMobile ? 640 : 1280,
+        height: isMobile ? 480 : 720
+      });
+    }
+    
+    await pbSt.cam.start();
+    pbSt.running = true;
+    
+    if (btnSingle) btnSingle.disabled = false;
+    if (btnStrip) btnStrip.disabled = false;
+    if (btnStop) btnStop.disabled = false;
+    
+    pbLoad.classList.add('hidden');
+    toast('📷 Kamera Photobooth aktif! Silakan berpose', 's');
+  } catch (e) {
+    pbLoad.classList.add('hidden');
+    pbPH.classList.remove('hidden');
+    toast('❌ Gagal mengaktifkan kamera: ' + e.message, 'e');
+    console.error(e);
+  }
+}
+
+// ── Stop Photobooth ───────────────────────────
+async function stopPhotobooth() {
+  if (!pbSt.running) return;
+  
+  pbSt.detecting = false;
+  pbSt.running = false;
+  
+  try {
+    if (pbSt.cam) {
+      await pbSt.cam.stop();
+    }
+  } catch(e) {
+    console.error('Error stopping photobooth camera:', e);
+  }
+  
+  const cvsPB = document.getElementById('cvsPB');
+  const ctx = cvsPB.getContext('2d');
+  ctx.clearRect(0, 0, cvsPB.width, cvsPB.height);
+  
+  const btnSingle = document.getElementById('pbBtnSingle');
+  const btnStrip = document.getElementById('pbBtnStrip');
+  const btnStop = document.getElementById('pbBtnStop');
+  const pbPH = document.getElementById('pbPH');
+  const pbHandCount = document.getElementById('pbHandCount');
+  
+  if (btnSingle) btnSingle.disabled = true;
+  if (btnStrip) btnStrip.disabled = true;
+  if (btnStop) btnStop.disabled = true;
+  if (pbPH) pbPH.classList.remove('hidden');
+  if (pbHandCount) pbHandCount.textContent = '0 Tangan';
+  
+  toast('⏹ Kamera Photobooth dihentikan', 'i');
+}
+
+// ── Results Handler ───────────────────────────
+// ── Hand Gesture Detector for Shutter ─────────
+function detectHandGesture(lm) {
+  const isUpright = lm[0].y > lm[5].y;
+  if (!isUpright) return null;
+  
+  const indexExtended = lm[8].y < lm[6].y;
+  const middleExtended = lm[12].y < lm[10].y;
+  const ringFolded = lm[16].y > lm[14].y;
+  const pinkyFolded = lm[20].y > lm[18].y;
+  
+  if (indexExtended && middleExtended && ringFolded && pinkyFolded) {
+    return 'peace';
+  }
+  return null;
+}
+
+// ── Results Handler ───────────────────────────
+function onPhotoboothResults(results) {
+  if (!pbSt.running) return;
+  
+  const cvsPB = document.getElementById('cvsPB');
+  const ctx = cvsPB.getContext('2d');
+  const vidPB = document.getElementById('vidPB');
+  
+  // 1. Draw camera feed
+  drawFramePB(ctx, vidPB, cvsPB, pbSt.filter);
+  
+  // 2. Draw multiple hand skeletons
+  let handsDetected = 0;
+  let activeGesture = null;
+  
+  if (results.multiHandLandmarks) {
+    handsDetected = results.multiHandLandmarks.length;
+    const handColors = [
+      { cc: '#BD00FF', pc: '#FF007A' }, // Purple-Pink Glow
+      { cc: '#00F0FF', pc: '#93C5FD' }, // Cyan-Blue Glow
+      { cc: '#14B8A6', pc: '#99F6E4' }, // Teal
+      { cc: '#EF4444', pc: '#FCA5A5' }  // Red
+    ];
+    
+    results.multiHandLandmarks.forEach((lm, index) => {
+      const colors = handColors[index % handColors.length];
+      drawSkeleton(ctx, lm, cvsPB, colors.cc, colors.pc);
+      
+      // Classify gesture for first hand
+      if (index === 0) {
+        activeGesture = detectHandGesture(lm);
+      }
+    });
+  }
+  
+  // 3. Process AI Gesture Shutter Trigger (Peace Sign ✌️)
+  if (activeGesture === 'peace' && !pbSt.countdownActive) {
+    if (!pbSt.gestureStartTime) {
+      pbSt.gestureStartTime = Date.now();
+    }
+    const elapsed = Date.now() - pbSt.gestureStartTime;
+    const progress = Math.min(elapsed / 1500, 1);
+    
+    // Draw real-time UI overlay on canvas
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.beginPath();
+    ctx.roundRect(cvsPB.width/2 - 160, 24, 320, 48, 14);
+    ctx.fill();
+    
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    
+    // Neon active progress line at the bottom of the card
+    ctx.strokeStyle = '#00f0ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cvsPB.width/2 - 160 + 14, 68);
+    ctx.lineTo(cvsPB.width/2 - 160 + 14 + (320 - 28) * progress, 68);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`✌️ Peace! Shutter aktif dalam ${Math.ceil((1500 - elapsed)/1000 * 10)/10}s`, cvsPB.width/2, 44);
+    ctx.restore();
+    
+    if (elapsed >= 1500) {
+      pbSt.gestureStartTime = null;
+      // Triggers immediate photo capture
+      takePhoto(pbSt.mode);
+    }
+  } else {
+    pbSt.gestureStartTime = null;
+  }
+  
+  const pbHandCount = document.getElementById('pbHandCount');
+  if (pbHandCount) pbHandCount.textContent = `${handsDetected} Tangan`;
+}
+
+// ── Custom Camera Drawer with Filter ──────────
+function drawFramePB(ctx, vid, cvs, filterType) {
+  const w = vid.videoWidth || 640, h = vid.videoHeight || 480;
+  if (cvs.width !== w || cvs.height !== h) { cvs.width = w; cvs.height = h; }
+  
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+  ctx.scale(-1, 1);
+  ctx.translate(-w, 0);
+  
+  // Apply Canvas filter properties
+  ctx.filter = getFilterCSS(filterType);
+  ctx.drawImage(vid, 0, 0, w, h);
+  ctx.restore();
+}
+
+function getFilterCSS(filter) {
+  switch (filter) {
+    case 'bright':
+      return 'brightness(1.2) contrast(1.05) saturate(1.1)';
+    case 'dark':
+      return 'brightness(0.75) contrast(1.2) saturate(0.85)';
+    case 'grayscale':
+      return 'grayscale(100%) brightness(1.05) contrast(1.1)';
+    case 'cyan':
+      return 'hue-rotate(180deg) saturate(1.3) contrast(1.05)';
+    case 'amber':
+      return 'sepia(50%) saturate(1.2) contrast(1.1) brightness(1.02)';
+    case 'normal':
+    default:
+      return 'none';
+  }
+}
+
+// ── Crop Proportional Draw Helper (ANTI-GEPENG) ──
+function drawImageProp(ctx, img, x, y, w, h, offsetX = 0.5, offsetY = 0.5) {
+  const imgW = img.width;
+  const imgH = img.height;
+  
+  // Crop fit (cover logic)
+  const scale = Math.max(w / imgW, h / imgH);
+  const sw = w / scale;
+  const sh = h / scale;
+  const sx = (imgW - sw) * offsetX;
+  const sy = (imgH - sh) * offsetY;
+  
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
+// ── Arched Path Drawer Helper ─────────────────
+function drawArchedRect(ctx, x, y, w, h, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x, y + h); // bottom left
+  ctx.lineTo(x, y + radius); // left to arc start
+  ctx.arcTo(x, y, x + w, y, radius); // top left curve
+  ctx.arcTo(x + w, y, x + w, y + h, radius); // top right curve
+  ctx.lineTo(x + w, y + h); // bottom right
+  ctx.closePath();
+}
+
+// ── Text Column Wrapper for Newspaper ─────────
+function drawTextColumn(ctx, text, x, y, width, lineHeight) {
+  ctx.font = '11px "Times New Roman", Times, serif';
+  ctx.fillStyle = '#1E293B';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  
+  const words = text.split(' ');
+  let line = '';
+  let currentY = y;
+  
+  for (let n = 0; n < words.length; n++) {
+    let testLine = line + words[n] + ' ';
+    let metrics = ctx.measureText(testLine);
+    if (metrics.width > width && n > 0) {
+      ctx.fillText(line, x, currentY);
+      line = words[n] + ' ';
+      currentY += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, x, currentY);
+  return currentY + lineHeight;
+}
+
+// ── Trigger capture process ───────────────────
+function takePhoto(mode) {
+  if (pbSt.countdownActive || !pbSt.running) return;
+  runPhotoboothCapture(mode);
+}
+
+// ── Capture Loop with async/await ──────────────
+async function runPhotoboothCapture(mode) {
+  pbSt.mode = mode;
+  pbSt.photos = [];
+  pbSt.countdownActive = true;
+  
+  const totalPhotos = mode === 'strip' ? 4 : 1;
+  
+  const btnSingle = document.getElementById('pbBtnSingle');
+  const btnStrip = document.getElementById('pbBtnStrip');
+  const btnStop = document.getElementById('pbBtnStop');
+  const pbCountdown = document.getElementById('pbCountdown');
+  const pbCountdownNum = document.getElementById('pbCountdownNum');
+  const pbFlash = document.getElementById('pbFlash');
+  const cvsPB = document.getElementById('cvsPB');
+  
+  if (btnSingle) btnSingle.disabled = true;
+  if (btnStrip) btnStrip.disabled = true;
+  if (btnStop) btnStop.disabled = true;
+  
+  for (let i = 0; i < totalPhotos; i++) {
+    if (!pbSt.running) break;
+    
+    // Countdown
+    if (pbCountdown) pbCountdown.classList.remove('hidden');
+    for (let c = 3; c > 0; c--) {
+      if (!pbSt.running) break;
+      if (pbCountdownNum) {
+        pbCountdownNum.textContent = c;
+        pbCountdownNum.classList.remove('animate-ping');
+        void pbCountdownNum.offsetWidth; // trigger reflow
+        pbCountdownNum.classList.add('animate-ping');
+      }
+      playBeep(440, 100);
+      await sleep(1000);
+    }
+    
+    if (!pbSt.running) break;
+    
+    // Snapping
+    if (pbCountdown) pbCountdown.classList.add('hidden');
+    playBeep(880, 250);
+    
+    // Flash Animation
+    if (pbFlash) {
+      pbFlash.classList.add('flash-active');
+      setTimeout(() => { pbFlash.classList.remove('flash-active'); }, 500);
+    }
+    
+    // Snap snapshot
+    const snapCvs = document.createElement('canvas');
+    snapCvs.width = cvsPB.width;
+    snapCvs.height = cvsPB.height;
+    const snapCtx = snapCvs.getContext('2d');
+    snapCtx.drawImage(cvsPB, 0, 0);
+    pbSt.photos.push(snapCvs);
+    
+    toast(`📸 Foto ${i+1}/${totalPhotos} berhasil diambil!`, 's');
+    
+    if (i < totalPhotos - 1) {
+      toast('Siap-siap pose berikutnya... 🕒', 'i');
+      await sleep(1800); // 1.8s pose delay
+    }
+  }
+  
+  pbSt.countdownActive = false;
+  
+  if (pbSt.photos.length === totalPhotos) {
+    compileFinalImage();
+  } else {
+    enableCaptureButtons();
+  }
+}
+
+// ── Compile final Polaroid Card or Photostrip ─
+function compileFinalImage() {
+  const canvas = document.getElementById('cvsFinal');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const template = pbSt.frame;
+  const mode = pbSt.mode;
+  
+  // Clean final canvas completely
+  ctx.shadowColor = 'transparent';
+  ctx.filter = 'none';
+  
+  if (template === 'newspaper') {
+    // Newspaper Layout (kept for backward compatibility or extra templates)
+    if (mode === 'single') {
+      canvas.width = 800;
+      canvas.height = 1000;
+      drawFrameBackground(ctx, template, 800, 1000);
+      
+      const img = pbSt.photos[0];
+      const targetW = 560;
+      const targetH = 420;
+      const targetX = 120;
+      const targetY = 160;
+      
+      // Draw grayscale photo
+      ctx.save();
+      ctx.filter = 'grayscale(100%) contrast(1.2) brightness(1.03)';
+      drawImageProp(ctx, img, targetX, targetY, targetW, targetH);
+      ctx.restore();
+      
+      // Photo frame border
+      ctx.strokeStyle = '#1E293B';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(targetX, targetY, targetW, targetH);
+      
+      drawFrameDecorations(ctx, template, mode, [{x: targetX, y: targetY, w: targetW, h: targetH}]);
+    } else {
+      // Newspaper Photostrip: 800 x 1100
+      canvas.width = 800;
+      canvas.height = 1100;
+      drawFrameBackground(ctx, template, 800, 1100);
+      
+      const photoW = 260;
+      const photoH = 195;
+      const leftMargin = 50;
+      const topMargin = 160;
+      const gap = 30;
+      const coords = [];
+      
+      for (let i = 0; i < 4; i++) {
+        const img = pbSt.photos[i];
+        const targetX = leftMargin;
+        const targetY = topMargin + i * (photoH + gap);
+        coords.push({x: targetX, y: targetY, w: photoW, h: photoH});
+        
+        ctx.save();
+        ctx.filter = 'grayscale(100%) contrast(1.2) brightness(1.03)';
+        drawImageProp(ctx, img, targetX, targetY, photoW, photoH);
+        ctx.restore();
+        
+        ctx.strokeStyle = '#1E293B';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(targetX, targetY, photoW, photoH);
+      }
+      
+      drawFrameDecorations(ctx, template, mode, coords);
+    }
+  } 
+  else {
+    // Normal Card or Strip (covers white, retro-polaroid, arcade-neon, manga-speed, flow-neon, grunge)
+    if (mode === 'single') {
+      canvas.width = 600;
+      canvas.height = 800;
+      drawFrameBackground(ctx, template, 600, 800);
+      
+      const img = pbSt.photos[0];
+      const targetW = 520;
+      const targetH = 520;
+      const targetX = 40;
+      const targetY = 40;
+      
+      // Backdrop shadow & fill card behind the photo
+      ctx.shadowColor = 'rgba(15, 23, 42, 0.15)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+      
+      if (template === 'arcade-neon') {
+        ctx.fillStyle = '#06011A';
+      } else if (template === 'flow-neon') {
+        ctx.fillStyle = '#0C0A1E';
+      } else if (template === 'manga-speed') {
+        ctx.fillStyle = '#FFFFFF';
+      } else if (template === 'retro-polaroid') {
+        ctx.fillStyle = '#FCF9F2';
+      } else {
+        ctx.fillStyle = '#FFFFFF';
+      }
+      
+      ctx.beginPath();
+      if (template === 'grunge') {
+        drawArchedRect(ctx, targetX - 8, targetY - 8, targetW + 16, targetH + 16, 32);
+      } else {
+        ctx.roundRect(targetX - 8, targetY - 8, targetW + 16, targetH + 16, 12);
+      }
+      ctx.fill();
+      ctx.shadowColor = 'transparent'; // reset
+      
+      // Draw cropped photo
+      ctx.save();
+      ctx.beginPath();
+      if (template === 'grunge') {
+        drawArchedRect(ctx, targetX, targetY, targetW, targetH, 24);
+      } else {
+        ctx.roundRect(targetX, targetY, targetW, targetH, 8);
+      }
+      ctx.clip();
+      
+      drawImageProp(ctx, img, targetX, targetY, targetW, targetH);
+      ctx.restore();
+      
+      // Draw neon border stroke
+      if (template === 'arcade-neon') {
+        ctx.strokeStyle = '#EC4899';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(targetX - 8, targetY - 8, targetW + 16, targetH + 16);
+      } else if (template === 'flow-neon') {
+        ctx.strokeStyle = '#00F0FF';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(targetX - 8, targetY - 8, targetW + 16, targetH + 16);
+      } else if (template === 'manga-speed') {
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(targetX - 8, targetY - 8, targetW + 16, targetH + 16);
+      }
+      
+      drawFrameDecorations(ctx, template, mode, [{x: targetX, y: targetY, w: targetW, h: targetH}]);
+      
+    } else {
+      // Photostrip (4 Photos)
+      canvas.width = 480;
+      canvas.height = 1460;
+      drawFrameBackground(ctx, template, 480, 1460);
+      
+      const photoW = 400;
+      const photoH = 300; // 4:3
+      const leftMargin = 40;
+      const topMargin = 60;
+      const gap = 36;
+      const coords = [];
+      
+      for (let i = 0; i < 4; i++) {
+        const img = pbSt.photos[i];
+        const targetX = leftMargin;
+        const targetY = topMargin + i * (photoH + gap);
+        coords.push({x: targetX, y: targetY, w: photoW, h: photoH});
+        
+        ctx.shadowColor = 'rgba(15, 23, 42, 0.1)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 3;
+        
+        if (template === 'arcade-neon') {
+          ctx.fillStyle = '#06011A';
+        } else if (template === 'flow-neon') {
+          ctx.fillStyle = '#0C0A1E';
+        } else if (template === 'manga-speed') {
+          ctx.fillStyle = '#FFFFFF';
+        } else if (template === 'retro-polaroid') {
+          ctx.fillStyle = '#FCF9F2';
+        } else {
+          ctx.fillStyle = '#FFFFFF';
+        }
+        
+        ctx.beginPath();
+        if (template === 'grunge') {
+          drawArchedRect(ctx, targetX - 6, targetY - 6, photoW + 12, photoH + 12, 24);
+        } else {
+          ctx.roundRect(targetX - 6, targetY - 6, photoW + 12, photoH + 12, 10);
+        }
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        
+        if (template === 'arcade-neon') {
+          ctx.strokeStyle = '#EC4899';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(targetX - 6, targetY - 6, photoW + 12, photoH + 12);
+        } else if (template === 'flow-neon') {
+          ctx.strokeStyle = '#00F0FF';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(targetX - 6, targetY - 6, photoW + 12, photoH + 12);
+        } else if (template === 'manga-speed') {
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(targetX - 6, targetY - 6, photoW + 12, photoH + 12);
+        }
+        
+        ctx.save();
+        ctx.beginPath();
+        if (template === 'grunge') {
+          drawArchedRect(ctx, targetX, targetY, photoW, photoH, 18);
+        } else {
+          ctx.roundRect(targetX, targetY, photoW, photoH, 6);
+        }
+        ctx.clip();
+        
+        drawImageProp(ctx, img, targetX, targetY, photoW, photoH);
+        ctx.restore();
+      }
+      
+      drawFrameDecorations(ctx, template, mode, coords);
+    }
+  }
+  
+  // Show preview modal with smooth fade-in + confetti
+  const pbPreviewModal = document.getElementById('pbPreviewModal');
+  const pbModalCard   = document.getElementById('pbModalCard');
+  const pbPhotoWrapper = document.getElementById('pbPhotoWrapper');
+  const actionPanel   = document.getElementById('pbActionPanel');
+
+  // Build carousel for strip mode
+  buildPhotoCarousel();
+
+  // Save this session to localStorage history
+  if (canvas) saveToPhotoHistory(canvas);
+
+  if (pbPreviewModal) {
+    pbPreviewModal.classList.remove('hidden');
+    // Trigger entrance animation on next frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (pbModalCard) {
+          pbModalCard.style.opacity = '1';
+          pbModalCard.style.transform = 'translateY(0) scale(1)';
+        }
+        if (pbPhotoWrapper) {
+          pbPhotoWrapper.style.opacity = '1';
+          pbPhotoWrapper.style.transform = 'translateY(0)';
+        }
+        if (actionPanel) {
+          actionPanel.style.opacity = '1';
+          actionPanel.style.transform = 'translateY(0)';
+        }
+      });
+    });
+    // Short camera-click SFX for feedback
+    playBeep(1200, 80);
+    setTimeout(() => playBeep(880, 120), 100);
+    // 🎉 Confetti burst!
+    setTimeout(() => launchConfetti(), 200);
+  }
+}
+
+// ── Draw Frame Background Pattern ──────────────
+function drawFrameBackground(ctx, template, w, h) {
+  ctx.clearRect(0, 0, w, h);
+  
+  if (template === 'white') {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#F1F5F9';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(6, 6, w - 12, h - 12);
+  } 
+  else if (template === 'retro-polaroid') {
+    // Warm vintage instax cream
+    ctx.fillStyle = '#FCF9F2';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#F3EFE6';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, w - 8, h - 8);
+  }
+  else if (template === 'arcade-neon') {
+    // Retro gaming arcade
+    ctx.fillStyle = '#06011A';
+    ctx.fillRect(0, 0, w, h);
+    
+    // Draw neon pink scanlines/grid
+    ctx.strokeStyle = 'rgba(255, 0, 122, 0.12)';
+    ctx.lineWidth = 1;
+    const grid = 20;
+    for (let x = 0; x < w; x += grid) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = 0; y < h; y += grid) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    
+    // Yellow/Cyan frame borders
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, w - 4, h - 4);
+    ctx.strokeStyle = '#00FFFF';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(6, 6, w - 12, h - 12);
+  }
+  else if (template === 'manga-speed') {
+    // Manga style: solid white background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, w, h);
+    
+    // Draw speed lines from the edges pointing towards the center
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.5;
+    const center = { x: w / 2, y: h / 2 };
+    for (let i = 0; i < 40; i++) {
+      const angle = (i / 40) * Math.PI * 2;
+      const startDist = Math.min(w, h) * 0.45;
+      const endDist = Math.max(w, h) * 0.7;
+      
+      const x1 = center.x + Math.cos(angle) * startDist;
+      const y1 = center.y + Math.sin(angle) * startDist;
+      const x2 = center.x + Math.cos(angle) * endDist;
+      const y2 = center.y + Math.sin(angle) * endDist;
+      
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    
+    // Solid thick black border
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, w - 6, h - 6);
+  }
+  else if (template === 'flow-neon') {
+    // GestureFlow Exclusive: holographic slate gradient
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, '#0F0C20');
+    grad.addColorStop(0.5, '#151035');
+    grad.addColorStop(1, '#070514');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    
+    // Cyber circuit path accents
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.1)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(20, 20); ctx.lineTo(100, 20); ctx.lineTo(120, 40);
+    ctx.moveTo(w-20, h-20); ctx.lineTo(w-100, h-20); ctx.lineTo(w-120, h-40);
+    ctx.stroke();
+    
+    // Dual neon border
+    ctx.strokeStyle = '#BD00FF'; // Purple
+    ctx.lineWidth = 3;
+    ctx.strokeRect(2, 2, w - 4, h - 4);
+    ctx.strokeStyle = '#00F0FF'; // Cyan
+    ctx.lineWidth = 1;
+    ctx.strokeRect(5, 5, w - 10, h - 10);
+  }
+  else if (template === 'grunge') {
+    // Keep grunge for backwards compatibility
+    ctx.fillStyle = '#F5EBE6';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(185, 28, 28, 0.15)';
+    for (let i = 0; i < 60; i++) {
+      const rx = (i * 113) % w;
+      const ry = (i * 87) % h;
+      const size = (i % 4) + 1.5;
+      ctx.beginPath(); ctx.arc(rx, ry, size, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.strokeStyle = '#B91C1C';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, w - 4, h - 4);
+  }
+  else if (template === 'arcade') {
+    // Keep arcade for compatibility
+    ctx.fillStyle = '#160D33';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#EAB308';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, w - 4, h - 4);
+  }
+  else if (template === 'cyber') {
+    // Keep cyber for compatibility
+    ctx.fillStyle = '#0B0B1E';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#F43F5E';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, w - 4, h - 4);
+  }
+}
+
+// ── Draw Emojis, Watermark, & Slogans ──────────
+function drawFrameDecorations(ctx, template, mode, coords) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  let fontColor = '#1E293B';
+  let fontColorSec = '#64748B';
+  let phrase = "GestureFlow • Stay Connected! 🤟✨";
+  
+  if (template === 'arcade') {
+    fontColor = '#FFFF00';
+    fontColorSec = '#EC4899';
+    phrase = "LET'S PLAY! GAMER READY 👾🕹️";
+  } else if (template === 'grunge') {
+    fontColor = '#B91C1C';
+    fontColorSec = '#7C2D12';
+    phrase = "SAKUBOX SPECIAL EDITION 💋";
+  } else if (template === 'cyber') {
+    fontColor = '#22D3EE';
+    fontColorSec = '#F43F5E';
+    phrase = "Spill isyarat cintamu! 💫🛸";
+  }
+
+  if (template === 'newspaper') {
+    // ── KORAN CHRONICLE WATERMARK & TEXT ──
+    const w = ctx.canvas.width;
+    const h = ctx.canvas.height;
+    
+    // Header block
+    ctx.fillStyle = '#1E293B';
+    ctx.font = 'bold 8px "Times New Roman", Times, serif';
+    ctx.fillText('EDISI KHUSUS • GESTUREFLOW CHRONICLE • 12 JUNI 2026', w/2, 32);
+    
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#1E293B';
+    ctx.beginPath(); ctx.moveTo(25, 42); ctx.lineTo(w-25, 42); ctx.stroke();
+    
+    ctx.font = '800 34px "Georgia", serif';
+    ctx.fillText('GESTUREFLOW CHRONICLE', w/2, 68);
+    
+    ctx.beginPath(); ctx.moveTo(25, 94); ctx.lineTo(w-25, 94); ctx.stroke();
+    
+    ctx.font = 'italic 10px "Times New Roman", Times, serif';
+    ctx.fillText('Mendekatkan Dunia Lewat Isyarat • Pelopor Deteksi Bahasa Isyarat Real-Time di Browser', w/2, 104);
+    
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(25, 114); ctx.lineTo(w-25, 114); ctx.stroke();
+    
+    if (mode === 'single') {
+      // Bottom text columns for single newspaper layout
+      ctx.font = 'bold 12px "Times New Roman", serif';
+      ctx.fillText('Gambar 1. Demonstrasi Deteksi Bahasa Isyarat', w/2, 605);
+      
+      const colY = 640;
+      const colW = 240;
+      const lineH = 14;
+      
+      // Column 1 (Left)
+      ctx.font = '800 13px Georgia, serif';
+      ctx.fillText('DETEKSI MULTI-TANGAN AKTIF', 180, colY - 15);
+      const article1 = "GestureFlow memperkenalkan sistem AI baru yang dapat memetakan hingga empat tangan sekaligus di web browser. Fitur ini dirancang untuk memudahkan pose kelompok dan pose interaktif antar pengguna.";
+      drawTextColumn(ctx, article1, 60, colY, colW, lineH);
+      
+      // Column 2 (Right)
+      ctx.font = '800 13px Georgia, serif';
+      ctx.fillText('BELAJAR ISYARAT LEBIH ASYIK', 500, colY - 15);
+      const article2 = "Melalui integrasi gamifikasi, platform GestureFlow memberikan pengalaman edukatif yang luar biasa. Pengguna dapat mengumpulkan XP, menyelesaikan kuis, dan menyimpan memori indah lewat photobooth.";
+      drawTextColumn(ctx, article2, 500, colY, colW, lineH);
+      
+      // Barcode at bottom right
+      ctx.font = '9px "Courier New", monospace';
+      ctx.fillText('*GESTUREFLOW*', 680, 940);
+      ctx.fillStyle = '#1E293B';
+      // draw barcode lines
+      for (let i = 0; i < 20; i++) {
+        ctx.fillRect(630 + i*4, 900, (i%3===0 ? 3 : 1), 35);
+      }
+    } else {
+      // Newspaper Photostrip Column text layout
+      const colX = 350;
+      const colW = 400;
+      const lineH = 14;
+      
+      // Section 1
+      ctx.fillStyle = '#1E293B';
+      ctx.font = '800 16px Georgia, serif';
+      ctx.fillText('DETEKSI MULTI-TANGAN KINI AKTIF!', colX + colW/2, 175);
+      
+      const art1 = "GestureFlow memperkenalkan sistem pemrosesan real-time multi-tangan yang dioptimalkan untuk performa browser Anda. Fitur ini memungkinkan pengguna untuk berpose bersama teman dalam satu frame dengan deteksi skeletal neon dinamis. Para peneliti menyatakan bahwa metode ini meningkatkan kegemaran belajar bahasa isyarat di kalangan usia muda secara signifikan.";
+      drawTextColumn(ctx, art1, colX, 200, colW, lineH);
+      
+      // Section 2
+      ctx.font = '800 16px Georgia, serif';
+      ctx.fillText('GAMIFIKASI ASYIK DENGAN XP SYSTEM', colX + colW/2, 435);
+      
+      const art2 = "Platform edukasi modern ini mengadopsi model pembelajaran interaktif ala Duolingo. Setiap deteksi isyarat ASL yang berhasil memberikan poin XP tambahan untuk menaikkan level prestasi pengguna. Sistem kuis instan juga ditambahkan untuk mengevaluasi pemahaman secara berkala.";
+      drawTextColumn(ctx, art2, colX, 460, colW, lineH);
+      
+      // Section 3
+      ctx.font = '800 16px Georgia, serif';
+      ctx.fillText('AESTHETIC PHOTOBOOTH UNTUK GEN Z', colX + colW/2, 685);
+      
+      const art3 = "Membagikan cinta bahasa isyarat kini semakin mudah dan ikonik dengan disediakannya bingkai photostrip estetik. Didesain menyerupai photobooth cetak retro yang sedang populer, pengguna dapat secara instan menyimpan foto berpose isyarat tangan dan mengunggahnya langsung ke Instagram Story mereka.";
+      drawTextColumn(ctx, art3, colX, 710, colW, lineH);
+      
+      // Draw barcode bottom right
+      ctx.font = '8px "Courier New", monospace';
+      ctx.fillText('*GESTURE-FLOW-WEB*', colX + 150, 985);
+      for (let i = 0; i < 30; i++) {
+        ctx.fillRect(colX + 90 + i*4, 940, (i%4===0 ? 3 : 1.5), 35);
+      }
+    }
+  } 
+  else {
+    // Draw normal frames decorations
+    if (mode === 'single') {
+      ctx.fillStyle = fontColorSec;
+      ctx.font = '800 11px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('AESTHETIC PHOTOBOOTH', 300, 615);
+      
+      ctx.fillStyle = fontColor;
+      ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(phrase, 300, 655);
+      
+      ctx.fillStyle = fontColorSec;
+      ctx.font = '800 12px "JetBrains Mono", monospace';
+      ctx.fillText('🤟 Web Gesture Isyarat 🤟', 300, 705);
+      
+      const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+      ctx.font = '600 11px "JetBrains Mono", monospace';
+      ctx.fillText(dateStr, 300, 735);
+      
+      ctx.font = '22px serif';
+      ctx.fillText('✨', 60, 595);
+      ctx.fillText('🌈', 540, 595);
+      ctx.fillText('📸', 60, 735);
+      ctx.fillText('✌️', 540, 735);
+      
+    } else {
+      ctx.fillStyle = fontColorSec;
+      ctx.font = '800 10px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('AESTHETIC PHOTOBOOTH', 240, 30);
+      
+      ctx.font = '16px serif';
+      const gaps = [382, 718, 1054];
+      const emojis = ['🤟', '⚡', '✨'];
+      for (let i = 0; i < 3; i++) {
+        ctx.fillText(emojis[i], 240, gaps[i]);
+      }
+      
+      ctx.fillStyle = fontColor;
+      ctx.font = 'bold 14px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(phrase, 240, 1405);
+      
+      ctx.fillStyle = fontColorSec;
+      ctx.font = '800 10px "JetBrains Mono", monospace';
+      ctx.fillText('🤟 Web Gesture Isyarat 🤟', 240, 1435);
+    }
+  }
+}
+
+// ── Download Image ────────────────────────────
+function downloadFinal() {
+  const canvas = document.getElementById('cvsFinal');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.download = `gestureflow-photobooth-${Date.now()}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  toast('📸 Foto disimpan! Share ke medsos ya! 🎉', 's');
+}
+
+// ── Share to Instagram Story (Web Share API) ──
+async function shareToIG() {
+  const canvas = document.getElementById('cvsFinal');
+  if (!canvas) return;
+
+  // Check if Web Share API with files is supported (mobile browsers)
+  if (!navigator.canShare) {
+    // Fallback: download the file and tell user to upload manually
+    downloadFinal();
+    toast('💡 Browser ini belum support share langsung. Foto sudah diunduh — upload manual ke IG Story ya! 📲', 'i');
+    return;
+  }
+
+  try {
+    const btn = document.getElementById('pbShareBtn');
+    if (btn) btn.textContent = '⏳ Menyiapkan...';
+
+    // Convert canvas to Blob (File)
+    canvas.toBlob(async (blob) => {
+      const fileName = `gestureflow-${Date.now()}.png`;
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'GestureFlow Photobooth 🤟',
+            text: 'Cek hasil photobooth seru saya di GestureFlow! Belajar bahasa isyarat sambil foto keren! 🤟✨ #GestureFlow #BahasaIsyarat'
+          });
+          toast('🎉 Berhasil share! Jangan lupa tag @GestureFlow ya!', 's');
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            // User cancelled or error, fallback to download
+            downloadFinal();
+            toast('📲 Share dibatalkan. Foto tetap disimpan!', 'i');
+          }
+        }
+      } else {
+        // Device doesn't support file sharing, fallback
+        downloadFinal();
+        toast('💡 Foto diunduh! Upload manual ke IG Story ya 📲', 'i');
+      }
+
+      const btn2 = document.getElementById('pbShareBtn');
+      if (btn2) btn2.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg> Share ke Instagram Story`;
+    }, 'image/png');
+  } catch (e) {
+    downloadFinal();
+    toast('📲 Foto diunduh! Upload ke IG Story ya!', 'i');
+  }
+}
+
+// ── Zoom Lightbox ─────────────────────────────
+function openPhotoZoom() {
+  const canvas = document.getElementById('cvsFinal');
+  const overlay = document.getElementById('pbZoomOverlay');
+  const img     = document.getElementById('pbZoomImg');
+  if (!canvas || !overlay || !img) return;
+
+  img.src = canvas.toDataURL('image/png');
+  overlay.style.display = 'flex';
+  // Fade in
+  overlay.style.opacity = '0';
+  requestAnimationFrame(() => {
+    overlay.style.transition = 'opacity 0.25s ease';
+    overlay.style.opacity = '1';
+  });
+}
+
+function closePhotoZoom() {
+  const overlay = document.getElementById('pbZoomOverlay');
+  if (!overlay) return;
+  overlay.style.opacity = '0';
+  setTimeout(() => { overlay.style.display = 'none'; }, 250);
+}
+
+// ── Retake Action ─────────────────────────────
+function retakePhoto() {
+  closePbPreview();
+  toast('Silakan berpose kembali! 📷', 'i');
+}
+
+// ── Close Preview ─────────────────────────────
+function closePbPreview() {
+  const modal = document.getElementById('pbPreviewModal');
+  if (modal) modal.classList.add('hidden');
+  stopPrintSound();
+  enableCaptureButtons();
+  // Reset entrance animation states so next open re-animates
+  const card = document.getElementById('pbModalCard');
+  const wrap = document.getElementById('pbPhotoWrapper');
+  const panel = document.getElementById('pbActionPanel');
+  if (card)  { card.style.opacity = '0';  card.style.transform = 'translateY(32px) scale(0.96)'; }
+  if (wrap)  { wrap.style.opacity = '0';  wrap.style.transform = 'translateY(16px)'; }
+  if (panel) { panel.style.opacity = '0'; panel.style.transform = 'translateY(8px)'; }
+}
+
+function enableCaptureButtons() {
+  if (pbSt.running) {
+    const btnSingle = document.getElementById('pbBtnSingle');
+    const btnStrip = document.getElementById('pbBtnStrip');
+    const btnStop = document.getElementById('pbBtnStop');
+    if (btnSingle) btnSingle.disabled = false;
+    if (btnStrip) btnStrip.disabled = false;
+    if (btnStop) btnStop.disabled = false;
+  }
+}
+
+// ── DOM Listeners Setup ───────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Bind Frame selectors
+  const frameContainer = document.getElementById('pbFrameSelect');
+  if (frameContainer) {
+    frameContainer.querySelectorAll('.pb-frame-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        frameContainer.querySelectorAll('.pb-frame-btn').forEach(b => {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        pbSt.frame = btn.dataset.frame;
+        toast(`Bingkai diganti: ${btn.querySelector('p').textContent} 🖼️`, 'i');
+      });
+    });
+  }
+
+  // Bind Filter selectors
+  const filterContainer = document.getElementById('pbFilterSelect');
+  if (filterContainer) {
+    filterContainer.querySelectorAll('.pb-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterContainer.querySelectorAll('.pb-filter-btn').forEach(b => {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        pbSt.filter = btn.dataset.filter;
+        toast(`Filter diganti: ${btn.textContent} 🎨`, 'i');
+      });
+    });
+  }
+
+  // Load history on tab activate
+  renderPhotoHistory();
+});
+
+// ════════════════════════════════════════════════
+// #3 CAROUSEL — individual shots in strip mode
+// ════════════════════════════════════════════════
+function buildPhotoCarousel() {
+  const wrap  = document.getElementById('pbCarouselWrap');
+  const track = document.getElementById('pbCarouselTrack');
+  if (!wrap || !track) return;
+
+  // Only show for strip/koran mode (multiple photos)
+  const photos = pbSt.photos || [];
+  if (photos.length <= 1) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  track.innerHTML = '';
+  photos.forEach((imgBitmap, i) => {
+    // Draw individual photo to a temp canvas
+    const mini = document.createElement('canvas');
+    mini.width  = 240;
+    mini.height = 180;
+    const mCtx = mini.getContext('2d');
+    // Apply current filter
+    const filterMap = {
+      normal: 'none', grayscale: 'grayscale(100%)',
+      vintage: 'sepia(60%) contrast(1.1)', vivid: 'saturate(1.8) contrast(1.05)',
+      cool: 'hue-rotate(180deg) saturate(1.2)', warm: 'sepia(30%) saturate(1.4) brightness(1.05)',
+      noir: 'grayscale(100%) contrast(1.5) brightness(0.85)',
+      cyan: 'hue-rotate(160deg) saturate(1.3)', amber: 'sepia(80%) saturate(1.5)'
+    };
+    mCtx.filter = filterMap[pbSt.filter] || 'none';
+    drawImageProp(mCtx, imgBitmap, 0, 0, 240, 180);
+    mCtx.filter = 'none';
+
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'flex-shrink:0; position:relative; cursor:pointer;';
+    wrapper.title = `Foto ${i + 1} — klik untuk zoom`;
+
+    mini.style.cssText = 'width:90px; height:68px; border-radius:10px; border:3px solid white; box-shadow:0 2px 12px rgba(0,0,0,0.15); display:block; transition:transform 0.2s ease;';
+    mini.onmouseenter = () => { mini.style.transform = 'scale(1.08)'; };
+    mini.onmouseleave = () => { mini.style.transform = 'scale(1)'; };
+    mini.onclick = () => {
+      // Zoom this individual shot
+      const overlay = document.getElementById('pbZoomOverlay');
+      const img     = document.getElementById('pbZoomImg');
+      if (!overlay || !img) return;
+      img.src = mini.toDataURL('image/png');
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '0';
+      requestAnimationFrame(() => {
+        overlay.style.transition = 'opacity 0.25s ease';
+        overlay.style.opacity = '1';
+      });
+    };
+
+    const badge = document.createElement('span');
+    badge.textContent = `${i + 1}`;
+    badge.style.cssText = 'position:absolute; top:4px; left:4px; background:rgba(0,0,0,0.55); color:white; font-size:9px; font-weight:800; padding:1px 5px; border-radius:6px;';
+
+    wrapper.appendChild(mini);
+    wrapper.appendChild(badge);
+    track.appendChild(wrapper);
+  });
+
+  wrap.style.display = 'block';
+}
+
+// ════════════════════════════════════════════════
+// #4 CONFETTI — burst when photo appears
+// ════════════════════════════════════════════════
+function launchConfetti() {
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  const colors = ['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#f97316','#a855f7','#06b6d4','#ef4444','#84cc16'];
+  const particles = [];
+  const count = 120;
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height * 0.4 - canvas.height * 0.2,
+      vx: (Math.random() - 0.5) * 8,
+      vy: Math.random() * 4 + 2,
+      rot: Math.random() * 360,
+      rotV: (Math.random() - 0.5) * 8,
+      w: Math.random() * 10 + 6,
+      h: Math.random() * 5 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle'
+    });
+  }
+
+  let frame = 0;
+  const maxFrames = 120;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame++;
+    let alive = false;
+    for (const p of particles) {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += 0.12; // gravity
+      p.rot += p.rotV;
+      if (frame > 60) p.alpha -= 0.025;
+      if (p.alpha <= 0) continue;
+      alive = true;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, p.alpha);
+      ctx.fillStyle = p.color;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      }
+      ctx.restore();
+    }
+    if (alive && frame < maxFrames) {
+      requestAnimationFrame(draw);
+    } else {
+      canvas.remove();
+    }
+  }
+  requestAnimationFrame(draw);
+}
+
+// ════════════════════════════════════════════════
+// #5 LOCALSTORAGE — photo history (max 5 sessions)
+// ════════════════════════════════════════════════
+const PB_HISTORY_KEY = 'gf_pb_history';
+const PB_HISTORY_MAX = 5;
+
+function saveToPhotoHistory(canvas) {
+  try {
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.75); // jpeg for smaller size
+    const entry = {
+      id:   Date.now(),
+      date: new Date().toLocaleString('id-ID', { dateStyle:'short', timeStyle:'short' }),
+      mode: pbSt.mode,
+      frame: pbSt.frame,
+      img:  dataUrl
+    };
+    let history = JSON.parse(localStorage.getItem(PB_HISTORY_KEY) || '[]');
+    history.unshift(entry);
+    if (history.length > PB_HISTORY_MAX) history = history.slice(0, PB_HISTORY_MAX);
+    localStorage.setItem(PB_HISTORY_KEY, JSON.stringify(history));
+    renderPhotoHistory();
+  } catch (e) {
+    // localStorage might be full, fail silently
+    console.warn('Photo history save failed:', e);
+  }
+}
+
+function renderPhotoHistory() {
+  const section = document.getElementById('pbHistorySection');
+  const grid    = document.getElementById('pbHistoryGrid');
+  const countEl = document.getElementById('pbHistoryCount');
+  if (!section || !grid) return;
+
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem(PB_HISTORY_KEY) || '[]'); } catch(e) {}
+
+  if (history.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  if (countEl) countEl.textContent = history.length;
+
+  grid.innerHTML = '';
+  history.forEach((entry, i) => {
+    const card = document.createElement('div');
+    card.style.cssText = 'flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; transition:transform 0.2s ease;';
+    card.onmouseenter = () => { card.style.transform = 'scale(1.05)'; };
+    card.onmouseleave = () => { card.style.transform = 'scale(1)'; };
+
+    const img = document.createElement('img');
+    img.src = entry.img;
+    img.alt = `Sesi ${i + 1}`;
+    img.style.cssText = 'width:80px; height:80px; object-fit:cover; border-radius:10px; border:3px solid white; box-shadow:0 2px 10px rgba(0,0,0,0.13);';
+
+    const meta = document.createElement('div');
+    meta.style.cssText = 'text-align:center; width:80px;';
+    const modeEmoji = entry.mode === 'strip' ? '🎞️' : '📸';
+    meta.innerHTML = `<div style="font-size:9px;font-weight:700;color:#6366f1;">${modeEmoji} ${(entry.frame||'').toUpperCase()}</div><div style="font-size:8px;color:#94a3b8;">${entry.date}</div>`;
+
+    // Click → open in zoom lightbox
+    card.onclick = () => {
+      const overlay = document.getElementById('pbZoomOverlay');
+      const zImg    = document.getElementById('pbZoomImg');
+      if (!overlay || !zImg) return;
+      zImg.src = entry.img;
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '0';
+      requestAnimationFrame(() => {
+        overlay.style.transition = 'opacity 0.25s ease';
+        overlay.style.opacity = '1';
+      });
+    };
+
+    // Long-press / right-click context to download
+    card.title = `Klik: lihat besar | ${entry.date} — ${entry.mode} / ${entry.frame}`;
+
+    // Download button overlay
+    const dlBtn = document.createElement('button');
+    dlBtn.textContent = '⬇️';
+    dlBtn.title = 'Unduh foto ini';
+    dlBtn.style.cssText = 'font-size:9px; background:#6366f1; color:white; border:none; border-radius:6px; padding:2px 5px; cursor:pointer; margin-top:1px;';
+    dlBtn.onclick = (e) => {
+      e.stopPropagation();
+      const a = document.createElement('a');
+      a.download = `gestureflow-${entry.id}.jpg`;
+      a.href = entry.img;
+      a.click();
+    };
+
+    card.appendChild(img);
+    card.appendChild(meta);
+    card.appendChild(dlBtn);
+    grid.appendChild(card);
+  });
+}
+
+function clearPhotoHistory() {
+  if (!confirm('Hapus semua riwayat foto? 🗑️')) return;
+  localStorage.removeItem(PB_HISTORY_KEY);
+  renderPhotoHistory();
+  toast('🗑️ Riwayat foto dihapus', 'i');
+}
+</script>
+</body></html>
