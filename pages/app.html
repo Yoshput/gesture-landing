@@ -316,7 +316,7 @@ canvas { display: block; width: 100%; height: 100%; }
       <button id="btnSound" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition btn btn-ghost btn-sm">
         <span id="soundIcon">🔊</span><span id="soundLbl" class="hidden sm:inline">Suara</span>
       </button>
-      <a href="./landing.html" class="text-xs font-medium hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg transition" style="color:var(--tx3)" onmouseover="this.style.color=this.style.background=''" onmouseout="">← Beranda</a>
+      <a href="../index.html" class="text-xs font-medium hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg transition" style="color:var(--tx3)" onmouseover="this.style.color=this.style.background=''" onmouseout="">← Beranda</a>
     </div>
   </div>
 </nav>
@@ -1291,6 +1291,10 @@ function detectASL(lm) {
   // ═══════════════════════════════════════════
 
   if (f.I && f.M && f.Rc && f.Pc) {
+    const handFacingDown = lm[0].y < lm[5].y;
+    // P: like K but pointing down (wrist above index MCP)
+    if (handFacingDown) return 'P';
+
     // K: thumb is also up AND touching between index+middle
     if (f.T && t2m < 0.55) return 'K';
 
@@ -1307,33 +1311,22 @@ function detectASL(lm) {
 
   // ═══════════════════════════════════════════
   // GROUP 4: Only index up (or index+thumb)
-  // Must distinguish: D (up), G (sideways), X (hook)
+  // Must distinguish: D (up), G (sideways), X (hook), Q (down)
   // ═══════════════════════════════════════════
+  if (f.Mc && f.Rc && f.Pc) {
+    const handFacingDown = lm[0].y < lm[5].y;
 
-  if (f.I && f.Mc && f.Rc && f.Pc && !f.T) {
-    // X: index is HOOKED — semi-bent, neither fully open nor fully closed
-    // Use fingerHook for index finger
-    const indexIsHook = fingerHook(lm, 8, 6, 5);
-    if (indexIsHook) return 'X';
+    // Q: index pointing DOWNWARD, middle/ring/pinky curled
+    if (handFacingDown && (f.I || fingerHook(lm, 8, 6, 5))) return 'Q';
+
+    // X: index is HOOKED — semi-bent, not pointing down
+    if (fingerHook(lm, 8, 6, 5)) return 'X';
 
     // D: index pointing clearly UPWARD
-    if (indexUp) return 'D';
+    if (f.I && indexUp) return 'D';
 
-    // G: index pointing sideways (horizontal) — no thumb version
-    return 'G';
-  }
-
-  if (f.I && f.Mc && f.Rc && f.Pc && f.T) {
-    // P: index + thumb pointing DOWNWARD (wrist above fingers)
-    const handFacingDown = lm[0].y < lm[5].y;  // wrist higher than index MCP in y
-    if (handFacingDown && t2m < 0.60) return 'P';
-    // Q: like G (index+thumb sideways) but pointing down
-    if (handFacingDown) return 'Q';
-    // G with thumb: both index + thumb pointing same direction sideways
-    if (indexAngleH) return 'G';
-    // D with thumb: index up, others curl to form circle with thumb
-    if (indexUp && t2m < 0.55) return 'D';
-    return 'G';
+    // G: index pointing sideways (horizontal)
+    if (f.I) return 'G';
   }
 
   // ═══════════════════════════════════════════
@@ -1495,6 +1488,9 @@ function detectNumber(lm) {
   // 5 — all 5 fingers fully open  ✓ easiest
   if (f.T && f.I && f.M && f.R && f.P) return '5';
 
+  // 9 — thumb + index tip pinch (OK sign: middle, ring, pinky extended)
+  if (t2i < 0.35 && f.M && f.R && f.P) return '9';
+
   // 4 — four fingers up, thumb tucked  ✓
   if (f.I && f.M && f.R && f.P && f.Tc) return '4';
 
@@ -1516,9 +1512,6 @@ function detectNumber(lm) {
 
   // 3 — thumb + index + middle up  ✓
   if (f.T && f.I && f.M && f.Rc && f.Pc) return '3';
-
-  // 9 — thumb + index tip pinch (like OK but rest curled)  ✓
-  if (t2i < 0.32 && f.Mc && f.Rc && f.Pc) return '9';
 
   // 6 — thumb + pinky touching, 3 middle fingers up  ✓
   if (f.I && f.M && f.R && !f.P && t2p < 0.45 && !f.T) return '6';
