@@ -2,454 +2,618 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>GestureFlow — Final v3.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GestureFlow — Belajar Bahasa Isyarat</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <style>
-/* ── CSS Variables ── */
+/* ══════════════════════════════════════════════
+   DESIGN SYSTEM — Educational / Clean / Modern
+   Inspired by Duolingo + Ruangguru + Khan Academy
+══════════════════════════════════════════════ */
 :root {
-  --neon:  #00ff88;
-  --neon2: #a855f7;
-  --neon3: #22d3ee;
-  --gold:  #fbbf24;
-  --red:   #f87171;
-  --bg:    #03070f;
-  --surf:  rgba(8,16,32,0.9);
-  --bord:  rgba(168,85,247,0.22);
-  --bord2: rgba(0,255,136,0.18);
+  /* Primary palette */
+  --primary:      #2563EB;
+  --primary-light:#EFF6FF;
+  --primary-dark: #1D4ED8;
+  --secondary:    #14B8A6;
+  --secondary-lt: #F0FDFA;
+  --accent:       #F59E0B;
+  --accent-lt:    #FFFBEB;
+  --success:      #22C55E;
+  --success-lt:   #F0FDF4;
+  --danger:       #EF4444;
+  --danger-lt:    #FEF2F2;
+
+  /* Surfaces */
+  --bg:     #F8FAFC;
+  --surf:   #FFFFFF;
+  --surf2:  #F1F5F9;
+  --surf3:  #E2E8F0;
+  --bord:   #E2E8F0;
+  --bord2:  #CBD5E1;
+
+  /* Text */
+  --tx:     #0F172A;
+  --tx2:    #475569;
+  --tx3:    #94A3B8;
+  --tx4:    #CBD5E1;
+
+  /* Shadows */
+  --sh-sm:  0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  --sh-md:  0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
+  --sh-lg:  0 10px 30px rgba(15,23,42,.1),  0 4px 8px  rgba(15,23,42,.04);
+  --sh-xl:  0 20px 48px rgba(15,23,42,.12), 0 8px 16px rgba(15,23,42,.06);
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl:24px;
 }
-*, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
 body {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   background: var(--bg);
-  color: #e2e8f0;
+  color: var(--tx);
   overflow-x: hidden;
   min-height: 100vh;
-}
-/* Background blobs */
-body::before, body::after {
-  content: '';
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-body::before {
-  width: 600px; height: 600px;
-  top: -10%; right: -10%;
-  background: radial-gradient(circle, rgba(168,85,247,.1) 0%, transparent 70%);
-}
-body::after {
-  width: 500px; height: 500px;
-  bottom: -10%; left: -10%;
-  background: radial-gradient(circle, rgba(0,255,136,.07) 0%, transparent 70%);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Glass card */
-.glass {
+/* ── Cards & Surfaces ── */
+.card {
   background: var(--surf);
-  backdrop-filter: blur(20px) saturate(1.3);
-  -webkit-backdrop-filter: blur(20px) saturate(1.3);
   border: 1px solid var(--bord);
-  border-radius: 16px;
-  position: relative;
-  z-index: 1;
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-sm);
 }
-.glass-cyan { border-color: rgba(34,211,238,.2); }
-.glass-green { border-color: var(--bord2); }
+.card-hover {
+  transition: box-shadow .2s, transform .2s;
+  cursor: pointer;
+}
+.card-hover:hover {
+  box-shadow: var(--sh-md);
+  transform: translateY(-2px);
+}
 
-/* Nav */
-nav { background: rgba(3,7,15,0.92); backdrop-filter: blur(24px); }
+/* ── Navigation ── */
+nav {
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bord);
+}
 
-/* Tabs */
+/* ── Tabs ── */
 .tab {
-  padding: 10px 18px;
+  padding: 10px 16px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   border-bottom: 2.5px solid transparent;
-  transition: color .18s, border-color .18s;
-  color: #64748b;
+  color: var(--tx3);
+  transition: color .15s, border-color .15s;
   user-select: none;
 }
-.tab:hover:not(.active) { color: #94a3b8; border-bottom-color: rgba(168,85,247,.3); }
-.tab.active { color: var(--neon); border-bottom-color: var(--neon); }
+.tab:hover:not(.active) { color: var(--tx2); border-bottom-color: var(--bord2); }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-/* Video hidden, canvas shown */
-video { display: none !important; }
-canvas { display: block; width: 100%; height: 100%; }
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 20px; border-radius: var(--r-md);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all .15s; border: none; outline: none;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+.btn-primary   { background: var(--primary); color: #fff; box-shadow: 0 2px 8px rgba(37,99,235,.3); }
+.btn-primary:hover:not(:disabled)   { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(37,99,235,.4); }
+.btn-secondary { background: var(--secondary); color: #fff; box-shadow: 0 2px 8px rgba(20,184,166,.3); }
+.btn-secondary:hover:not(:disabled) { background: #0d9488; }
+.btn-accent    { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(245,158,11,.3); }
+.btn-accent:hover:not(:disabled)    { background: #d97706; }
+.btn-success   { background: var(--success); color: #fff; box-shadow: 0 2px 8px rgba(34,197,94,.3); }
+.btn-success:hover:not(:disabled)   { background: #16a34a; }
+.btn-danger    { background: var(--danger); color: #fff; box-shadow: 0 2px 8px rgba(239,68,68,.3); }
+.btn-danger:hover:not(:disabled)    { background: #dc2626; }
+.btn-ghost     { background: var(--surf2); color: var(--tx2); border: 1px solid var(--bord); }
+.btn-ghost:hover:not(:disabled)     { background: var(--surf3); color: var(--tx); }
+.btn-outline   { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+.btn-outline:hover:not(:disabled)   { background: var(--primary-light); }
+.btn-sm { padding: 7px 14px; font-size: 12.5px; border-radius: var(--r-sm); }
+.btn-lg { padding: 14px 28px; font-size: 15px; border-radius: var(--r-lg); }
 
-/* Camera glow states */
-.cam-idle   { box-shadow: none; }
-.cam-active { box-shadow: 0 0 0 2px rgba(168,85,247,.5), 0 0 24px rgba(168,85,247,.2); }
-.cam-detect { box-shadow: 0 0 0 2.5px var(--neon), 0 0 28px rgba(0,255,136,.25); transition: box-shadow .15s; }
+/* ── Progress bar ── */
+.prog-bar { height: 8px; background: var(--surf2); border-radius: 99px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 99px; transition: width .2s ease; }
 
-/* Toast */
+/* ── Badge ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 99px;
+  font-size: 11.5px; font-weight: 600;
+}
+.badge-primary   { background: var(--primary-light); color: var(--primary); }
+.badge-secondary { background: var(--secondary-lt); color: #0f766e; }
+.badge-success   { background: var(--success-lt); color: #15803d; }
+.badge-warning   { background: var(--accent-lt); color: #b45309; }
+.badge-danger    { background: var(--danger-lt); color: #b91c1c; }
+.badge-neutral   { background: var(--surf2); color: var(--tx2); }
+
+/* ── Toast ── */
 #toasts {
   position: fixed; top: 72px; right: 14px;
   z-index: 9999; display: flex; flex-direction: column; gap: 6px;
-  pointer-events: none; width: 260px;
+  pointer-events: none; width: 280px;
 }
 .toast {
-  padding: 10px 14px; border-radius: 11px;
-  font-size: 12.5px; font-weight: 600; color: #fff;
-  opacity: 0; transform: translateX(70px);
-  transition: opacity .22s ease, transform .22s cubic-bezier(.34,1.56,.64,1);
-  border-left: 3px solid transparent;
+  padding: 12px 16px; border-radius: var(--r-md);
+  font-size: 13px; font-weight: 600; color: #fff;
+  opacity: 0; transform: translateX(80px);
+  transition: opacity .22s, transform .22s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: var(--sh-md);
+  border-left: 3.5px solid transparent;
+  display: flex; align-items: center; gap: 8px;
 }
 .toast.show { opacity: 1; transform: translateX(0); }
-.toast.s { background: rgba(6,78,59,.92); border-color: var(--neon); }
-.toast.e { background: rgba(127,29,29,.92); border-color: var(--red); }
-.toast.i { background: rgba(15,23,42,.92); border-color: var(--neon2); }
-.toast.w { background: rgba(78,30,0,.92); border-color: var(--gold); }
+.toast.s { background: #064e3b; border-color: var(--success); }
+.toast.e { background: #7f1d1d; border-color: var(--danger); }
+.toast.i { background: #1e3a5f; border-color: var(--primary); }
+.toast.w { background: #78350f; border-color: var(--accent); }
 
-/* Stability bar animated fill */
-.stab-bar { transition: width .07s linear; }
+/* ── Camera states ── */
+video { display: none !important; }
+canvas { display: block; width: 100%; height: 100%; }
+.cam-idle   { box-shadow: none; }
+.cam-active { box-shadow: 0 0 0 2px rgba(37,99,235,.4), 0 0 20px rgba(37,99,235,.1); }
+.cam-detect { box-shadow: 0 0 0 3px var(--success), 0 0 24px rgba(34,197,94,.2); transition: box-shadow .15s; }
 
-/* Progress ring */
+/* ── Live badge on camera ── */
+.live-badge {
+  position: absolute; bottom: 12px; left: 12px;
+  background: rgba(15,23,42,.8); backdrop-filter: blur(8px);
+  border-radius: var(--r-md); padding: 6px 12px;
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: var(--sh-sm);
+}
+
+/* ── Progress ring ── */
 .p-ring { transform: rotate(-90deg); }
 .p-ring-c { transition: stroke-dashoffset .12s linear; stroke-linecap: round; }
 
-/* Letter/number cells */
+/* ── Letter/number cells ── */
 .cell {
-  border: 1.5px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.02);
-  border-radius: 8px;
+  border: 1.5px solid var(--bord);
+  background: var(--surf);
+  border-radius: var(--r-sm);
   transition: all .15s;
   display: flex; align-items: center; justify-content: center;
   font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
+  font-weight: 700; font-size: 12px;
+  color: var(--tx3);
 }
-.cell.done  { background: rgba(5,150,105,.3); border-color: #059669; color: #6ee7b7; }
-.cell.cur   { background: rgba(168,85,247,.3); border-color: var(--neon2); color: #e9d5ff; box-shadow: 0 0 14px rgba(168,85,247,.4); animation: cellPulse 1.2s ease-in-out infinite; }
-.cell.cur-c { background: rgba(34,211,238,.2); border-color: var(--neon3); color: #a5f3fc; box-shadow: 0 0 14px rgba(34,211,238,.35); animation: cellPulse 1.2s ease-in-out infinite; }
+.cell.done  { background: var(--success-lt); border-color: var(--success); color: #15803d; }
+.cell.cur   { background: var(--primary-light); border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); animation: cellPulse 1.2s ease-in-out infinite; }
+.cell.cur-c { background: var(--secondary-lt); border-color: var(--secondary); color: #0f766e; box-shadow: 0 0 0 3px rgba(20,184,166,.15); animation: cellPulse 1.2s ease-in-out infinite; }
+@keyframes cellPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
 
-@keyframes cellPulse { 0%,100%{opacity:1} 50%{opacity:.65} }
+/* ── Stab bar ── */
+.stab-bar { transition: width .07s linear; }
 
-/* Spin loader */
-@keyframes spin { to { transform: rotate(360deg) } }
-.spin { animation: spin .7s linear infinite; }
-
-/* Result flash */
+/* ── Animations ── */
+@keyframes spin  { to { transform: rotate(360deg) } }
 @keyframes popIn { 0%{transform:scale(.4);opacity:0} 65%{transform:scale(1.18)} 100%{transform:scale(1);opacity:1} }
-.pop-in { animation: popIn .3s ease-out forwards; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+@keyframes scorePop { 0%{transform:scale(.5);opacity:0} 60%{transform:scale(1.25)} 100%{transform:scale(1);opacity:1} }
+@keyframes confetti { 0%{transform:translateY(0) rotate(0)} 100%{transform:translateY(-60px) rotate(360deg);opacity:0} }
+@keyframes bounceIn { 0%{transform:scale(.3)} 50%{transform:scale(1.08)} 70%{transform:scale(.95)} 100%{transform:scale(1)} }
 
-@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-.fade-up { animation: fadeUp .25s ease-out; }
+.spin      { animation: spin .7s linear infinite; }
+.pop-in    { animation: popIn .3s ease-out forwards; }
+.fade-up   { animation: fadeUp .25s ease-out; }
+.slide-in  { animation: slideIn .2s ease-out; }
+.score-pop { animation: scorePop .35s ease-out; }
+.bounce-in { animation: bounceIn .4s ease-out; }
 
-/* Game timer ring color transition */
-#gameRingPath { transition: stroke .3s; }
+/* ── XP bar ── */
+.xp-bar { height: 6px; background: var(--surf2); border-radius: 99px; overflow: hidden; }
+.xp-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 99px; transition: width .4s ease; }
 
-/* Mobile tab scrollbar hide */
+/* ── Scroll ── */
 #tabRow { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 #tabRow::-webkit-scrollbar { display: none; }
-
-/* Custom scrollbar for boxes */
-.scroll-box { overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(168,85,247,.3) transparent; }
+.scroll-box { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--bord2) transparent; }
 .scroll-box::-webkit-scrollbar { width: 4px; }
-.scroll-box::-webkit-scrollbar-thumb { background: rgba(168,85,247,.3); border-radius: 99px; }
+.scroll-box::-webkit-scrollbar-thumb { background: var(--bord2); border-radius: 99px; }
 
-/* Neon text */
-.nt  { color: var(--neon); text-shadow: 0 0 16px rgba(0,255,136,.4); }
-.nt2 { color: var(--neon2); }
-.nt3 { color: var(--neon3); }
+/* ── Section divider ── */
+.sec-head { font-size: 11px; font-weight: 700; color: var(--tx3); text-transform: uppercase; letter-spacing: .06em; }
 
-/* Glow button */
-.btn-glow:hover { filter: brightness(1.12); transform: translateY(-1px); }
-.btn-glow { transition: filter .15s, transform .15s; }
+/* ── Gamification ── */
+.xp-badge { background: linear-gradient(135deg,var(--primary),var(--secondary)); color: #fff; border-radius: var(--r-md); padding: 4px 10px; font-size: 12px; font-weight: 700; }
+.streak-fire { font-size: 18px; }
+.achievement { border: 2px solid var(--bord); border-radius: var(--r-lg); padding: 12px; text-align: center; background: var(--surf); transition: all .2s; }
+.achievement.earned { border-color: var(--accent); background: var(--accent-lt); }
+.achievement.earned .ach-icon { filter: none; }
+.achievement .ach-icon { filter: grayscale(1) opacity(.4); font-size: 28px; margin-bottom: 6px; }
 
-/* Card hover */
-.hov { transition: transform .15s, box-shadow .15s; }
-.hov:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,255,136,.12); }
+/* ── Game timer ring ── */
+#gameRingPath { transition: stroke .3s; }
 
-/* Score pop */
-@keyframes scorePop { 0%{transform:scale(.5);opacity:0} 60%{transform:scale(1.3)} 100%{transform:scale(1);opacity:1} }
-.score-pop { animation: scorePop .35s ease-out; }
+/* ── Level bar ── */
+.lvl-bar { height: 6px; border-radius: 99px; transition: background .3s; }
 
-/* Live detection badge */
-.live-badge {
-  position: absolute; bottom: 10px; left: 10px;
-  background: rgba(3,7,15,.75); backdrop-filter: blur(8px);
-  border-radius: 12px; padding: 6px 12px;
-  display: flex; align-items: center; gap: 8px;
-  border: 1px solid rgba(255,255,255,.08);
+/* ── Feedback overlay ── */
+.feedback-correct { background: var(--success-lt); border: 2px solid var(--success); }
+.feedback-wrong   { background: var(--danger-lt);  border: 2px solid var(--danger); }
+
+/* ── Text to Gesture ── */
+.letter-card {
+  background: var(--surf);
+  border: 1.5px solid var(--bord);
+  border-radius: var(--r-lg);
+  padding: 12px 8px;
+  text-align: center;
+  transition: all .2s;
+  min-width: 72px;
+}
+.letter-card.active { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+
+/* ── Developer mode ── */
+.dev-badge { background: #0f172a; color: #22d3ee; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; padding: 3px 8px; border-radius: 4px; }
+
+/* ── Mobile first ── */
+@media (max-width: 640px) {
+  .tab { padding: 9px 12px; font-size: 12px; }
+  .btn  { padding: 9px 16px; font-size: 13px; }
+  .btn-lg { padding: 12px 22px; font-size: 14px; }
 }
 
-/* Level bar */
-.lvl-bar { height: 6px; border-radius: 99px; transition: background .3s; }
+/* ── Confetti particle ── */
+.confetti-p { position: fixed; pointer-events: none; z-index: 9998; width: 8px; height: 8px; border-radius: 2px; animation: confetti 1s ease-out forwards; }
 </style>
 </head>
 <body>
 
-<!-- ══ TOAST CONTAINER ══ -->
+<!-- TOAST -->
 <div id="toasts"></div>
 
-<!-- ══ NAVBAR ══ -->
-<nav class="fixed top-0 w-full z-50 border-b" style="border-color:rgba(168,85,247,.18)">
-  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between relative z-10">
+<!-- ══ NAV ══ -->
+<nav class="fixed top-0 w-full z-50">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <!-- Logo -->
     <div class="flex items-center gap-2.5">
-      <div class="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">🤟</div>
-      <span class="font-bold text-sm nt hidden sm:inline">GestureFlow</span>
-      <span class="text-xs px-1.5 py-0.5 rounded font-mono" style="background:rgba(0,255,136,.1);color:var(--neon);border:1px solid rgba(0,255,136,.2)">v3.0</span>
+      <div class="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0" style="background:linear-gradient(135deg,var(--primary),var(--secondary))">🤟</div>
+      <div>
+        <span class="font-bold text-sm" style="color:var(--primary)">GestureFlow</span>
+        <span class="text-xs ml-1.5 badge badge-primary">v3.0</span>
+      </div>
     </div>
+    <!-- Nav right -->
     <div class="flex items-center gap-2">
-      <button id="btnSound" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold btn-glow" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);color:var(--neon)">
-        <span id="soundIcon">🔊</span><span id="soundLbl">Suara ON</span>
+      <!-- XP display -->
+      <div id="navXP" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold" style="background:var(--primary-light);color:var(--primary)">
+        ⚡ <span id="navXPVal">0</span> XP
+      </div>
+      <!-- Dev mode toggle -->
+      <button id="btnDevMode" onclick="toggleDevMode()" title="Developer Mode" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition" style="background:var(--surf2);border:1px solid var(--bord)" aria-label="Toggle developer mode">
+        🛠️
       </button>
-      <a href="./landing.html" class="text-xs text-gray-600 hover:text-gray-400 transition px-2 py-1.5 rounded-lg hover:bg-white/5">← Beranda</a>
+      <!-- Sound -->
+      <button id="btnSound" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition btn btn-ghost btn-sm">
+        <span id="soundIcon">🔊</span><span id="soundLbl" class="hidden sm:inline">Suara</span>
+      </button>
+      <a href="./landing.html" class="text-xs font-medium hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg transition" style="color:var(--tx3)" onmouseover="this.style.color=this.style.background=''" onmouseout="">← Beranda</a>
     </div>
   </div>
 </nav>
 
 <!-- ══ TAB BAR ══ -->
-<div class="fixed top-[52px] w-full z-40 border-b" style="background:rgba(3,7,15,.95);backdrop-filter:blur(20px);border-color:rgba(168,85,247,.15)">
+<div class="fixed z-40 w-full" style="top:52px;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--bord)">
   <div id="tabRow" class="flex max-w-7xl mx-auto px-3">
     <button class="tab active" data-tab="gesture">🎯 Gesture</button>
     <button class="tab" data-tab="alphabet">🔤 A–Z</button>
     <button class="tab" data-tab="numeric">🔢 0–9</button>
     <button class="tab" data-tab="game">🎮 Game</button>
     <button class="tab" data-tab="learn">📚 Belajar</button>
+    <button class="tab" data-tab="text2gest">✏️ Teks→Gestur</button>
     <button class="tab" data-tab="dashboard">📊 Dashboard</button>
   </div>
 </div>
 
 <!-- ══ MAIN ══ -->
-<main class="max-w-7xl mx-auto px-4 pt-28 pb-10 relative z-10">
+<main class="max-w-7xl mx-auto px-4 pb-12 relative" style="padding-top:108px">
 
-<!-- ════════════════════════════════════════
-     TAB: GESTURE MODE
-════════════════════════════════════════ -->
+<!-- ════════════ TAB: GESTURE ════════════ -->
 <section id="tab-gesture" class="space-y-4 fade-up">
   <div class="grid md:grid-cols-3 gap-4">
 
-    <!-- Camera Feed -->
-    <div class="md:col-span-2 glass p-4">
-      <div id="camWrap" class="aspect-video bg-black rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
+    <!-- Camera -->
+    <div class="md:col-span-2 card p-4">
+      <!-- Dev info bar (hidden by default) -->
+      <div id="devBar" class="hidden mb-3 p-2.5 rounded-xl flex flex-wrap gap-3 text-xs font-mono" style="background:#0f172a;color:#22d3ee">
+        <span>FPS: <b id="devFps">–</b></span>
+        <span>Deteksi: <b id="devDet">0</b></span>
+        <span>Conf: <b id="devConf">–</b></span>
+        <span>Cam: <b id="devCam">–</b></span>
+        <span>Hands: <b id="devHands">0</b></span>
+      </div>
+
+      <div id="camWrap" class="aspect-video bg-slate-100 rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
         <video id="vidMain" autoplay muted playsinline></video>
         <canvas id="cvsMain"></canvas>
-        <!-- Placeholder -->
         <div id="camPH" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
-          <div class="text-5xl opacity-20">📷</div>
-          <p class="text-sm text-gray-600">Klik <strong class="text-gray-500">▶ Start</strong> untuk memulai</p>
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-1" style="background:var(--surf2)">📷</div>
+          <p class="text-sm font-medium" style="color:var(--tx3)">Klik <strong style="color:var(--tx2)">▶ Mulai Kamera</strong> untuk memulai</p>
         </div>
-        <!-- Loader -->
-        <div id="camLoad" class="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-black/70">
-          <div class="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full spin"></div>
-          <p class="text-xs text-gray-400">Memuat model AI...</p>
+        <div id="camLoad" class="absolute inset-0 hidden flex-col items-center justify-center gap-3" style="background:rgba(255,255,255,.9)">
+          <div class="w-10 h-10 border-4 rounded-full spin" style="border-color:var(--primary);border-top-color:transparent"></div>
+          <p class="text-sm font-medium" style="color:var(--tx2)">Memuat model AI...</p>
         </div>
-        <!-- Hand badge -->
-        <div id="handBadge" class="absolute top-3 left-3 hidden text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(0,255,136,.85);color:#03070f">✋ Terdeteksi</div>
-        <!-- Gesture overlay on video -->
-        <div id="gOv" class="absolute bottom-3 right-3 hidden bg-black/70 backdrop-blur rounded-xl px-3 py-2 flex items-center gap-2">
+        <!-- Detected badge -->
+        <div id="handBadge" class="hidden absolute top-3 left-3 badge badge-success text-xs">✋ Terdeteksi</div>
+        <!-- FPS (dev mode) -->
+        <div id="fpsBadge" class="hidden absolute top-3 right-3 dev-badge"><span id="fpsVal">–</span> FPS</div>
+        <!-- Gesture overlay -->
+        <div id="gOv" class="hidden absolute bottom-3 right-3 rounded-xl px-3 py-2 flex items-center gap-2" style="background:rgba(15,23,42,.8);backdrop-filter:blur(8px)">
           <span id="gOvEmoji" class="text-2xl"></span>
           <span id="gOvName" class="text-sm font-semibold text-white"></span>
         </div>
-        <!-- FPS badge -->
-        <div id="fpsBadge" class="absolute top-3 right-3 hidden text-xs font-mono px-2 py-1 rounded-lg" style="background:rgba(0,0,0,.7);color:var(--neon3)">
-          <span id="fpsVal">–</span> FPS
+        <!-- Live badge -->
+        <div class="live-badge">
+          <span class="text-xs" style="color:var(--tx4)">Terbaca:</span>
+          <span id="gLiveName" class="text-sm font-bold" style="color:#fff">–</span>
         </div>
       </div>
 
       <!-- Stability -->
       <div class="mt-3">
-        <div class="flex justify-between text-xs text-gray-600 mb-1">
+        <div class="flex justify-between text-xs mb-1" style="color:var(--tx3)">
           <span>Gesture Stability</span>
-          <span id="stabLbl" class="font-mono text-gray-500">–</span>
+          <span id="stabLbl" class="font-mono">–</span>
         </div>
-        <div class="h-1.5 rounded-full bg-gray-900 overflow-hidden">
-          <div id="stabBar" class="stab-bar h-full rounded-full" style="width:0%;background:linear-gradient(90deg,var(--neon2),var(--neon))"></div>
-        </div>
+        <div class="prog-bar"><div id="stabBar" class="prog-fill stab-bar" style="width:0%;background:linear-gradient(90deg,var(--primary),var(--secondary))"></div></div>
       </div>
 
       <!-- Controls -->
       <div class="flex gap-2 mt-3">
-        <button id="btnStart" onclick="startMain()" class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">▶ Start Camera</button>
-        <button id="btnStop" onclick="stopMain()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#be123c,#dc2626)">⏹ Stop</button>
-        <button id="btnSS" onclick="doScreenshot()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#0369a1,#0ea5e9)">📸</button>
+        <button id="btnStart" onclick="startMain()" class="btn btn-primary flex-1">▶ Mulai Kamera</button>
+        <button id="btnStop" onclick="stopMain()" disabled class="btn btn-danger flex-1">⏹ Stop</button>
+        <button id="btnSS" onclick="doScreenshot()" disabled class="btn btn-ghost btn-sm px-3" title="Screenshot">📸</button>
       </div>
     </div>
 
     <!-- Info Panel -->
-    <div class="glass p-5 flex flex-col gap-4">
-      <!-- Current Gesture -->
-      <div>
-        <p class="text-xs text-gray-600 uppercase tracking-widest mb-2">Gesture Terbaca</p>
-        <div id="gDisplay" class="text-7xl text-center leading-none mb-2" style="min-height:84px; display:flex; align-items:center; justify-content:center">–</div>
-        <p id="gName" class="text-center font-semibold text-gray-300 text-sm">Menunggu tangan...</p>
-        <div class="mt-2 h-1.5 rounded-full bg-gray-900 overflow-hidden">
-          <div id="confBar" class="h-full rounded-full transition-all duration-200" style="width:0%;background:linear-gradient(90deg,var(--neon2),#e879f9)"></div>
+    <div class="card p-5 flex flex-col gap-4">
+      <!-- XP + Level strip -->
+      <div class="flex items-center justify-between p-3 rounded-xl" style="background:var(--primary-light)">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black" style="background:var(--primary);color:#fff" id="gestLevelBadge">1</div>
+          <div>
+            <p class="text-xs font-bold" style="color:var(--primary)" id="gestLevelName">Pemula</p>
+            <p class="text-xs" style="color:var(--tx3)" id="gestXPTxt">0 / 50 XP</p>
+          </div>
         </div>
-        <p id="confTxt" class="text-center text-gray-700 text-xs mt-1.5 font-mono">Confidence: –</p>
+        <span id="gestStreakDisp" class="text-lg">🔥 <span id="gestStreakNum" class="font-black text-sm" style="color:var(--accent)">0</span></span>
+      </div>
+      <div class="xp-bar"><div id="gestXPBar" class="xp-fill" style="width:0%"></div></div>
+
+      <!-- Detected gesture -->
+      <div class="text-center py-2">
+        <p class="sec-head mb-2">Gesture Terbaca</p>
+        <div id="gDisplay" class="text-7xl leading-none mb-2" style="min-height:80px;display:flex;align-items:center;justify-content:center">–</div>
+        <p id="gName" class="font-semibold text-sm" style="color:var(--tx2)">Menunggu tangan...</p>
+        <div class="mt-2 prog-bar"><div id="confBar" class="prog-fill" style="width:0%;background:linear-gradient(90deg,var(--primary),var(--secondary))"></div></div>
+        <p id="confTxt" class="text-xs mt-1 font-mono" style="color:var(--tx3)">Confidence: –</p>
       </div>
 
       <!-- Stats -->
-      <div class="space-y-1.5 text-sm border-t border-gray-800/60 pt-4">
-        <div class="flex justify-between"><span class="text-gray-600">Total Deteksi</span><span id="totalDet" class="font-mono font-bold">0</span></div>
-        <div class="flex justify-between"><span class="text-gray-600">Durasi Sesi</span><span id="sessTime" class="font-mono font-bold">0s</span></div>
-        <div class="flex justify-between"><span class="text-gray-600">FPS Rata-rata</span><span id="fpsTxt" class="font-mono font-bold nt">–</span></div>
+      <div class="grid grid-cols-3 gap-2 text-center" style="border-top:1px solid var(--bord);padding-top:14px">
+        <div class="p-2 rounded-xl" style="background:var(--surf2)">
+          <p class="text-xs mb-0.5" style="color:var(--tx3)">Deteksi</p>
+          <p id="totalDet" class="font-black font-mono text-base" style="color:var(--tx)">0</p>
+        </div>
+        <div class="p-2 rounded-xl" style="background:var(--surf2)">
+          <p class="text-xs mb-0.5" style="color:var(--tx3)">Durasi</p>
+          <p id="sessTime" class="font-black font-mono text-base" style="color:var(--tx)">0s</p>
+        </div>
+        <div class="p-2 rounded-xl" style="background:var(--surf2)">
+          <p class="text-xs mb-0.5" style="color:var(--tx3)">FPS</p>
+          <p id="fpsTxt" class="font-black font-mono text-base" style="color:var(--primary)">–</p>
+        </div>
       </div>
 
       <!-- Sentence Builder -->
-      <div class="border-t border-gray-800/60 pt-4 flex flex-col gap-2">
-        <div class="flex justify-between items-center">
-          <p class="text-xs text-gray-600 uppercase tracking-widest">Kalimat Builder</p>
-          <span class="text-xs text-gray-700">tahan 1.5 detik</span>
+      <div style="border-top:1px solid var(--bord);padding-top:14px">
+        <div class="flex justify-between items-center mb-2">
+          <p class="sec-head">Kalimat Builder</p>
+          <span class="badge badge-neutral text-xs">tahan 0.8s</span>
         </div>
-        <div id="sentBox" class="scroll-box bg-gray-950 rounded-xl p-3 text-gray-500 text-sm min-h-[44px] max-h-[72px] leading-relaxed">(gesture akan muncul di sini)</div>
-        <div class="flex gap-1.5">
-          <button onclick="clearSent()" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-gray-900 hover:bg-gray-800 transition border border-gray-800">🗑 Hapus</button>
-          <button onclick="copySent()" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-gray-900 hover:bg-gray-800 transition border border-gray-800">📋 Salin</button>
-          <button onclick="speakSent()" class="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-gray-900 hover:bg-gray-800 transition border border-gray-800">🔊 Baca</button>
+        <div id="sentBox" class="scroll-box rounded-xl p-3 text-sm min-h-[44px] max-h-[80px] leading-relaxed" style="background:var(--surf2);color:var(--tx3)">(gesture akan muncul di sini)</div>
+        <div class="flex gap-1.5 mt-2">
+          <button onclick="clearSent()" class="btn btn-ghost btn-sm flex-1">🗑 Hapus</button>
+          <button onclick="copySent()" class="btn btn-ghost btn-sm flex-1">📋 Salin</button>
+          <button onclick="speakSent()" class="btn btn-ghost btn-sm flex-1">🔊 Baca</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Gesture Reference Grid -->
-  <div class="glass p-5">
+  <!-- Gesture Reference -->
+  <div class="card p-5">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-bold text-sm text-gray-300">📖 Referensi Gesture — Bahasa Isyarat (klik untuk dengar)</h3>
-      <span class="text-xs px-2 py-1 rounded-lg" style="background:rgba(0,255,136,.08);color:var(--neon);border:1px solid rgba(0,255,136,.15)">tahan 0.8 detik</span>
+      <h3 class="font-bold text-sm" style="color:var(--tx)">📖 Referensi Gesture Bahasa Isyarat</h3>
+      <span class="badge badge-primary text-xs">Klik untuk dengar</span>
     </div>
     <div id="gestRef" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3"></div>
-    <div class="mt-3 p-2.5 rounded-xl text-xs text-gray-600" style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05)">
-      💡 <strong class="text-gray-500">Tips:</strong> Pastikan telapak menghadap kamera, pencahayaan cukup, dan tangan terlihat penuh dalam frame.
+    <div class="mt-3 p-3 rounded-xl text-xs" style="background:var(--primary-light);color:var(--primary)">
+      💡 <strong>Tips:</strong> Pastikan telapak menghadap kamera, pencahayaan cukup, dan tangan terlihat penuh dalam frame. Tahan gesture selama 0.8 detik.
     </div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     TAB: A–Z TRAINING
-════════════════════════════════════════ -->
+<!-- ════════════ TAB: A–Z ════════════ -->
 <section id="tab-alphabet" class="hidden space-y-4 fade-up">
   <div class="grid md:grid-cols-3 gap-4">
     <!-- Camera -->
-    <div class="md:col-span-2 glass p-4 space-y-3">
+    <div class="md:col-span-2 card p-4 space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="font-bold">🔤 A–Z Training</h2>
-        <button onclick="toggleAZMode()" id="azModeBtn" class="px-3 py-1 rounded-full text-xs font-semibold border transition btn-glow" style="border-color:var(--neon2);color:var(--neon2)">Mode: Belajar</button>
+        <h2 class="font-bold" style="color:var(--tx)">🔤 A–Z Training</h2>
+        <button onclick="toggleAZMode()" id="azModeBtn" class="btn btn-outline btn-sm">Mode: Belajar</button>
       </div>
-      <div id="azCamWrap" class="aspect-video bg-black rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
+      <div id="azCamWrap" class="aspect-video bg-slate-100 rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
         <video id="vidAZ" autoplay muted playsinline></video>
         <canvas id="cvsAZ"></canvas>
         <div id="azPH" class="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <div class="text-5xl opacity-20">📷</div>
-          <p class="text-sm text-gray-600">Klik Start untuk latihan</p>
+          <div class="text-4xl opacity-30">📷</div>
+          <p class="text-sm font-medium" style="color:var(--tx3)">Klik Start untuk mulai latihan</p>
         </div>
-        <!-- Target letter overlay -->
-        <div id="azTargOv" class="absolute top-3 right-3 hidden bg-black/80 backdrop-blur-sm rounded-2xl px-4 py-2 text-center">
-          <p class="text-xs text-gray-500 mb-0.5">Tunjukkan</p>
-          <p id="azTargLet" class="text-5xl font-black leading-none font-mono nt2">A</p>
+        <!-- Target -->
+        <div id="azTargOv" class="hidden absolute top-3 right-3 rounded-2xl px-4 py-2.5 text-center" style="background:rgba(15,23,42,.85);backdrop-filter:blur(8px)">
+          <p class="text-xs mb-0.5" style="color:#94a3b8">Tunjukkan</p>
+          <p id="azTargLet" class="text-5xl font-black leading-none font-mono" style="color:#fff">A</p>
+        </div>
+        <!-- Motion guide -->
+        <div id="motionGuideOv" class="hidden absolute bottom-14 right-3 rounded-xl px-3 py-2 text-center" style="background:rgba(245,158,11,.9);backdrop-filter:blur(8px)">
+          <p class="text-xs font-bold text-white mb-0.5">🎬 Gerakkan!</p>
+          <p id="motionGuideTxt" class="text-xs text-white"></p>
         </div>
         <!-- Result flash -->
-        <div id="azResOv" class="absolute inset-0 hidden items-center justify-center bg-black/50">
-          <div class="pop-in text-center bg-black/80 backdrop-blur rounded-2xl px-10 py-7 border" style="border-color:rgba(255,255,255,.1)">
-            <div id="azResEmoji" class="text-6xl mb-2">✅</div>
-            <p id="azResTxt" class="text-2xl font-black">A Benar!</p>
+        <div id="azResOv" class="absolute inset-0 hidden items-center justify-center" style="background:rgba(255,255,255,.85)">
+          <div class="pop-in text-center card px-10 py-8 border-2" id="azResCard">
+            <div id="azResEmoji" class="text-6xl mb-3">✅</div>
+            <p id="azResTxt" class="text-2xl font-black" style="color:var(--tx)">A Benar!</p>
+            <div id="azXPPop" class="mt-2 text-sm font-bold" style="color:var(--primary)">+10 XP</div>
           </div>
         </div>
-        <div id="azHandBadge" class="absolute top-3 left-3 hidden text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(0,255,136,.85);color:#03070f">✋</div>
+        <!-- Wrong feedback -->
+        <div id="azWrongOv" class="absolute inset-0 hidden items-center justify-center" style="background:rgba(255,255,255,.85)">
+          <div class="pop-in card px-8 py-6 border-2 w-72 text-center" style="border-color:var(--danger)">
+            <div class="text-4xl mb-2">❌</div>
+            <p class="font-black text-lg mb-1" style="color:var(--danger)">Hampir Benar!</p>
+            <div class="grid grid-cols-2 gap-3 my-3 text-sm">
+              <div class="p-2 rounded-xl" style="background:var(--danger-lt)">
+                <p class="text-xs mb-1" style="color:var(--tx3)">Anda tunjukkan</p>
+                <p id="azWrongGot" class="text-3xl font-black font-mono" style="color:var(--danger)">–</p>
+              </div>
+              <div class="p-2 rounded-xl" style="background:var(--success-lt)">
+                <p class="text-xs mb-1" style="color:var(--tx3)">Seharusnya</p>
+                <p id="azWrongTgt" class="text-3xl font-black font-mono" style="color:var(--success)">–</p>
+              </div>
+            </div>
+            <p id="azWrongTip" class="text-xs" style="color:var(--tx3)">–</p>
+          </div>
+        </div>
+        <div id="azHandBadge" class="hidden absolute top-3 left-3 badge badge-success text-xs">✋</div>
         <div class="live-badge">
-          <span class="text-xs text-gray-600">Terbaca:</span>
-          <span id="azLive" class="text-2xl font-black font-mono nt3">–</span>
+          <span class="text-xs" style="color:var(--tx4)">Terbaca:</span>
+          <span id="azLive" class="text-2xl font-black font-mono text-white">–</span>
         </div>
       </div>
       <!-- Stability -->
       <div>
-        <div class="flex justify-between text-xs text-gray-600 mb-1"><span>Hold Stability</span><span id="azStabLbl" class="font-mono text-gray-500">–</span></div>
-        <div class="h-2 rounded-full bg-gray-900 overflow-hidden">
-          <div id="azStabBar" class="stab-bar h-full rounded-full" style="width:0%;background:linear-gradient(90deg,var(--neon2),var(--neon))"></div>
+        <div class="flex justify-between text-xs mb-1" style="color:var(--tx3)">
+          <span>Hold Stability</span>
+          <span id="azStabLbl" class="font-mono">–</span>
         </div>
+        <div class="prog-bar" style="height:10px"><div id="azStabBar" class="stab-bar prog-fill" style="width:0%;background:linear-gradient(90deg,var(--primary),var(--secondary))"></div></div>
       </div>
       <div class="flex gap-2">
-        <button id="azBtnStart" onclick="startAZ()" class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">▶ Start</button>
-        <button id="azBtnStop" onclick="stopAZ()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#be123c,#dc2626)">⏹ Stop</button>
-        <button id="azBtnSkip" onclick="skipAZ()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40 bg-gray-800 hover:bg-gray-700 transition">⏭ Skip</button>
+        <button id="azBtnStart" onclick="startAZ()" class="btn btn-primary flex-1">▶ Start</button>
+        <button id="azBtnStop" onclick="stopAZ()" disabled class="btn btn-danger flex-1">⏹ Stop</button>
+        <button id="azBtnSkip" onclick="skipAZ()" disabled class="btn btn-ghost flex-1">⏭ Skip</button>
       </div>
-      <div class="mt-2">
-        <button onclick="downloadDataset()" class="w-full py-2 rounded-xl font-semibold text-xs btn-glow transition" style="background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.2);color:var(--neon3)">
-          📥 Download Dataset Gesture (Snapshot Benar)
-        </button>
-      </div>
+      <button onclick="downloadDataset()" class="btn btn-secondary btn-sm w-full" style="opacity:.8">
+        📥 Download Dataset Gesture Snapshot
+      </button>
     </div>
 
     <!-- AZ Score Panel -->
-    <div class="glass p-5 space-y-4">
+    <div class="card p-5 space-y-4">
+      <!-- Progress ring -->
       <div>
-        <p class="text-xs text-gray-600 uppercase tracking-widest mb-3">Progress Sesi</p>
+        <p class="sec-head mb-3">Progress Sesi</p>
         <div class="flex items-center gap-3">
           <div class="relative w-16 h-16 flex-shrink-0">
             <svg class="w-16 h-16 p-ring" viewBox="0 0 64 64">
-              <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/>
-              <circle id="azPRing" cx="32" cy="32" r="26" fill="none" stroke="var(--neon2)" stroke-width="5" stroke-dasharray="163.4" stroke-dashoffset="163.4" class="p-ring-c"/>
+              <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surf2)" stroke-width="5"/>
+              <circle id="azPRing" cx="32" cy="32" r="26" fill="none" stroke="var(--primary)" stroke-width="5" stroke-dasharray="163.4" stroke-dashoffset="163.4" class="p-ring-c"/>
             </svg>
-            <div class="absolute inset-0 flex items-center justify-center"><span id="azPct" class="text-xs font-bold font-mono">0%</span></div>
+            <div class="absolute inset-0 flex items-center justify-center"><span id="azPct" class="text-xs font-bold font-mono" style="color:var(--primary)">0%</span></div>
           </div>
           <div>
-            <p class="text-2xl font-black" id="azCorrNum">0</p>
-            <p class="text-xs text-gray-600">Benar dari <span id="azTotNum" class="font-mono">0</span></p>
+            <p class="text-2xl font-black" id="azCorrNum" style="color:var(--tx)">0</p>
+            <p class="text-xs" style="color:var(--tx3)">Benar dari <span id="azTotNum" class="font-mono font-bold">0</span></p>
           </div>
         </div>
       </div>
-      <!-- Current letter info -->
-      <div class="bg-black/40 rounded-xl p-4 text-center border border-gray-800/50">
-        <p class="text-xs text-gray-600 mb-1">Huruf Sekarang</p>
-        <div id="azCurLet" class="text-6xl font-black font-mono nt2 mb-1">–</div>
-        <p id="azCurDesc" class="text-xs text-gray-400 leading-snug">–</p>
-        <p id="azCurHint" class="text-xs text-gray-700 mt-1">–</p>
+
+      <!-- Current letter -->
+      <div class="rounded-xl p-4 text-center border" style="background:var(--primary-light);border-color:rgba(37,99,235,.2)">
+        <p class="text-xs mb-1 sec-head">Huruf Sekarang</p>
+        <div id="azCurLet" class="text-6xl font-black font-mono mb-1" style="color:var(--primary)">–</div>
+        <p id="azCurDesc" class="text-xs leading-snug" style="color:var(--tx2)">–</p>
+        <p id="azCurHint" class="text-xs mt-1" style="color:var(--tx3)">–</p>
       </div>
-      <!-- Letter progress grid -->
+
+      <!-- Grid -->
       <div>
-        <p class="text-xs text-gray-600 mb-2">A–Z Progress</p>
+        <p class="sec-head mb-2">A–Z Progress</p>
         <div id="azGrid" class="grid grid-cols-7 gap-1"></div>
       </div>
-      <!-- Streak info -->
+
+      <!-- Streak -->
       <div class="grid grid-cols-2 gap-2 text-center">
-        <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
-          <p class="text-gray-700 text-xs">Streak</p>
-          <p id="azStreak" class="font-black text-yellow-400 text-xl font-mono">0</p>
+        <div class="rounded-xl p-3" style="background:var(--accent-lt);border:1px solid rgba(245,158,11,.2)">
+          <p class="text-xs mb-0.5" style="color:var(--tx3)">Streak</p>
+          <p id="azStreak" class="font-black text-xl font-mono" style="color:var(--accent)">0</p>
         </div>
-        <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
-          <p class="text-gray-700 text-xs">Best</p>
-          <p id="azBest" class="font-black text-orange-400 text-xl font-mono">0</p>
+        <div class="rounded-xl p-3" style="background:var(--success-lt);border:1px solid rgba(34,197,94,.2)">
+          <p class="text-xs mb-0.5" style="color:var(--tx3)">Best</p>
+          <p id="azBest" class="font-black text-xl font-mono" style="color:var(--success)">0</p>
         </div>
       </div>
     </div>
   </div>
 
   <!-- AZ Reference -->
-  <div class="glass p-5">
-    <h3 class="font-bold text-sm mb-3 text-gray-300">📖 Referensi ASL A–Z</h3>
-    <!-- Quick visual guide using SVG hand diagrams -->
-    <div class="mb-4 p-3 rounded-xl text-xs" style="background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.15)">
-      <p class="font-bold text-gray-400 mb-3">🖼️ Panduan Visual Posisi Tangan (klik untuk dengar)</p>
+  <div class="card p-5">
+    <h3 class="font-bold text-sm mb-4" style="color:var(--tx)">📖 Referensi ASL A–Z</h3>
+    <div class="mb-4 p-3 rounded-xl" style="background:var(--primary-light);border:1px solid rgba(37,99,235,.15)">
+      <p class="font-bold text-xs mb-3" style="color:var(--primary)">🖼️ Panduan Visual Posisi Tangan (klik untuk dengar)</p>
       <div id="azVisualGuide" class="grid grid-cols-4 sm:grid-cols-7 md:grid-cols-9 gap-2"></div>
     </div>
-    <!-- Disambiguation tips for confusable letters -->
-    <div class="mb-4 p-3 rounded-xl text-xs" style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2)">
-      <p class="font-bold text-yellow-400 mb-2">⚠️ Huruf yang sering tertukar — baca bedanya:</p>
+    <div class="mb-4 p-3 rounded-xl" style="background:var(--accent-lt);border:1px solid rgba(245,158,11,.2)">
+      <p class="font-bold text-xs mb-2" style="color:var(--accent)">⚠️ Huruf yang sering tertukar:</p>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <span class="text-lg font-black nt2">E</span> vs <span class="text-lg font-black text-cyan-400">O</span>
-          <p class="text-gray-500 mt-1">E: jari tekuk RAPAT ke telapak. O: jari membentuk LINGKARAN penuh.</p>
+        <div class="rounded-lg p-2 text-center" style="background:var(--surf)">
+          <span class="font-black text-base" style="color:var(--primary)">E</span> vs <span class="font-black text-base" style="color:var(--secondary)">O</span>
+          <p class="text-xs mt-1" style="color:var(--tx3)">E: tekuk RAPAT. O: LINGKARAN penuh.</p>
         </div>
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <span class="text-lg font-black nt2">A</span> vs <span class="text-lg font-black text-red-400">S</span>
-          <p class="text-gray-500 mt-1">A: jempol di SISI. S: jempol MELINTANG di depan jari.</p>
+        <div class="rounded-lg p-2 text-center" style="background:var(--surf)">
+          <span class="font-black text-base" style="color:var(--primary)">A</span> vs <span class="font-black text-base" style="color:var(--danger)">S</span>
+          <p class="text-xs mt-1" style="color:var(--tx3)">A: jempol di SISI. S: di DEPAN.</p>
         </div>
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <span class="text-lg font-black nt2">V</span> vs <span class="text-lg font-black text-blue-400">U</span>
-          <p class="text-gray-500 mt-1">V: 2 jari TERBUKA lebar. U: 2 jari RAPAT berdampingan.</p>
+        <div class="rounded-lg p-2 text-center" style="background:var(--surf)">
+          <span class="font-black text-base" style="color:var(--primary)">V</span> vs <span class="font-black text-base" style="color:var(--secondary)">U</span>
+          <p class="text-xs mt-1" style="color:var(--tx3)">V: LEBAR. U: RAPAT berdampingan.</p>
         </div>
-        <div class="bg-black/30 rounded-lg p-2 text-center">
-          <span class="text-lg font-black nt2">D</span> vs <span class="text-lg font-black text-orange-400">G</span>
-          <p class="text-gray-500 mt-1">D: telunjuk tegak ke ATAS. G: telunjuk+jempol ke SAMPING.</p>
+        <div class="rounded-lg p-2 text-center" style="background:var(--surf)">
+          <span class="font-black text-base" style="color:var(--primary)">D</span> vs <span class="font-black text-base" style="color:var(--accent)">G</span>
+          <p class="text-xs mt-1" style="color:var(--tx3)">D: ke ATAS. G: ke SAMPING.</p>
         </div>
       </div>
     </div>
@@ -457,362 +621,341 @@ canvas { display: block; width: 100%; height: 100%; }
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     TAB: NUMERIC 0–9
-════════════════════════════════════════ -->
+<!-- ════════════ TAB: NUMERIC ════════════ -->
 <section id="tab-numeric" class="hidden space-y-4 fade-up">
   <div class="grid md:grid-cols-3 gap-4">
-    <!-- Camera -->
-    <div class="md:col-span-2 glass glass-cyan p-4 space-y-3">
+    <div class="md:col-span-2 card p-4 space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="font-bold">🔢 Pengenalan Angka 0–9</h2>
-        <span class="text-xs px-2 py-0.5 rounded-full font-bold font-mono" style="background:rgba(34,211,238,.12);color:var(--neon3);border:1px solid rgba(34,211,238,.3)">NEW ✨</span>
+        <h2 class="font-bold" style="color:var(--tx)">🔢 Pengenalan Angka 0–9</h2>
+        <span class="badge badge-secondary">NEW ✨</span>
       </div>
-      <div id="numCamWrap" class="aspect-video bg-black rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
+      <div id="numCamWrap" class="aspect-video bg-slate-100 rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
         <video id="vidNum" autoplay muted playsinline></video>
         <canvas id="cvsNum"></canvas>
         <div id="numPH" class="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <div class="text-5xl opacity-20">📷</div>
-          <p class="text-sm text-gray-600">Klik Start untuk latihan angka</p>
+          <div class="text-4xl opacity-30">📷</div>
+          <p class="text-sm font-medium" style="color:var(--tx3)">Klik Start untuk latihan angka</p>
         </div>
-        <div id="numTargOv" class="absolute top-3 right-3 hidden bg-black/80 backdrop-blur-sm rounded-2xl px-4 py-2 text-center">
-          <p class="text-xs text-gray-500 mb-0.5">Tunjukkan</p>
-          <p id="numTargNum" class="text-5xl font-black leading-none font-mono nt3">0</p>
+        <div id="numTargOv" class="hidden absolute top-3 right-3 rounded-2xl px-4 py-2.5 text-center" style="background:rgba(15,23,42,.85);backdrop-filter:blur(8px)">
+          <p class="text-xs mb-0.5" style="color:#94a3b8">Tunjukkan</p>
+          <p id="numTargNum" class="text-5xl font-black leading-none font-mono" style="color:var(--secondary)">0</p>
         </div>
-        <div id="numResOv" class="absolute inset-0 hidden items-center justify-center bg-black/50">
-          <div class="pop-in text-center bg-black/80 backdrop-blur rounded-2xl px-10 py-7 border border-gray-800">
-            <div id="numResEmoji" class="text-6xl mb-2">✅</div>
-            <p id="numResTxt" class="text-2xl font-black">0 Benar!</p>
+        <div id="numResOv" class="absolute inset-0 hidden items-center justify-center" style="background:rgba(255,255,255,.85)">
+          <div class="pop-in text-center card px-10 py-8 border-2" style="border-color:var(--success)">
+            <div id="numResEmoji" class="text-6xl mb-3">✅</div>
+            <p id="numResTxt" class="text-2xl font-black" style="color:var(--tx)">0 Benar!</p>
+            <div class="mt-2 text-sm font-bold" style="color:var(--secondary)">+10 XP</div>
           </div>
         </div>
-        <div id="numHandBadge" class="absolute top-3 left-3 hidden text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(34,211,238,.9);color:#03070f">✋</div>
+        <div id="numHandBadge" class="hidden absolute top-3 left-3 badge badge-secondary text-xs">✋</div>
         <div class="live-badge">
-          <span class="text-xs text-gray-600">Terbaca:</span>
-          <span id="numLive" class="text-2xl font-black font-mono nt3">–</span>
+          <span class="text-xs" style="color:var(--tx4)">Terbaca:</span>
+          <span id="numLive" class="text-2xl font-black font-mono text-white">–</span>
         </div>
       </div>
       <div>
-        <div class="flex justify-between text-xs text-gray-600 mb-1"><span>Hold Stability</span><span id="numStabLbl" class="font-mono text-gray-500">–</span></div>
-        <div class="h-2 rounded-full bg-gray-900 overflow-hidden">
-          <div id="numStabBar" class="stab-bar h-full rounded-full" style="width:0%;background:linear-gradient(90deg,var(--neon3),var(--neon))"></div>
-        </div>
+        <div class="flex justify-between text-xs mb-1" style="color:var(--tx3)"><span>Hold Stability</span><span id="numStabLbl" class="font-mono">–</span></div>
+        <div class="prog-bar" style="height:10px"><div id="numStabBar" class="stab-bar prog-fill" style="width:0%;background:linear-gradient(90deg,var(--secondary),var(--success))"></div></div>
       </div>
       <div class="flex gap-2">
-        <button id="numBtnStart" onclick="startNum()" class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm" style="background:linear-gradient(135deg,#0e7490,#06b6d4)">▶ Start</button>
-        <button id="numBtnStop" onclick="stopNum()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#be123c,#dc2626)">⏹ Stop</button>
-        <button id="numBtnSkip" onclick="skipNum()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40 bg-gray-800 hover:bg-gray-700 transition">⏭ Skip</button>
+        <button id="numBtnStart" onclick="startNum()" class="btn btn-secondary flex-1">▶ Start</button>
+        <button id="numBtnStop" onclick="stopNum()" disabled class="btn btn-danger flex-1">⏹ Stop</button>
+        <button id="numBtnSkip" onclick="skipNum()" disabled class="btn btn-ghost flex-1">⏭ Skip</button>
       </div>
     </div>
 
-    <!-- Num Score Panel -->
-    <div class="glass glass-cyan p-5 space-y-4">
+    <div class="card p-5 space-y-4">
       <div>
-        <p class="text-xs text-gray-600 uppercase tracking-widest mb-3">Progress</p>
+        <p class="sec-head mb-3">Progress</p>
         <div class="flex items-center gap-3">
           <div class="relative w-16 h-16 flex-shrink-0">
             <svg class="w-16 h-16 p-ring" viewBox="0 0 64 64">
-              <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="5"/>
-              <circle id="numPRing" cx="32" cy="32" r="26" fill="none" stroke="var(--neon3)" stroke-width="5" stroke-dasharray="163.4" stroke-dashoffset="163.4" class="p-ring-c"/>
+              <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surf2)" stroke-width="5"/>
+              <circle id="numPRing" cx="32" cy="32" r="26" fill="none" stroke="var(--secondary)" stroke-width="5" stroke-dasharray="163.4" stroke-dashoffset="163.4" class="p-ring-c"/>
             </svg>
-            <div class="absolute inset-0 flex items-center justify-center"><span id="numPct" class="text-xs font-bold font-mono">0%</span></div>
+            <div class="absolute inset-0 flex items-center justify-center"><span id="numPct" class="text-xs font-bold font-mono" style="color:var(--secondary)">0%</span></div>
           </div>
           <div>
-            <p class="text-2xl font-black" id="numCorrNum">0</p>
-            <p class="text-xs text-gray-600">Benar dari <span id="numTotNum" class="font-mono">0</span></p>
+            <p class="text-2xl font-black" id="numCorrNum" style="color:var(--tx)">0</p>
+            <p class="text-xs" style="color:var(--tx3)">Benar dari <span id="numTotNum" class="font-mono font-bold">0</span></p>
           </div>
         </div>
       </div>
-      <div class="bg-black/40 rounded-xl p-4 text-center border border-gray-800/50">
-        <p class="text-xs text-gray-600 mb-1">Angka Sekarang</p>
-        <div id="numCurNum" class="text-6xl font-black font-mono nt3 mb-1">–</div>
-        <p id="numCurHint" class="text-xs text-gray-500 leading-snug mt-1">–</p>
+      <div class="rounded-xl p-4 text-center border" style="background:var(--secondary-lt);border-color:rgba(20,184,166,.2)">
+        <p class="sec-head mb-1">Angka Sekarang</p>
+        <div id="numCurNum" class="text-6xl font-black font-mono mb-1" style="color:var(--secondary)">–</div>
+        <p id="numCurHint" class="text-xs leading-snug mt-1" style="color:var(--tx2)">–</p>
       </div>
       <div>
-        <p class="text-xs text-gray-600 mb-2">0–9 Progress</p>
+        <p class="sec-head mb-2">0–9 Progress</p>
         <div id="numGrid" class="grid grid-cols-5 gap-2"></div>
       </div>
       <div class="grid grid-cols-2 gap-2 text-center">
-        <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
-          <p class="text-gray-700 text-xs">Streak</p>
-          <p id="numStreak" class="font-black text-yellow-400 text-xl font-mono">0</p>
+        <div class="rounded-xl p-3" style="background:var(--accent-lt);border:1px solid rgba(245,158,11,.2)">
+          <p class="text-xs mb-0.5" style="color:var(--tx3)">Streak</p>
+          <p id="numStreak" class="font-black text-xl font-mono" style="color:var(--accent)">0</p>
         </div>
-        <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
-          <p class="text-gray-700 text-xs">Best</p>
-          <p id="numBest" class="font-black text-orange-400 text-xl font-mono">0</p>
+        <div class="rounded-xl p-3" style="background:var(--success-lt);border:1px solid rgba(34,197,94,.2)">
+          <p class="text-xs mb-0.5" style="color:var(--tx3)">Best</p>
+          <p id="numBest" class="font-black text-xl font-mono" style="color:var(--success)">0</p>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Number Reference -->
-  <div class="glass glass-cyan p-5">
-    <h3 class="font-bold text-sm mb-3 text-gray-300">📖 Referensi Angka 0–9 (klik untuk dengar)</h3>
+  <div class="card p-5">
+    <h3 class="font-bold text-sm mb-3" style="color:var(--tx)">📖 Referensi Angka 0–9 (klik untuk dengar)</h3>
     <div id="numVisualGuide" class="grid grid-cols-5 sm:grid-cols-10 gap-3 mb-4"></div>
     <div id="numRef" class="grid grid-cols-5 sm:grid-cols-10 gap-3"></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     TAB: GAME & KUIS
-════════════════════════════════════════ -->
+<!-- ════════════ TAB: GAME ════════════ -->
 <section id="tab-game" class="hidden space-y-4 fade-up">
   <div class="grid md:grid-cols-3 gap-4">
-    <!-- Camera -->
-    <div class="md:col-span-2 glass glass-green p-4 space-y-3">
+    <div class="md:col-span-2 card p-4 space-y-3">
       <div class="flex items-center justify-between flex-wrap gap-2">
-        <h2 class="font-bold">🎮 Game & Kuis Interaktif</h2>
+        <h2 class="font-bold" style="color:var(--tx)">🎮 Game & Kuis Interaktif</h2>
         <div class="flex gap-1.5">
-          <button id="gameModeAZ" onclick="setGameMode('az')" class="px-3 py-1 rounded-full text-xs font-semibold border transition btn-glow" style="background:rgba(0,255,136,.1);color:var(--neon);border-color:var(--neon)">🔤 A–Z</button>
-          <button id="gameModeNum" onclick="setGameMode('num')" class="px-3 py-1 rounded-full text-xs font-semibold border transition btn-glow" style="color:#6b7280;border-color:rgba(255,255,255,.1)">🔢 0–9</button>
-          <button id="gameModeGest" onclick="setGameMode('gest')" class="px-3 py-1 rounded-full text-xs font-semibold border transition btn-glow" style="color:#6b7280;border-color:rgba(255,255,255,.1)">🖐 Gesture</button>
+          <button id="gameModeAZ" onclick="setGameMode('az')" class="btn btn-primary btn-sm">🔤 A–Z</button>
+          <button id="gameModeNum" onclick="setGameMode('num')" class="btn btn-ghost btn-sm">🔢 0–9</button>
+          <button id="gameModeGest" onclick="setGameMode('gest')" class="btn btn-ghost btn-sm">🖐 Gesture</button>
         </div>
       </div>
-
-      <div id="gameCamWrap" class="aspect-video bg-black rounded-xl overflow-hidden relative cam-idle transition-all duration-300">
+      <div id="gameCamWrap" class="aspect-video rounded-xl overflow-hidden relative cam-idle transition-all duration-300" style="background:#f1f5f9">
         <video id="vidGame" autoplay muted playsinline></video>
         <canvas id="cvsGame"></canvas>
-
-        <!-- Pre-game screen -->
         <div id="gamePH" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
-          <div class="text-7xl">🎮</div>
-          <p class="text-lg font-bold text-white">Siap Bermain?</p>
-          <p class="text-sm text-gray-500 text-center px-6">Tunjukkan gesture yang diminta secepatnya untuk mendapat poin!</p>
+          <div class="text-6xl">🎮</div>
+          <p class="text-lg font-bold" style="color:var(--tx)">Siap Bermain?</p>
+          <p class="text-sm text-center px-6" style="color:var(--tx3)">Tunjukkan gesture yang diminta secepatnya untuk mendapat poin!</p>
         </div>
-
-        <!-- In-game target -->
-        <div id="gameTargOv" class="absolute top-3 right-3 hidden">
-          <div class="bg-black/85 backdrop-blur-sm rounded-2xl p-3 text-center border border-gray-700/50">
-            <p class="text-xs text-gray-500 mb-1">Tunjukkan</p>
+        <div id="gameTargOv" class="hidden absolute top-3 right-3">
+          <div class="rounded-2xl p-3 text-center" style="background:rgba(15,23,42,.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1)">
+            <p class="text-xs mb-1" style="color:#94a3b8">Tunjukkan</p>
             <p id="gameTargTxt" class="text-5xl font-black font-mono leading-none text-white">A</p>
           </div>
         </div>
-
-        <!-- Timer ring -->
-        <div id="gameTimerOv" class="absolute top-3 left-3 hidden">
+        <div id="gameTimerOv" class="hidden absolute top-3 left-3">
           <div class="relative w-14 h-14">
             <svg class="w-14 h-14 p-ring" viewBox="0 0 56 56">
-              <circle cx="28" cy="28" r="22" fill="rgba(0,0,0,.75)" stroke="rgba(255,255,255,.07)" stroke-width="4.5"/>
-              <circle id="gameRingPath" cx="28" cy="28" r="22" fill="none" stroke="var(--neon)" stroke-width="4.5"
-                stroke-dasharray="138.2" stroke-dashoffset="0" class="p-ring-c"/>
+              <circle cx="28" cy="28" r="22" fill="rgba(15,23,42,.8)" stroke="rgba(255,255,255,.1)" stroke-width="4.5"/>
+              <circle id="gameRingPath" cx="28" cy="28" r="22" fill="none" stroke="var(--success)" stroke-width="4.5" stroke-dasharray="138.2" stroke-dashoffset="0" class="p-ring-c"/>
             </svg>
             <div class="absolute inset-0 flex items-center justify-center">
               <span id="gameTimerTxt" class="text-sm font-black font-mono text-white">10</span>
             </div>
           </div>
         </div>
-
-        <!-- Result flash -->
         <div id="gameFlash" class="absolute inset-0 hidden items-center justify-center pointer-events-none">
-          <div id="gameFlashInner" class="text-8xl"></div>
+          <div id="gameFlashInner" class="text-8xl score-pop"></div>
         </div>
-
-        <div id="gameHandBadge" class="absolute top-3 left-20 hidden text-xs font-bold px-2.5 py-1 rounded-full" style="background:rgba(0,255,136,.85);color:#03070f">✋</div>
+        <div id="gameHandBadge" class="hidden absolute top-3 left-20 badge badge-success text-xs">✋</div>
         <div class="live-badge">
-          <span class="text-xs text-gray-600">Terbaca:</span>
-          <span id="gameLive" class="text-2xl font-black font-mono nt">–</span>
+          <span class="text-xs" style="color:var(--tx4)">Terbaca:</span>
+          <span id="gameLive" class="text-2xl font-black font-mono text-white">–</span>
         </div>
       </div>
-
-      <!-- Game stab -->
       <div>
-        <div class="flex justify-between text-xs text-gray-600 mb-1"><span>Hold Stability</span><span id="gameStabLbl" class="font-mono text-gray-500">–</span></div>
-        <div class="h-2 rounded-full bg-gray-900 overflow-hidden">
-          <div id="gameStabBar" class="stab-bar h-full rounded-full" style="width:0%;background:linear-gradient(90deg,var(--neon),var(--neon2))"></div>
-        </div>
+        <div class="flex justify-between text-xs mb-1" style="color:var(--tx3)"><span>Hold Stability</span><span id="gameStabLbl" class="font-mono">–</span></div>
+        <div class="prog-bar" style="height:10px"><div id="gameStabBar" class="stab-bar prog-fill" style="width:0%;background:linear-gradient(90deg,var(--primary),var(--success))"></div></div>
       </div>
-
       <div class="flex gap-2">
-        <button id="gameBtnStart" onclick="startGame()" class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm" style="background:linear-gradient(135deg,#065f46,#059669)">🎮 Mulai Game</button>
-        <button id="gameBtnStop" onclick="stopGame()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40" style="background:linear-gradient(135deg,#be123c,#dc2626)">⏹ Stop</button>
-        <button id="gameBtnSkip" onclick="skipGame()" disabled class="btn-glow flex-1 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-40 bg-gray-800 hover:bg-gray-700 transition">⏭ Skip</button>
+        <button id="gameBtnStart" onclick="startGame()" class="btn btn-success flex-1">🎮 Mulai Game</button>
+        <button id="gameBtnStop" onclick="stopGame()" disabled class="btn btn-danger flex-1">⏹ Stop</button>
+        <button id="gameBtnSkip" onclick="skipGame()" disabled class="btn btn-ghost flex-1">⏭ Skip</button>
       </div>
     </div>
 
     <!-- Score Panel -->
-    <div class="glass glass-green p-5 space-y-4">
-      <!-- Big Score -->
+    <div class="card p-5 space-y-4">
       <div>
-        <p class="text-xs text-gray-600 uppercase tracking-widest mb-2">Skor</p>
-        <div class="bg-black/50 rounded-2xl py-4 text-center border border-gray-800/40">
-          <p id="gameScore" class="text-6xl font-black font-mono nt">0</p>
-          <p class="text-xs text-gray-700 mt-1">poin</p>
+        <p class="sec-head mb-2">Skor</p>
+        <div class="rounded-2xl py-5 text-center" style="background:linear-gradient(135deg,var(--primary),var(--secondary))">
+          <p id="gameScore" class="text-5xl font-black font-mono text-white">0</p>
+          <p class="text-xs text-white/70 mt-1">poin</p>
         </div>
       </div>
-
-      <!-- Quick stats -->
       <div class="grid grid-cols-2 gap-2">
-        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-gray-800/40">
-          <p class="text-gray-700 text-xs">Benar</p>
-          <p id="gameCorrect" class="font-black text-green-400 text-xl font-mono">0</p>
+        <div class="rounded-xl p-2.5 text-center" style="background:var(--success-lt);border:1px solid rgba(34,197,94,.2)">
+          <p class="text-xs" style="color:var(--tx3)">Benar</p>
+          <p id="gameCorrect" class="font-black text-xl font-mono" style="color:var(--success)">0</p>
         </div>
-        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-gray-800/40">
-          <p class="text-gray-700 text-xs">Salah</p>
-          <p id="gameWrong" class="font-black text-red-400 text-xl font-mono">0</p>
+        <div class="rounded-xl p-2.5 text-center" style="background:var(--danger-lt);border:1px solid rgba(239,68,68,.2)">
+          <p class="text-xs" style="color:var(--tx3)">Salah</p>
+          <p id="gameWrong" class="font-black text-xl font-mono" style="color:var(--danger)">0</p>
         </div>
-        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-gray-800/40">
-          <p class="text-gray-700 text-xs">Streak</p>
-          <p id="gameStreak" class="font-black text-yellow-400 text-xl font-mono">0</p>
+        <div class="rounded-xl p-2.5 text-center" style="background:var(--accent-lt);border:1px solid rgba(245,158,11,.2)">
+          <p class="text-xs" style="color:var(--tx3)">Streak</p>
+          <p id="gameStreak" class="font-black text-xl font-mono" style="color:var(--accent)">0</p>
         </div>
-        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-gray-800/40">
-          <p class="text-gray-700 text-xs">Waktu</p>
-          <p id="gameElapsed" class="font-black text-blue-400 text-xl font-mono">0s</p>
+        <div class="rounded-xl p-2.5 text-center" style="background:var(--primary-light);border:1px solid rgba(37,99,235,.2)">
+          <p class="text-xs" style="color:var(--tx3)">Waktu</p>
+          <p id="gameElapsed" class="font-black text-xl font-mono" style="color:var(--primary)">0s</p>
         </div>
       </div>
-
-      <!-- Current target hint -->
-      <div class="bg-black/30 rounded-xl p-3 border border-gray-800/40">
-        <p class="text-xs text-gray-600 mb-1">Target</p>
-        <div id="gameCurTgt" class="text-4xl font-black font-mono nt mb-1">–</div>
-        <p id="gameCurHint" class="text-xs text-gray-600 leading-snug">Mulai game dulu</p>
+      <div class="rounded-xl p-3" style="background:var(--surf2)">
+        <p class="sec-head mb-1">Target</p>
+        <div id="gameCurTgt" class="text-4xl font-black font-mono mb-1" style="color:var(--primary)">–</div>
+        <p id="gameCurHint" class="text-xs" style="color:var(--tx3)">Mulai game dulu</p>
       </div>
-
-      <!-- Level indicator -->
       <div>
-        <div class="flex justify-between text-xs text-gray-600 mb-2">
+        <div class="flex justify-between text-xs mb-2" style="color:var(--tx3)">
           <span>Level</span>
-          <span id="gameLevelTxt" class="font-mono text-gray-500">Pemula</span>
+          <span id="gameLevelTxt" class="font-mono font-bold" style="color:var(--primary)">Pemula</span>
         </div>
         <div class="flex gap-1">
-          <div id="lv1" class="lvl-bar flex-1 bg-green-500"></div>
-          <div id="lv2" class="lvl-bar flex-1 bg-gray-800"></div>
-          <div id="lv3" class="lvl-bar flex-1 bg-gray-800"></div>
-          <div id="lv4" class="lvl-bar flex-1 bg-gray-800"></div>
-          <div id="lv5" class="lvl-bar flex-1 bg-gray-800"></div>
+          <div id="lv1" class="lvl-bar flex-1" style="background:var(--success)"></div>
+          <div id="lv2" class="lvl-bar flex-1" style="background:var(--bord2)"></div>
+          <div id="lv3" class="lvl-bar flex-1" style="background:var(--bord2)"></div>
+          <div id="lv4" class="lvl-bar flex-1" style="background:var(--bord2)"></div>
+          <div id="lv5" class="lvl-bar flex-1" style="background:var(--bord2)"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Session records -->
-  <div class="glass glass-green p-5">
-    <h3 class="font-bold text-sm mb-4 text-gray-300">🏆 Rekaman Sesi</h3>
+  <!-- Records -->
+  <div class="card p-5">
+    <h3 class="font-bold text-sm mb-4" style="color:var(--tx)">🏆 Rekaman Sesi</h3>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-      <div class="bg-black/40 rounded-xl p-3 border border-gray-800/40">
-        <p class="text-gray-600 text-xs">Skor Tertinggi</p>
-        <p id="gameBestScore" class="text-2xl font-black font-mono nt">0</p>
+      <div class="rounded-xl p-3" style="background:var(--primary-light)">
+        <p class="text-xs mb-1" style="color:var(--tx3)">Skor Tertinggi</p>
+        <p id="gameBestScore" class="text-2xl font-black font-mono" style="color:var(--primary)">0</p>
       </div>
-      <div class="bg-black/40 rounded-xl p-3 border border-gray-800/40">
-        <p class="text-gray-600 text-xs">Best Streak</p>
-        <p id="gameBestStreak" class="text-2xl font-black font-mono text-yellow-400">0</p>
+      <div class="rounded-xl p-3" style="background:var(--accent-lt)">
+        <p class="text-xs mb-1" style="color:var(--tx3)">Best Streak</p>
+        <p id="gameBestStreak" class="text-2xl font-black font-mono" style="color:var(--accent)">0</p>
       </div>
-      <div class="bg-black/40 rounded-xl p-3 border border-gray-800/40">
-        <p class="text-gray-600 text-xs">Total Sesi</p>
-        <p id="gameTotalSess" class="text-2xl font-black font-mono text-blue-400">0</p>
+      <div class="rounded-xl p-3" style="background:var(--secondary-lt)">
+        <p class="text-xs mb-1" style="color:var(--tx3)">Total Sesi</p>
+        <p id="gameTotalSess" class="text-2xl font-black font-mono" style="color:var(--secondary)">0</p>
       </div>
-      <div class="bg-black/40 rounded-xl p-3 border border-gray-800/40">
-        <p class="text-gray-600 text-xs">Akurasi Rata-rata</p>
-        <p id="gameAvgAcc" class="text-2xl font-black font-mono nt2">–</p>
+      <div class="rounded-xl p-3" style="background:var(--success-lt)">
+        <p class="text-xs mb-1" style="color:var(--tx3)">Akurasi Avg</p>
+        <p id="gameAvgAcc" class="text-2xl font-black font-mono" style="color:var(--success)">–</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     TAB: BELAJAR
-════════════════════════════════════════ -->
+<!-- ════════════ TAB: BELAJAR (Duolingo-style) ════════════ -->
 <section id="tab-learn" class="hidden fade-up">
-  <div class="glass p-5">
-    <h2 class="font-bold text-xl mb-1">📚 Mode Belajar</h2>
-    <p class="text-gray-600 text-sm mb-5">Pelajari posisi tangan untuk setiap gesture & alfabet isyarat</p>
-    <div id="learnCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  <!-- Learn header -->
+  <div class="card p-5 mb-4">
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="font-bold text-xl" style="color:var(--tx)">📚 Mode Belajar</h2>
+      <div class="flex gap-2">
+        <button onclick="setLearnCat('gesture')" id="learnCatGest" class="btn btn-primary btn-sm">Gesture</button>
+        <button onclick="setLearnCat('az')" id="learnCatAZ" class="btn btn-ghost btn-sm">A–Z</button>
+        <button onclick="setLearnCat('num')" id="learnCatNum" class="btn btn-ghost btn-sm">0–9</button>
+      </div>
+    </div>
+    <p class="text-sm" style="color:var(--tx3)">Pelajari posisi tangan untuk setiap gesture dengan panduan detail</p>
+  </div>
+  <div id="learnCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+</section>
+
+<!-- ════════════ TAB: TEXT → GESTURE ════════════ -->
+<section id="tab-text2gest" class="hidden fade-up space-y-4">
+  <div class="card p-5">
+    <h2 class="font-bold text-xl mb-1" style="color:var(--tx)">✏️ Teks → Gestur</h2>
+    <p class="text-sm mb-4" style="color:var(--tx3)">Ketik teks dan lihat visualisasi gesture per huruf</p>
+    <div class="flex gap-2">
+      <input id="t2gInput" type="text" maxlength="20" placeholder="Ketik huruf, misal: HALO" class="flex-1 px-4 py-3 rounded-xl text-base font-medium border outline-none transition" style="border-color:var(--bord);background:var(--surf);color:var(--tx);font-family:inherit" oninput="renderT2G()" />
+      <button onclick="$('t2gInput').value='';renderT2G()" class="btn btn-ghost">✕</button>
+    </div>
+  </div>
+  <div id="t2gOut" class="flex flex-wrap gap-3"></div>
+  <div class="card p-4 hidden" id="t2gEmpty">
+    <p class="text-center text-sm" style="color:var(--tx3)">Ketik huruf di atas untuk melihat gesture visualnya 👆</p>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     TAB: DASHBOARD
-════════════════════════════════════════ -->
+<!-- ════════════ TAB: DASHBOARD ════════════ -->
 <section id="tab-dashboard" class="hidden space-y-4 fade-up">
-  <!-- Stat cards -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="glass p-4"><p class="text-xs text-gray-600 mb-1">Total Deteksi</p><p id="dTot" class="text-3xl font-black font-mono nt2">0</p></div>
-    <div class="glass p-4"><p class="text-xs text-gray-600 mb-1">Gesture Disimpan</p><p id="dSaved" class="text-3xl font-black font-mono text-blue-400">0</p></div>
-    <div class="glass p-4"><p class="text-xs text-gray-600 mb-1">A–Z Benar</p><p id="dAZ" class="text-3xl font-black font-mono text-green-400">0</p></div>
-    <div class="glass p-4"><p class="text-xs text-gray-600 mb-1">Best Game Score</p><p id="dGame" class="text-3xl font-black font-mono text-yellow-400">0</p></div>
+  <!-- Quick stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="card p-4">
+      <p class="sec-head mb-1">Huruf Dikuasai</p>
+      <p id="dAZ" class="text-3xl font-black font-mono" style="color:var(--primary)">0</p>
+      <p class="text-xs mt-1" style="color:var(--tx3)">dari 26 huruf</p>
+    </div>
+    <div class="card p-4">
+      <p class="sec-head mb-1">Angka Dikuasai</p>
+      <p id="dNum" class="text-3xl font-black font-mono" style="color:var(--secondary)">0</p>
+      <p class="text-xs mt-1" style="color:var(--tx3)">dari 10 angka</p>
+    </div>
+    <div class="card p-4">
+      <p class="sec-head mb-1">Total XP</p>
+      <p id="dXP" class="text-3xl font-black font-mono" style="color:var(--accent)">0</p>
+      <p class="text-xs mt-1" style="color:var(--tx3)">experience points</p>
+    </div>
+    <div class="card p-4">
+      <p class="sec-head mb-1">Best Skor Game</p>
+      <p id="dGame" class="text-3xl font-black font-mono" style="color:var(--success)">0</p>
+      <p class="text-xs mt-1" style="color:var(--tx3)">poin tertinggi</p>
+    </div>
   </div>
 
-  <!-- Breakdown -->
-  <div class="glass p-5">
-    <h3 class="font-bold text-sm mb-4 text-gray-300">📊 Gesture Breakdown</h3>
+  <!-- Achievements -->
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-sm" style="color:var(--tx)">🏅 Pencapaian</h3>
+      <span id="achCount" class="badge badge-neutral">0 / 8 earned</span>
+    </div>
+    <div id="achieveGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+  </div>
+
+  <!-- Daily challenge -->
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-sm" style="color:var(--tx)">🎯 Tantangan Hari Ini</h3>
+      <span class="badge badge-warning">+30 XP</span>
+    </div>
+    <div id="dailyChallenges" class="space-y-3"></div>
+  </div>
+
+  <!-- Gesture breakdown -->
+  <div class="card p-5">
+    <h3 class="font-bold text-sm mb-4" style="color:var(--tx)">📊 Gesture Breakdown</h3>
     <div id="breakdown" class="space-y-2.5"></div>
   </div>
 
-  <!-- Roadmap -->
-  <div class="glass p-5">
-    <h3 class="font-bold text-sm mb-8 text-gray-300">🗺️ Roadmap & Status Pengembangan</h3>
-    <div class="relative px-2">
-      <!-- Timeline line -->
-      <div class="absolute left-0 right-0 top-[22px] h-0.5 z-0" style="background:linear-gradient(90deg,var(--neon),var(--neon2),var(--neon3),rgba(251,191,36,.5))"></div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
-        <!-- Phase 1 -->
-        <div class="text-center">
-          <div class="w-5 h-5 rounded-full mx-auto mb-4 ring-4" style="background:var(--neon);box-shadow:0 0 16px var(--neon);ring-color:rgba(0,255,136,.2)"></div>
-          <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-2" style="background:rgba(0,255,136,.12);color:var(--neon);border:1px solid rgba(0,255,136,.3)">✅ Tahap 1</span>
-          <p class="text-xs font-semibold text-gray-300 mt-1">Game & Kuis Interaktif</p>
-          <p class="text-xs text-gray-600 mt-1 leading-snug">Evaluasi alfabet real-time di browser</p>
-        </div>
-        <!-- Phase 2 -->
-        <div class="text-center">
-          <div class="w-5 h-5 rounded-full mx-auto mb-4" style="background:var(--neon2);box-shadow:0 0 16px var(--neon2)"></div>
-          <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-2" style="background:rgba(168,85,247,.12);color:var(--neon2);border:1px solid rgba(168,85,247,.3)">✅ Tahap 2</span>
-          <p class="text-xs font-semibold text-gray-300 mt-1">Pengenalan Angka 0–9</p>
-          <p class="text-xs text-gray-600 mt-1 leading-snug">Pemetaan gestur & model numerik</p>
-        </div>
-        <!-- Phase 3 -->
-        <div class="text-center">
-          <div class="w-5 h-5 rounded-full mx-auto mb-4" style="background:var(--neon3);box-shadow:0 0 16px var(--neon3)"></div>
-          <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-2" style="background:rgba(34,211,238,.12);color:var(--neon3);border:1px solid rgba(34,211,238,.3)">✅ Tahap 3</span>
-          <p class="text-xs font-semibold text-gray-300 mt-1">UI King-Class Final</p>
-          <p class="text-xs text-gray-600 mt-1 leading-snug">CSS polish, animasi, dark-mode premium</p>
-        </div>
-        <!-- Phase 4 -->
-        <div class="text-center">
-          <div class="w-5 h-5 rounded-full mx-auto mb-4 border-2" style="border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.08)"></div>
-          <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-2" style="background:rgba(251,191,36,.08);color:#fbbf24;border:1px solid rgba(251,191,36,.3)">🔜 Tahap 4</span>
-          <p class="text-xs font-semibold text-gray-300 mt-1">Beta Testing PWA</p>
-          <p class="text-xs text-gray-600 mt-1 leading-snug">Multi-device smartphone testing</p>
-        </div>
-      </div>
-    </div>
+  <!-- A-Z accuracy -->
+  <div class="card p-5">
+    <h3 class="font-bold text-sm mb-4" style="color:var(--tx)">🔤 Akurasi Per Huruf</h3>
+    <div id="azAccuracy" class="grid grid-cols-7 sm:grid-cols-13 gap-1.5"></div>
   </div>
 
-  <!-- Module status -->
-  <div class="glass p-5">
-    <h3 class="font-bold text-sm mb-4 text-gray-300">✅ Status Modul Final</h3>
-    <div class="grid sm:grid-cols-2 gap-3">
-      <div class="rounded-xl p-4 border" style="background:rgba(0,255,136,.04);border-color:rgba(0,255,136,.2)">
-        <div class="flex gap-2 items-start mb-2">
-          <span class="text-base mt-0.5">✅</span>
-          <div>
-            <h4 class="font-semibold text-sm text-green-400">Game & Kuis Interaktif</h4>
-            <p class="text-xs text-gray-500 mt-1 leading-snug">Score, timer per soal, streak, level, 3 mode (A–Z, 0–9, Gesture). Suara feedback aktif.</p>
-          </div>
+  <!-- Roadmap -->
+  <div class="card p-5">
+    <h3 class="font-bold text-sm mb-8" style="color:var(--tx)">🗺️ Roadmap Pengembangan</h3>
+    <div class="relative">
+      <div class="absolute left-0 right-0 h-0.5 z-0" style="top:28px;background:linear-gradient(90deg,var(--success),var(--primary),var(--secondary),rgba(245,158,11,.4))"></div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
+        <div class="text-center">
+          <div class="w-5 h-5 rounded-full mx-auto mb-4" style="background:var(--success);box-shadow:0 0 12px rgba(34,197,94,.5)"></div>
+          <span class="badge badge-success mb-2">✅ Tahap 1</span>
+          <p class="text-xs font-semibold mt-2" style="color:var(--tx)">Game & Kuis</p>
+          <p class="text-xs mt-1" style="color:var(--tx3)">Evaluasi alfabet real-time</p>
         </div>
-      </div>
-      <div class="rounded-xl p-4 border" style="background:rgba(0,255,136,.04);border-color:rgba(0,255,136,.2)">
-        <div class="flex gap-2 items-start mb-2">
-          <span class="text-base mt-0.5">✅</span>
-          <div>
-            <h4 class="font-semibold text-sm text-green-400">Pengenalan Angka (0–9)</h4>
-            <p class="text-xs text-gray-500 mt-1 leading-snug">Deteksi koordinat tangan untuk angka ASL 0–9, progress tracker, streak, referensi visual.</p>
-          </div>
+        <div class="text-center">
+          <div class="w-5 h-5 rounded-full mx-auto mb-4" style="background:var(--primary);box-shadow:0 0 12px rgba(37,99,235,.5)"></div>
+          <span class="badge badge-primary mb-2">✅ Tahap 2</span>
+          <p class="text-xs font-semibold mt-2" style="color:var(--tx)">Angka 0–9</p>
+          <p class="text-xs mt-1" style="color:var(--tx3)">Model numerik ASL</p>
         </div>
-      </div>
-      <div class="rounded-xl p-4 border" style="background:rgba(34,211,238,.04);border-color:rgba(34,211,238,.2)">
-        <div class="flex gap-2 items-start mb-2">
-          <span class="text-base mt-0.5">✅</span>
-          <div>
-            <h4 class="font-semibold text-sm text-cyan-400">FPS Stabil & Deteksi Lancar</h4>
-            <p class="text-xs text-gray-500 mt-1 leading-snug">Model MediaPipe dipisah per mode, tidak saling mengganggu. Hold-stability anti-spam aktif.</p>
-          </div>
+        <div class="text-center">
+          <div class="w-5 h-5 rounded-full mx-auto mb-4" style="background:var(--secondary);box-shadow:0 0 12px rgba(20,184,166,.5)"></div>
+          <span class="badge badge-secondary mb-2">✅ Tahap 3</span>
+          <p class="text-xs font-semibold mt-2" style="color:var(--tx)">UI Redesign</p>
+          <p class="text-xs mt-1" style="color:var(--tx3)">Educational theme final</p>
         </div>
-      </div>
-      <div class="rounded-xl p-4 border" style="background:rgba(168,85,247,.04);border-color:rgba(168,85,247,.2)">
-        <div class="flex gap-2 items-start mb-2">
-          <span class="text-base mt-0.5">✅</span>
-          <div>
-            <h4 class="font-semibold text-sm nt2">Text-to-Speech Optimized</h4>
-            <p class="text-xs text-gray-500 mt-1 leading-snug">Queue-based TTS, tidak tumpang tindih. Toggle on/off, priority speech untuk event penting.</p>
-          </div>
+        <div class="text-center">
+          <div class="w-5 h-5 rounded-full mx-auto mb-4 border-2" style="border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.08)"></div>
+          <span class="badge badge-warning mb-2">🔜 Tahap 4</span>
+          <p class="text-xs font-semibold mt-2" style="color:var(--tx)">Beta PWA</p>
+          <p class="text-xs mt-1" style="color:var(--tx3)">Multi-device testing</p>
         </div>
       </div>
     </div>
@@ -820,8 +963,6 @@ canvas { display: block; width: 100%; height: 100%; }
 </section>
 
 </main>
-
-<!-- ══ JAVASCRIPT ══ -->
 <script>
 'use strict';
 // ═══════════════════════════════════════════════
@@ -1040,19 +1181,54 @@ function tipDist(lm, tip, mcp) { return dist(lm[tip], lm[mcp]) / hSize(lm); }
 // ─── Gesture Mode Detection ──────────────────
 function detectGesture(lm) {
   if (!lm || lm.length < 21) return null;
-  const f = fingers(lm);
+  const f  = fingers(lm);
   const hs = hSize(lm);
-  const thumbHigh = lm[4].y < lm[0].y - hs * 0.28;
   const t2i = nd(lm, 4, 8);
 
-  if (thumbHigh && f.Ic && f.Mc && f.Rc && f.Pc) return {type:'thumbs_up', name:'Bagus / Setuju', conf:0.93};
-  if (f.Ic && f.Mc && f.Rc && f.Pc && f.Tc)      return {type:'fist',      name:'Aku / Saya',    conf:0.91};
-  if (f.T && f.I && f.M && f.R && f.P)            return {type:'open_hand', name:'Halo / Hai',    conf:0.93};
-  if (t2i < 0.35 && f.M && f.R && f.P)            return {type:'ok',        name:'Oke / Baik',    conf:0.88};
-  if (!f.T && f.I && f.M && f.Rc && f.Pc)         return {type:'peace',     name:'Dua / Damai',   conf:0.87};
-  if (f.I && f.Mc && f.Rc && f.Pc)                return {type:'pointing',  name:'Kamu / Itu',    conf:0.86};
-  const ext = [f.T,f.I,f.M,f.R,f.P].filter(Boolean).length;
-  if (ext >= 4) return {type:'open_hand', name:'Halo / Hai', conf:0.65};
+  // ── Fist check FIRST — most reliable if all 4 fingers clearly curled ──
+  // All 4 fingers curled = strong fist signal, regardless of thumb
+  const all4curl = f.Ic && f.Mc && f.Rc && f.Pc;
+
+  if (all4curl) {
+    // Thumbs Up: thumb tip clearly ABOVE wrist AND above all finger MCPs
+    // AND thumb is extended (far from thumb MCP)
+    const thumbTipAboveWrist = lm[4].y < lm[0].y - hs * 0.35;
+    const thumbTipAboveFingers = lm[4].y < Math.min(lm[5].y, lm[9].y, lm[13].y, lm[17].y) - hs * 0.1;
+    const thumbFarFromPalm = dist(lm[4], lm[2]) > hs * 0.80;
+
+    if (thumbTipAboveWrist && thumbTipAboveFingers && thumbFarFromPalm) {
+      return {type:'thumbs_up', name:'Bagus / Setuju', conf:0.93};
+    }
+
+    // Fist: all 4 curled + thumb NOT pointing far up
+    // Thumb can be tucked, on the side, or slightly raised — but NOT high above fingers
+    return {type:'fist', name:'Aku / Saya', conf:0.91};
+  }
+
+  // ── Open Hand: all 5 fingers clearly extended ──
+  if (f.T && f.I && f.M && f.R && f.P) {
+    return {type:'open_hand', name:'Halo / Hai', conf:0.93};
+  }
+
+  // ── OK Sign: thumb+index pinch + middle/ring/pinky up ──
+  if (t2i < 0.35 && f.M && f.R && f.P && !f.I) {
+    return {type:'ok', name:'Oke / Baik', conf:0.88};
+  }
+
+  // ── Peace: index+middle up, rest curled, no thumb ──
+  if (!f.T && f.I && f.M && f.Rc && f.Pc) {
+    return {type:'peace', name:'Dua / Damai', conf:0.87};
+  }
+
+  // ── Pointing: only index up ──
+  if (f.I && f.Mc && f.Rc && f.Pc) {
+    return {type:'pointing', name:'Kamu / Itu', conf:0.86};
+  }
+
+  // Fallback open hand if 4+ fingers open
+  const extCount = [f.T, f.I, f.M, f.R, f.P].filter(Boolean).length;
+  if (extCount >= 4) return {type:'open_hand', name:'Halo / Hai', conf:0.65};
+
   return null;
 }
 
@@ -1219,10 +1395,84 @@ function detectASL(lm) {
     }
   }
 
-  // J and Z require motion — cannot detect from static frame
-  // They are handled by MOTION_LETTERS set — user is prompted to Skip
-
+  // J and Z: handled via trajectory buffer below (motionDetect)
   return null;
+}
+
+// ═══════════════════════════════════════════════
+// MOTION GESTURE DETECTION — J and Z via trajectory
+// Tracks pinky/index tip movement path over ~40 frames
+// ═══════════════════════════════════════════════
+const motionBuf = [];          // [{x,y,letter}] last N points
+const MOTION_BUF_MAX  = 45;   // ~1.5s at 30fps
+const MOTION_BUF_MIN  = 18;   // minimum frames for valid gesture
+
+function pushMotionPoint(lm, activeLetter) {
+  // Track relevant finger tip
+  const tip = activeLetter === 'J' ? lm[20] : lm[8];  // J=pinky, Z=index
+  motionBuf.push({ x: tip.x, y: tip.y, t: performance.now() });
+  if (motionBuf.length > MOTION_BUF_MAX) motionBuf.shift();
+}
+
+function resetMotionBuf() { motionBuf.length = 0; }
+
+// Analyse trajectory to detect J or Z shape
+function detectMotion(targetLetter) {
+  if (motionBuf.length < MOTION_BUF_MIN) return false;
+  const pts = motionBuf;
+  const n   = pts.length;
+
+  // Normalise all points to [0,1] range
+  const xs  = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const rangeX = maxX - minX, rangeY = maxY - minY;
+
+  // Needs meaningful movement
+  if (rangeX < 0.04 && rangeY < 0.04) return false;
+
+  if (targetLetter === 'J') {
+    // J shape: starts going DOWN, then curves LEFT at bottom
+    // Split into first half (going down) and second half (curving)
+    const first = pts.slice(0, Math.floor(n * 0.6));
+    const last  = pts.slice(Math.floor(n * 0.5));
+
+    // First half: mostly vertical movement (y increases = going down in image)
+    const firstDY = last[0].y - first[0].y;
+    const goingDown = firstDY > rangeY * 0.3;
+
+    // Last portion: x decreases (moves left in mirrored view = right in real)
+    const lastDX = last[last.length-1].x - last[0].x;
+    const curvingLeft = Math.abs(lastDX) > rangeX * 0.25;
+
+    return goingDown && curvingLeft && rangeY > 0.05;
+  }
+
+  if (targetLetter === 'Z') {
+    // Z shape: right → diagonal-down-left → right
+    // Divide into 3 segments
+    const seg1 = pts.slice(0,  Math.floor(n * 0.33));
+    const seg2 = pts.slice(Math.floor(n * 0.33), Math.floor(n * 0.67));
+    const seg3 = pts.slice(Math.floor(n * 0.67));
+
+    // Segment 1: moving right (x decreasing in mirrored = right in real)
+    const dx1 = seg1[seg1.length-1].x - seg1[0].x;
+    // Segment 2: moving diagonally (both x and y change)
+    const dx2 = seg2[seg2.length-1].x - seg2[0].x;
+    const dy2 = seg2[seg2.length-1].y - seg2[0].y;
+    // Segment 3: moving right again
+    const dx3 = seg3[seg3.length-1].x - seg3[0].x;
+
+    const seg1move  = Math.abs(dx1) > rangeX * 0.2;
+    const seg2diag  = Math.abs(dx2) > rangeX * 0.15 && Math.abs(dy2) > rangeY * 0.15;
+    const seg3move  = Math.abs(dx3) > rangeX * 0.2;
+    // Seg1 and seg3 should move in same x direction
+    const sameDir   = (dx1 > 0) === (dx3 > 0);
+
+    return seg1move && seg2diag && seg3move && sameDir && rangeX > 0.06;
+  }
+
+  return false;
 }
 
 // ─── Number Detection v3 — calibrated to standard finger-count gestures ──
@@ -1544,9 +1794,33 @@ function onAZ(res) {
     $('azHandBadge').classList.remove('hidden');
     $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-detect');
 
+    const tgt = azSt.letters[azSt.idx];
+
+    // ── Motion letters (J, Z): use trajectory detection ──
+    if (MOTION_LETTERS.has(tgt)) {
+      pushMotionPoint(lm, tgt);
+      const motionOk = detectMotion(tgt);
+      const live = $('azLive');
+      const bufPct = Math.min(100, (motionBuf.length / MOTION_BUF_MIN) * 100);
+
+      if (motionOk && !azSt.held) {
+        live.textContent = tgt; live.style.color = 'var(--neon)';
+        $('azStabBar').style.width = '100%';
+        $('azStabLbl').textContent = tgt + ' ✓';
+        azSt.held = true;
+        azCorrect(tgt);
+      } else {
+        live.textContent = motionBuf.length >= MOTION_BUF_MIN ? '...' : '→';
+        live.style.color = 'var(--gold)';
+        $('azStabBar').style.width = bufPct + '%';
+        $('azStabLbl').textContent = 'Gambar ' + tgt + '...';
+      }
+      return; // skip static detection for motion letters
+    }
+
+    // ── Static letters: normal detection ──
     smAZ.push(detectASL(lm));
     const det = smAZ.get();
-    const tgt = azSt.letters[azSt.idx];
     const live = $('azLive');
     live.textContent = det || '–';
     live.style.color = det === tgt ? 'var(--neon)' : det ? '#f87171' : 'var(--neon3)';
@@ -1608,7 +1882,7 @@ function downloadDataset() {
 
 function nextAZ() {
   if (azSt.idx < azSt.letters.length - 1) {
-    azSt.idx++; azSt.stableStart = 0; azSt.held = false;
+    azSt.idx++; azSt.stableStart = 0; azSt.held = false; resetMotionBuf();
     $('azStabBar').style.width = '0%';
     updateAZCurrent();
   } else {
@@ -1636,8 +1910,8 @@ const CONFUSABLE = {
   K: '💡 Telunjuk+tengah tegak, jempol menyentuh SISI jari tengah.',
   F: '💡 Jempol+telunjuk membentuk lingkaran OK, 3 jari lain tegak.',
   X: '💡 Bengkokkan telunjuk ke bawah seperti kail / tanda tanya.',
-  J: '🎬 Huruf J butuh GERAKAN. Mulai posisi I (kelingking tegak), lalu gambar J ke bawah.',
-  Z: '🎬 Huruf Z butuh GERAKAN. Gambar Z di udara dengan telunjuk.',
+  J: '🎬 Gerakkan kelingking membentuk huruf J ke bawah. Mulai dari posisi I tegak, lalu geser ke bawah & lengkung ke kiri.',
+  Z: '🎬 Gerakkan telunjuk membentuk huruf Z. Kanan → serong kiri-bawah → kanan lagi. Bar hijau = gerakan terdeteksi!',
   P: '💡 Seperti K tapi tangan MENGHADAP BAWAH — menantang!',
   Q: '💡 Seperti G tapi menunjuk ke BAWAH — jarang digunakan.',
   M: '💡 Tekuk 3 jari (telunjuk-tengah-manis) MENUTUPI jempol yang terlipat.',
@@ -1675,12 +1949,20 @@ function updateAZCurrent() {
     $('azCurHint').style.color = '';
   }
   $('azTargOv').classList.remove('hidden');
+  const mGuide = $('motionGuideOv');
+  if (isMotion && mGuide) {
+    mGuide.classList.remove('hidden');
+    $('motionGuideTxt').textContent = l === 'J' ? '↓ kelingking → lengkung kiri' : '→ \ → kanan';
+  } else if (mGuide) {
+    mGuide.classList.add('hidden');
+  }
 
   // Motion letters: speak warning, don't expect detection
   if (isMotion) {
-    speak('Huruf ' + l + ' membutuhkan gerakan. Tekan Skip untuk lanjut.');
+    speak('Huruf ' + l + '. Gerakkan ' + (l==='J' ? 'kelingking membentuk huruf J ke bawah' : 'telunjuk membentuk huruf Z') + '!');
     $('azBtnSkip').style.background = 'linear-gradient(135deg,#92400e,#d97706)';
-    $('azBtnSkip').textContent = '⏭ Skip (Gerakan)';
+    $('azBtnSkip').textContent = '⏭ Skip';
+    resetMotionBuf();
   } else {
     speak('Tunjukkan huruf ' + l);
     $('azBtnSkip').style.background = '';
@@ -1741,6 +2023,7 @@ async function stopAZ() {
   $('azBtnStop').disabled  = true;
   $('azBtnSkip').disabled  = true;
   $('azTargOv').classList.add('hidden');
+  const _mg = $('motionGuideOv'); if (_mg) _mg.classList.add('hidden');
   $('azPH').classList.remove('hidden');
   $('azHandBadge').classList.add('hidden');
   $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-idle');
@@ -2494,5 +2777,500 @@ document.addEventListener('DOMContentLoaded', async () => {
   speak('Selamat datang di GestureFlow versi tiga titik nol.', false);
 });
 </script>
-</body>
-</html>
+<script>
+'use strict';
+// ═══════════════════════════════════════════════
+// GestureFlow UI v4.0 — Gamification, DevMode,
+// Text→Gesture, Duolingo-style Learn, Analytics
+// ═══════════════════════════════════════════════
+
+// ── Gamification State ──────────────────────
+const GFState = {
+  xp:0, _lastLevel:0, streak:0, bestStreak:0,
+  azMastered: new Set(), numMastered: new Set(),
+  azAttempts:{}, azCorrectMap:{},
+  dailyDone: new Set(),
+};
+
+const LEVELS = [
+  {min:0,   name:'Pemula',     icon:'🌱'},
+  {min:50,  name:'Penjelajah', icon:'🔍'},
+  {min:150, name:'Pelajar',    icon:'📖'},
+  {min:300, name:'Mahir',      icon:'⭐'},
+  {min:500, name:'Expert',     icon:'🏆'},
+  {min:800, name:'Master',     icon:'👑'},
+];
+
+const ACHIEVEMENTS = [
+  {id:'first_gesture', icon:'🎉', name:'Langkah Pertama',  desc:'Deteksi gesture pertama',   xp:10},
+  {id:'streak5',       icon:'🔥', name:'Hot Streak',        desc:'Capai streak 5',             xp:20},
+  {id:'az_5',          icon:'📝', name:'Alphabet Starter',  desc:'Kuasai 5 huruf A–Z',         xp:25},
+  {id:'az_complete',   icon:'🔤', name:'Alphabet Master',   desc:'Selesaikan semua A–Z',       xp:100},
+  {id:'num_complete',  icon:'🔢', name:'Number Master',     desc:'Selesaikan semua 0–9',       xp:50},
+  {id:'game_100',      icon:'🎮', name:'Game Starter',      desc:'Raih skor game 100',         xp:30},
+  {id:'game_500',      icon:'🏅', name:'High Scorer',       desc:'Raih skor game 500',         xp:75},
+  {id:'speed_demon',   icon:'⚡', name:'Speed Demon',       desc:'Jawab benar <2 detik',       xp:40},
+];
+
+const DAILY = [
+  {id:'d_az5',    text:'Kuasai 5 huruf A–Z',          target:5,  type:'az',   xp:20},
+  {id:'d_num3',   text:'Latih 3 angka 0–9',            target:3,  type:'num',  xp:15},
+  {id:'d_game50', text:'Raih 50 poin di Game Mode',    target:50, type:'game', xp:25},
+];
+
+// XP helpers
+function addXP(amount) {
+  GFState.xp += amount;
+  updateXPUI();
+  if (amount > 0) showXPPop(amount);
+  checkLevelUp();
+  checkAchievements();
+  checkDailyAll();
+  updateDashboard();
+}
+
+function getCurLevel() {
+  for (let i = LEVELS.length-1; i >= 0; i--)
+    if (GFState.xp >= LEVELS[i].min) return i;
+  return 0;
+}
+function getNextXP() {
+  const i = getCurLevel();
+  return i < LEVELS.length-1 ? LEVELS[i+1].min : GFState.xp;
+}
+
+function updateXPUI() {
+  const i = getCurLevel(), info = LEVELS[i];
+  const nx = getNextXP(), cur = LEVELS[i].min;
+  const pct = i < LEVELS.length-1 ? Math.min(100, Math.round(((GFState.xp-cur)/(nx-cur))*100)) : 100;
+  $('navXPVal').textContent = GFState.xp;
+  $('navXP').classList.remove('hidden');
+  const el = (id) => document.getElementById(id);
+  if (el('gestLevelBadge')) el('gestLevelBadge').textContent = info.icon;
+  if (el('gestLevelName'))  el('gestLevelName').textContent  = `Level ${i+1} — ${info.name}`;
+  if (el('gestXPTxt'))      el('gestXPTxt').textContent      = `${GFState.xp} / ${nx} XP`;
+  if (el('gestXPBar'))      el('gestXPBar').style.width      = pct + '%';
+  if (el('gestStreakNum'))   el('gestStreakNum').textContent  = GFState.streak;
+}
+
+function checkLevelUp() {
+  const n = getCurLevel();
+  if (n > GFState._lastLevel) {
+    GFState._lastLevel = n;
+    const info = LEVELS[n];
+    toast(`🎉 Level Up! ${info.icon} ${info.name}`, 's');
+    speak(`Selamat! Kamu naik ke level ${info.name}!`, true);
+    confettiBurst();
+  }
+}
+
+function checkAchievements() {
+  const earn = (id) => {
+    if (GFState._ach?.[id]) return;
+    if (!GFState._ach) GFState._ach = {};
+    const a = ACHIEVEMENTS.find(x => x.id===id); if (!a) return;
+    GFState._ach[id] = true;
+    toast(`🏅 ${a.name}! +${a.xp} XP`, 'i');
+    GFState.xp += a.xp; updateXPUI();
+    renderAchievements();
+  };
+  if ((typeof mainSt!=='undefined' ? mainSt.totalDet : 0) > 0) earn('first_gesture');
+  if (GFState.streak >= 5)           earn('streak5');
+  if (GFState.azMastered.size >= 5)  earn('az_5');
+  if (GFState.azMastered.size >= 26) earn('az_complete');
+  if (GFState.numMastered.size >= 10) earn('num_complete');
+  if ((window._bestGameScore||0) >= 100) earn('game_100');
+  if ((window._bestGameScore||0) >= 500) earn('game_500');
+}
+
+function checkDailyAll() {
+  DAILY.forEach(d => {
+    if (GFState.dailyDone.has(d.id)) return;
+    const prog = d.type==='az'  ? GFState.azMastered.size :
+                 d.type==='num' ? GFState.numMastered.size :
+                 window._bestGameScore || 0;
+    if (prog >= d.target) {
+      GFState.dailyDone.add(d.id);
+      GFState.xp += d.xp; updateXPUI();
+      toast(`🎯 Challenge selesai! +${d.xp} XP`, 's');
+    }
+  });
+  renderDailyChallenges();
+}
+
+function renderAchievements() {
+  const el = document.getElementById('achieveGrid'); if (!el) return;
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const earned = !!(GFState._ach?.[a.id]);
+    return `<div class="achievement ${earned?'earned':''}">
+      <div class="ach-icon">${a.icon}</div>
+      <p class="text-xs font-bold" style="color:${earned?'var(--tx)':'var(--tx3)'}">${a.name}</p>
+      <p class="text-xs" style="color:var(--tx3)">${a.desc}</p>
+      ${earned ? `<span class="badge badge-warning mt-1" style="font-size:10px">+${a.xp} XP</span>` : ''}
+    </div>`;
+  }).join('');
+  const count = Object.keys(GFState._ach||{}).length;
+  const el2 = document.getElementById('achCount');
+  if (el2) el2.textContent = `${count} / ${ACHIEVEMENTS.length} earned`;
+}
+
+function renderDailyChallenges() {
+  const el = document.getElementById('dailyChallenges'); if (!el) return;
+  el.innerHTML = DAILY.map(d => {
+    const done = GFState.dailyDone.has(d.id);
+    const prog = d.type==='az'  ? GFState.azMastered.size :
+                 d.type==='num' ? GFState.numMastered.size :
+                 window._bestGameScore || 0;
+    const pct = Math.min(100, Math.round((prog/d.target)*100));
+    return `<div class="flex items-center gap-3 p-3 rounded-xl" style="background:${done?'var(--success-lt)':'var(--surf2)'};border:1px solid ${done?'rgba(34,197,94,.3)':'var(--bord)'}">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:${done?'var(--success)':'var(--bord2)'}">
+        <span style="font-size:16px">${done?'✅':'⭕'}</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold" style="color:var(--tx)">${d.text}</p>
+        <div class="mt-1 prog-bar" style="height:4px"><div class="prog-fill" style="width:${pct}%;background:${done?'var(--success)':'var(--primary)'}"></div></div>
+        <p class="text-xs mt-0.5" style="color:var(--tx3)">${prog} / ${d.target}</p>
+      </div>
+      <span class="badge badge-warning flex-shrink-0">+${d.xp} XP</span>
+    </div>`;
+  }).join('');
+}
+
+function confettiBurst() {
+  const cols = ['#2563EB','#14B8A6','#F59E0B','#22C55E','#EF4444'];
+  for (let i=0;i<24;i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-p';
+    p.style.cssText = `left:${Math.random()*100}vw;top:${35+Math.random()*25}vh;background:${cols[Math.floor(Math.random()*cols.length)]};transform:rotate(${Math.random()*360}deg);animation-delay:${Math.random()*.5}s;animation-duration:${.8+Math.random()*.6}s;`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), 1600);
+  }
+}
+
+function showXPPop(amount) {
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;bottom:80px;right:20px;z-index:9998;background:var(--primary);color:#fff;font-weight:800;font-size:15px;padding:8px 16px;border-radius:99px;pointer-events:none;animation:fadeUp .9s ease-out forwards;box-shadow:0 4px 12px rgba(37,99,235,.4);`;
+  el.textContent = `+${amount} XP`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 950);
+}
+
+// ── Developer Mode ───────────────────────────
+let devMode = false;
+function toggleDevMode() {
+  devMode = !devMode;
+  document.getElementById('devBar')?.classList.toggle('hidden', !devMode);
+  const btn = document.getElementById('btnDevMode');
+  btn.style.background = devMode ? '#0f172a' : '';
+  btn.style.color = devMode ? '#22d3ee' : '';
+  toast(devMode ? '🛠️ Dev Mode ON' : 'Dev Mode OFF', 'i');
+}
+
+// ── Text → Gesture ────────────────────────────
+function renderT2G() {
+  const val = (document.getElementById('t2gInput')?.value||'').toUpperCase().replace(/[^A-Z0-9 ]/g,'');
+  const out = document.getElementById('t2gOut');
+  const emp = document.getElementById('t2gEmpty');
+  if (!out) return;
+  if (!val.trim()) { out.innerHTML=''; emp?.classList.remove('hidden'); return; }
+  emp?.classList.add('hidden');
+  out.innerHTML = val.split('').map(ch => {
+    if (ch===' ') return `<div style="width:20px;display:flex;align-items:center;justify-content:center;color:var(--tx4)">_</div>`;
+    const isNum = /[0-9]/.test(ch);
+    const info  = isNum ? (typeof NUMBERS!=='undefined'?NUMBERS[parseInt(ch)]:null) : (typeof ASL!=='undefined'?ASL[ch]:null);
+    const svgCfg= isNum ? (typeof NUM_SVG!=='undefined'?NUM_SVG[ch]:null) : (typeof ASL_SVG!=='undefined'?ASL_SVG[ch]:null);
+    const svg   = (svgCfg && typeof svgHand!=='undefined') ? svgHand(svgCfg, ch, isNum?'var(--secondary)':'var(--primary)') : '';
+    const hint  = info?.hint || info?.desc || '';
+    const colr  = isNum ? 'var(--secondary)' : 'var(--primary)';
+    const colrlt= isNum ? 'var(--secondary-lt)' : 'var(--primary-light)';
+    return `<div class="letter-card card-hover" onclick="speak('${isNum?'Angka':'Huruf'} ${ch}. ${hint}', true)" style="border:1.5px solid var(--bord);cursor:pointer">
+      ${svg ? `<div style="max-width:56px;margin:0 auto 4px">${svg}</div>` : ''}
+      <div style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:${colr};margin-bottom:4px">${ch}</div>
+      <div style="font-size:10px;color:var(--tx3);line-height:1.3">${hint.split(' ').slice(0,5).join(' ')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Learn Mode (Duolingo-style) ───────────────
+let _learnCat = 'gesture';
+
+function setLearnCat(cat) {
+  _learnCat = cat;
+  ['gesture','az','num'].forEach(c => {
+    const btn = document.getElementById('learnCat'+{gesture:'Gest',az:'AZ',num:'Num'}[c]);
+    if (!btn) return;
+    if (c===cat) { btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary'); }
+    else         { btn.classList.remove('btn-primary'); btn.classList.add('btn-ghost'); }
+  });
+  renderLearnCards();
+}
+
+const MISTAKES = {
+  gesture: {
+    open_hand:'Jangan biarkan jari menekuk — semua harus lurus terbuka.',
+    fist:     'Jangan angkat jempol — pastikan semua jari mengepal rapat.',
+    thumbs_up:'Pastikan jempol jauh di atas semua jari, bukan sekadar terangkat sedikit.',
+    ok:       'Jangan buka terlalu lebar — jempol & telunjuk harus benar-benar menyentuh.',
+    peace:    'Jangan angkat jempol — hanya telunjuk & jari tengah.',
+    pointing: 'Pastikan hanya telunjuk tegak, semua jari lain tertutup rapat.',
+  },
+  az: {
+    A:'Jempol harus di SAMPING, bukan di depan jari.',
+    S:'Jempol harus MELINTANG di depan jari, bukan di samping.',
+    E:'Jangan buat lingkaran — tekuk semua jari rapat ke telapak.',
+    O:'Jangan tekuk terlalu rapat — harus membentuk lingkaran penuh.',
+    V:'Jangan rapatkan — buka 2 jari LEBAR membentuk V.',
+    U:'Jangan buka terlalu lebar — 2 jari harus rapat berdampingan.',
+    K:'Jempol harus menyentuh bagian tengah jari tengah.',
+    R:'2 jari harus benar-benar MENYILANG (tumpang tindih).',
+    X:'Jangan tekuk penuh — hanya SETENGAH bengkok (hook).',
+    H:'Arahkan HORIZONTAL ke samping, bukan ke atas.',
+    B:'Jempol harus benar-benar TERSEMBUNYI di telapak.',
+    G:'Arahkan SAMPING seperti pistol, bukan ke atas.',
+  },
+  num: {
+    '0':'Ujung semua jari harus menyentuh jempol membentuk lingkaran.',
+    '4':'Jempol harus benar-benar tertutup/ditekuk.',
+    '3':'Ring finger dan pinky harus tertutup rapat.',
+    '9':'Mirip OK tapi jari tengah, manis, kelingking harus tertutup.',
+  }
+};
+
+function renderLearnCards() {
+  const el = document.getElementById('learnCards'); if (!el) return;
+  let items = [];
+  if (_learnCat === 'gesture') {
+    items = Object.entries(typeof GESTURES!=='undefined'?GESTURES:{}).map(([k,g]) => ({
+      key:k, display:g.emoji, label:g.label, name:g.name,
+      desc:g.desc, sub:g.contoh, color:'var(--primary)',
+      svgCfg: typeof GEST_SVG_CFG!=='undefined'?GEST_SVG_CFG[k]:null,
+      hint:'', mistakes: MISTAKES.gesture[k]||'',
+    }));
+  } else if (_learnCat === 'az') {
+    items = Object.entries(typeof ASL!=='undefined'?ASL:{}).map(([l,info]) => ({
+      key:l, display:null, label:l, name:`Huruf ${l}`,
+      desc:info.desc, sub:'', color:'var(--primary)',
+      svgCfg: typeof ASL_SVG!=='undefined'?ASL_SVG[l]:null,
+      hint:info.hint, mistakes: MISTAKES.az[l]||'',
+    }));
+  } else {
+    items = Object.entries(typeof NUMBERS!=='undefined'?NUMBERS:{}).map(([n,info]) => ({
+      key:n, display:null, label:n, name:`Angka ${n}`,
+      desc:info.desc, sub:'', color:'var(--secondary)',
+      svgCfg: typeof NUM_SVG!=='undefined'?NUM_SVG[n]:null,
+      hint:info.hint, mistakes: MISTAKES.num[n]||'',
+    }));
+  }
+  const mastered = _learnCat==='az' ? GFState.azMastered : _learnCat==='num' ? GFState.numMastered : new Set();
+  el.innerHTML = items.map(item => {
+    const svg = (item.svgCfg && typeof svgHand!=='undefined') ? svgHand(item.svgCfg, item.key, item.color) : '';
+    const ms  = mastered.has(item.key);
+    return `<div class="card card-hover p-5 relative overflow-hidden" onclick="speak('${item.label}. ${item.desc}', true)" style="cursor:pointer">
+      ${ms ? `<div style="position:absolute;top:12px;right:12px"><span class="badge badge-success" style="font-size:11px">✅ Dikuasai</span></div>` : ''}
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        ${svg ? `<div style="width:60px;flex-shrink:0">${svg}</div>` : ''}
+        <div>
+          <div style="font-size:40px;font-weight:900;font-family:'JetBrains Mono',monospace;color:${item.color};line-height:1">${item.display || item.label}</div>
+          <p style="font-size:12px;font-weight:600;color:var(--tx2);margin-top:2px">${item.name}</p>
+        </div>
+      </div>
+      <p style="font-size:13px;line-height:1.5;color:var(--tx2);margin-bottom:10px">${item.desc}</p>
+      ${item.hint ? `<div style="background:var(--primary-light);border-radius:10px;padding:10px;margin-bottom:8px;font-size:12px;color:var(--primary)">
+        <strong>✋ Cara:</strong> ${item.hint}
+      </div>` : ''}
+      ${item.sub ? `<div style="background:var(--secondary-lt);border-radius:10px;padding:10px;margin-bottom:8px;font-size:12px;color:#0f766e">
+        <strong>💬 Contoh kalimat:</strong> "${item.sub}"
+      </div>` : ''}
+      ${item.mistakes ? `<div style="background:var(--danger-lt);border-radius:10px;padding:10px;font-size:12px;color:#b91c1c">
+        <strong>⚠️ Kesalahan umum:</strong> ${item.mistakes}
+      </div>` : ''}
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="event.stopPropagation();speak('${item.label}. ${item.hint||item.desc}', true)">
+        🔊 Dengar Panduan
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ── Dashboard ─────────────────────────────────
+function updateDashboard() {
+  const el = (id) => document.getElementById(id);
+  if (el('dAZ'))   el('dAZ').textContent   = GFState.azMastered.size;
+  if (el('dNum'))  el('dNum').textContent  = GFState.numMastered.size;
+  if (el('dXP'))   el('dXP').textContent   = GFState.xp;
+  if (el('dGame')) el('dGame').textContent = window._bestGameScore || 0;
+  renderAchievements();
+  renderDailyChallenges();
+  renderBreakdownNew();
+  renderAZAccuracy();
+}
+
+function renderBreakdownNew() {
+  const el = document.getElementById('breakdown'); if (!el) return;
+  const stats = typeof mainSt!=='undefined' ? (mainSt.stats||{}) : {};
+  const entries = Object.entries(stats);
+  if (!entries.length) {
+    el.innerHTML = `<p style="text-align:center;padding:16px 0;color:var(--tx3);font-size:14px">Belum ada data. Mulai deteksi gesture dulu.</p>`;
+    return;
+  }
+  const total = entries.reduce((s,[,v])=>s+v,0)||1;
+  el.innerHTML = entries.sort(([,a],[,b])=>b-a).map(([type,count])=>{
+    const g   = typeof GESTURES!=='undefined' ? GESTURES[type] : null;
+    const pct = Math.round((count/total)*100);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:4px 0">
+      <span style="font-size:20px;width:28px;text-align:center">${g?.emoji||'?'}</span>
+      <span style="font-size:13px;font-weight:600;width:96px;color:var(--tx)">${g?.label||type}</span>
+      <div style="flex:1;height:8px;background:var(--surf2);border-radius:99px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:99px"></div>
+      </div>
+      <span style="font-size:12px;font-family:monospace;color:var(--tx3);width:36px;text-align:right">${count}×</span>
+    </div>`;
+  }).join('');
+}
+
+function renderAZAccuracy() {
+  const el = document.getElementById('azAccuracy'); if (!el) return;
+  el.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l => {
+    const corr = GFState.azCorrectMap[l]||0, att = GFState.azAttempts[l]||0;
+    const acc  = att>0 ? Math.round((corr/att)*100) : null;
+    const bg   = acc===null ? 'var(--surf2)' : acc>=80 ? 'var(--success-lt)' : acc>=50 ? 'var(--accent-lt)' : 'var(--danger-lt)';
+    const tc   = acc===null ? 'var(--tx3)' : acc>=80 ? 'var(--success)' : acc>=50 ? 'var(--accent)' : 'var(--danger)';
+    return `<div title="${l}: ${acc!==null?acc+'%':'Belum dicoba'}" style="background:${bg};border:1.5px solid ${tc};border-radius:8px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+      <span style="font-size:11px;font-weight:800;color:${tc};font-family:'JetBrains Mono',monospace">${l}</span>
+      <span style="font-size:9px;color:${tc}">${acc!==null?acc+'%':'–'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Patch azCorrect to add XP + tracking ──────
+function patchCoreFunctions() {
+  // Patch azCorrect
+  if (typeof azCorrect === 'function') {
+    const orig = azCorrect;
+    window.azCorrect = function(letter) {
+      GFState.azMastered.add(letter);
+      GFState.azAttempts[letter]  = (GFState.azAttempts[letter]||0) + 1;
+      GFState.azCorrectMap[letter]= (GFState.azCorrectMap[letter]||0) + 1;
+      GFState.streak++;
+      if (GFState.streak > GFState.bestStreak) GFState.bestStreak = GFState.streak;
+      addXP(10);
+      const xpPop = document.getElementById('azXPPop');
+      if (xpPop) xpPop.textContent = '+10 XP 🎉';
+      orig(letter);
+    };
+  }
+  // Patch numCorrect
+  if (typeof numCorrect === 'function') {
+    const orig = numCorrect;
+    window.numCorrect = function(n) {
+      GFState.numMastered.add(String(n));
+      GFState.streak++;
+      if (GFState.streak > GFState.bestStreak) GFState.bestStreak = GFState.streak;
+      addXP(10);
+      orig(n);
+    };
+  }
+  // Patch gameHit to track best score
+  if (typeof gameHit === 'function') {
+    const orig = gameHit;
+    window.gameHit = function() {
+      addXP(5);
+      orig();
+      const sc = typeof gameSt !== 'undefined' ? (gameSt.score||0) : 0;
+      if (sc > (window._bestGameScore||0)) { window._bestGameScore = sc; }
+      checkAchievements();
+      updateDashboard();
+    };
+  }
+}
+
+// ── Re-render gesture ref cards with new clean style ──
+function reRenderGestRef() {
+  const el = document.getElementById('gestRef'); if (!el) return;
+  if (typeof GESTURES==='undefined' || typeof GEST_SVG_CFG==='undefined' || typeof svgHand==='undefined') return;
+  el.innerHTML = Object.entries(GESTURES).map(([k,g]) => {
+    const cfg = GEST_SVG_CFG[k]||{};
+    const svg = svgHand(cfg, k, 'var(--primary)');
+    return `<div class="card card-hover text-center p-4" onclick="speak('${g.label}. ${g.contoh}', true)" style="cursor:pointer">
+      <div style="max-width:60px;margin:0 auto 8px">${svg}</div>
+      <div style="font-size:22px;margin-bottom:4px">${g.emoji}</div>
+      <p style="font-size:12px;font-weight:700;color:var(--tx)">${g.label}</p>
+      <p style="font-size:11px;color:var(--tx3);margin-top:2px">${g.name}</p>
+    </div>`;
+  }).join('');
+}
+
+function reRenderAZRef() {
+  const el = document.getElementById('azRef'); if (!el) return;
+  if (typeof ASL==='undefined') return;
+  el.innerHTML = Object.entries(ASL).map(([l,info]) =>
+    `<div class="card card-hover cursor-pointer p-2 text-center" onclick="speak('Huruf ${l}. ${info.hint}', true)">
+      <div style="font-size:14px;font-weight:900;color:var(--primary);font-family:'JetBrains Mono',monospace">${l}</div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:2px">${info.hint.split(' ').slice(0,3).join(' ')}</div>
+    </div>`).join('');
+}
+
+function reRenderNumRef() {
+  const el = document.getElementById('numRef'); if (!el) return;
+  if (typeof NUMBERS==='undefined') return;
+  el.innerHTML = Object.entries(NUMBERS).map(([n,info]) =>
+    `<div class="card card-hover cursor-pointer rounded-2xl p-3 text-center" onclick="speak('Angka ${n}. ${info.hint}', true)">
+      <div style="font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--secondary);margin-bottom:4px">${n}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--tx2)">${info.desc.split('.')[0]}</div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:2px">${info.hint}</div>
+    </div>`).join('');
+}
+
+// ── Sound toggle re-style ──────────────────────
+const _origSoundClick = document.getElementById('btnSound')?.onclick;
+document.getElementById('btnSound')?.addEventListener('click', () => {
+  const muted = typeof _sMuted !== 'undefined' ? _sMuted : false;
+  const btn = document.getElementById('btnSound');
+  if (btn) {
+    btn.style.background = muted ? 'var(--danger-lt)' : 'var(--surf2)';
+    btn.style.color      = muted ? 'var(--danger)' : 'var(--tx2)';
+    btn.style.borderColor= muted ? 'var(--danger)' : 'var(--bord)';
+  }
+});
+
+// ── Intercept onMain to update XP UI ──────────
+const _xpInterval = setInterval(() => {
+  if (typeof mainSt !== 'undefined' && (mainSt.totalDet||0) > (GFState._lastDet||0)) {
+    GFState._lastDet = mainSt.totalDet;
+    checkAchievements();
+    updateXPUI();
+  }
+  updateXPUI();
+}, 2000);
+
+// ── Init ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    patchCoreFunctions();
+    reRenderGestRef();
+    reRenderAZRef();
+    reRenderNumRef();
+    updateXPUI();
+    renderAchievements();
+    renderDailyChallenges();
+    updateDashboard();
+    renderLearnCards();
+    // Show T2G hint
+    const emp = document.getElementById('t2gEmpty');
+    if (emp) emp.classList.remove('hidden');
+    console.log('GestureFlow UI v4.0 loaded ✅');
+  }, 500);
+
+  // Tab switch re-renders
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.tab;
+      if (t==='learn')     setTimeout(renderLearnCards, 80);
+      if (t==='dashboard') setTimeout(updateDashboard, 80);
+      if (t==='text2gest') {
+        const emp = document.getElementById('t2gEmpty');
+        if (emp) emp.classList.remove('hidden');
+      }
+    });
+  });
+});
+</script></body></html>
