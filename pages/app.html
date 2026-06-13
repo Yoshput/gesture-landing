@@ -1130,6 +1130,47 @@ canvas { display: block; width: 100%; height: 100%; }
               <p class="text-xs font-bold text-white">GestureFlow Neon</p>
               <p class="text-[9px] text-slate-400 truncate">Exclusive holographic</p>
             </button>
+            <!-- ── NEW FRAMES ── -->
+            <button class="pb-frame-btn col-span-2 rounded-xl p-2.5 text-left transition" data-frame="koran-png">
+              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[11px] font-black" style="background:#F5EDD3; color:#1a1a1a; border:1px solid #8B7355; font-family:serif;">📰 KABAR HARI INI</div>
+              <p class="text-xs font-bold text-white">Gesture Isyarat Koran</p>
+              <p class="text-[9px] text-slate-400 truncate">Edisi koran eksklusif</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="y2k-chrome">
+              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#c0c0c0,#e8e8e8,#a0a0a0); border:1px solid #888;">⚡</div>
+              <p class="text-xs font-bold text-white">Y2K Chrome</p>
+              <p class="text-[9px] text-slate-400 truncate">Metalik tribal 2000s</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="kpop-card">
+              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#e6e6fa,#f0e6ff); border:1px solid #c4b5fd;">🌸</div>
+              <p class="text-xs font-bold text-white">K-Pop Photocard</p>
+              <p class="text-[9px] text-slate-400 truncate">Idol concept teaser</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="vaporwave-dream">
+              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#0a0020,#6e1f7f,#e0607e);">🌅</div>
+              <p class="text-xs font-bold text-white">Vaporwave Dream</p>
+              <p class="text-[9px] text-slate-400 truncate">Retrowave synthwave</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="kawaii-shojo">
+              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#ffd6e7,#ffb3c6); border:1px solid #ffb3c6;">🌷</div>
+              <p class="text-xs font-bold text-white">Kawaii Shojo</p>
+              <p class="text-[9px] text-slate-400 truncate">Soft pink anime vibes</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="gothic-horror">
+              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:#0d0d0d; color:#8b0000; border:1px solid #8b0000;">🕸️</div>
+              <p class="text-xs font-bold text-white">Gothic Horror</p>
+              <p class="text-[9px] text-slate-400 truncate">Dark spooky Junji Ito</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="festival-sunset">
+              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#ff8c00,#e91e63); border:none;">🌴</div>
+              <p class="text-xs font-bold text-white">Coachella Sunset</p>
+              <p class="text-[9px] text-slate-400 truncate">Festival vibes</p>
+            </button>
+            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="sign-pride">
+              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#aec6cf,#e0f0ff); border:1px solid #aec6cf;">🤟</div>
+              <p class="text-xs font-bold text-white">Sign Language Pride</p>
+              <p class="text-[9px] text-slate-400 truncate">Inklusif & estetik</p>
+            </button>
           </div>
         </div>
 
@@ -4496,7 +4537,82 @@ function compileFinalImage() {
   ctx.shadowColor = 'transparent';
   ctx.filter = 'none';
   
-  if (template === 'newspaper') {
+  if (template === 'koran-png') {
+    // ── KORAN PNG OVERLAY — foto di tengah, frame PNG di atas ──
+    const koranPath = '../public/assets/img/photobooth/Gesture Isyarat Koran.png';
+    const loadKoran = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = koranPath;
+    });
+    if (mode === 'single') {
+      canvas.width  = 600;
+      canvas.height = 900;
+      // White background
+      ctx.fillStyle = '#F5EDD3'; ctx.fillRect(0,0,600,900);
+      // Draw user photo in the transparent center hole area
+      // (Koran PNG: hole is approx y=270 to y=600, full width)
+      const photo = pbSt.photos[0];
+      ctx.save();
+      ctx.beginPath(); ctx.rect(30, 265, 540, 330); ctx.clip();
+      drawImageProp(ctx, photo, 30, 265, 540, 330);
+      ctx.restore();
+      // Overlay the Koran PNG frame on top
+      loadKoran.then(koranImg => {
+        if (koranImg) ctx.drawImage(koranImg, 0, 0, 600, 900);
+        // Watermark
+        ctx.fillStyle='rgba(100,80,50,0.6)';
+        ctx.font='bold 9px "Times New Roman", serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('GestureFlow • Edisi Dokumentasi', 300, 885);
+        // Re-save to history after PNG overlay
+        saveToPhotoHistory(canvas);
+      });
+    } else {
+      // Strip: 4 photo slots stacked — buat layout custom koran strip
+      canvas.width  = 600;
+      canvas.height = 1600;
+      ctx.fillStyle = '#F5EDD3'; ctx.fillRect(0,0,600,1600);
+      const slotH = 330, slotY0 = 80, slotGap = 80;
+      for (let i=0; i<4; i++) {
+        const photo = pbSt.photos[i];
+        const sy = slotY0 + i*(slotH+slotGap);
+        ctx.save(); ctx.beginPath(); ctx.rect(30,sy,540,slotH); ctx.clip();
+        drawImageProp(ctx,photo,30,sy,540,slotH); ctx.restore();
+        // Thin koran-style divider
+        if(i<3){ctx.strokeStyle='#8B7355';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(30,sy+slotH+slotGap/2);ctx.lineTo(570,sy+slotH+slotGap/2);ctx.stroke();}
+      }
+      // Koran header text
+      ctx.fillStyle='#1a1a1a';
+      ctx.font='bold 28px "Times New Roman",serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('GESTURE ISYARAT', 300, 40);
+      ctx.font='11px "Times New Roman",serif';
+      ctx.fillText('KABAR HARI INI  •  EDISI DOKUMENTASI  •  FOTO KEBERSAMAAN', 300, 60);
+      ctx.fillStyle='rgba(100,80,50,0.6)'; ctx.font='bold 9px serif';
+      ctx.fillText('GestureFlow • Bahasa Isyarat Menyatukan 🤟', 300, 1590);
+      drawFrameDecorations(ctx,'koran-png','strip',[]);
+    }
+    // Show preview modal
+    const pbPreviewModal = document.getElementById('pbPreviewModal');
+    const pbModalCard   = document.getElementById('pbModalCard');
+    const pbPhotoWrapper = document.getElementById('pbPhotoWrapper');
+    const actionPanel   = document.getElementById('pbActionPanel');
+    buildPhotoCarousel();
+    if (canvas) saveToPhotoHistory(canvas);
+    if (pbPreviewModal) {
+      pbPreviewModal.classList.remove('hidden');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (pbModalCard) { pbModalCard.style.opacity='1'; pbModalCard.style.transform='translateY(0) scale(1)'; }
+        if (pbPhotoWrapper) { pbPhotoWrapper.style.opacity='1'; pbPhotoWrapper.style.transform='translateY(0)'; }
+        if (actionPanel) { actionPanel.style.opacity='1'; actionPanel.style.transform='translateY(0)'; }
+      }));
+      playBeep(1200,80); setTimeout(()=>playBeep(880,120),100);
+      setTimeout(()=>launchConfetti(),200);
+    }
+    return; // skip default modal logic below
+  }
+  else if (template === 'newspaper') {
     // Newspaper Layout (kept for backward compatibility or extra templates)
     if (mode === 'single') {
       canvas.width = 800;
@@ -4858,12 +4974,163 @@ function drawFrameBackground(ctx, template, w, h) {
     ctx.strokeRect(2, 2, w - 4, h - 4);
   }
   else if (template === 'cyber') {
-    // Keep cyber for compatibility
     ctx.fillStyle = '#0B0B1E';
     ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = '#F43F5E';
     ctx.lineWidth = 4;
     ctx.strokeRect(2, 2, w - 4, h - 4);
+  }
+  else if (template === 'y2k-chrome') {
+    // Silver metallic gradient background
+    const mg = ctx.createLinearGradient(0, 0, w, h);
+    mg.addColorStop(0, '#d8d8d8'); mg.addColorStop(0.3, '#f5f5f5');
+    mg.addColorStop(0.6, '#c0c0c0'); mg.addColorStop(1, '#a8a8a8');
+    ctx.fillStyle = mg; ctx.fillRect(0, 0, w, h);
+    // Tribal chrome corners
+    const tc = ctx.createLinearGradient(0,0,w,h);
+    tc.addColorStop(0,'rgba(255,255,255,0.6)'); tc.addColorStop(1,'rgba(80,80,80,0.3)');
+    ctx.strokeStyle = tc; ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, w-6, h-6);
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, w-20, h-20);
+    // Glitter dots
+    for (let i = 0; i < 60; i++) {
+      const gx = (i * 137) % w, gy = (i * 89) % h;
+      ctx.fillStyle = `rgba(255,255,255,${0.3 + (i%3)*0.15})`;
+      ctx.beginPath(); ctx.arc(gx, gy, 1 + (i%2), 0, Math.PI*2); ctx.fill();
+    }
+  }
+  else if (template === 'kpop-card') {
+    // Soft lavender-white minimal K-Pop
+    const kg = ctx.createLinearGradient(0, 0, 0, h);
+    kg.addColorStop(0, '#f8f4ff'); kg.addColorStop(0.5, '#ffffff'); kg.addColorStop(1, '#f0e8ff');
+    ctx.fillStyle = kg; ctx.fillRect(0, 0, w, h);
+    // Soft pastel top bar
+    const topBar = ctx.createLinearGradient(0,0,w,0);
+    topBar.addColorStop(0,'#c4b5fd'); topBar.addColorStop(0.5,'#e9d5ff'); topBar.addColorStop(1,'#c4b5fd');
+    ctx.fillStyle = topBar; ctx.fillRect(0, 0, w, 28);
+    // Inner border
+    ctx.strokeStyle = '#c4b5fd'; ctx.lineWidth = 2;
+    ctx.strokeRect(8, 8, w-16, h-16);
+    ctx.strokeStyle = 'rgba(196,181,253,0.4)'; ctx.lineWidth = 1;
+    ctx.strokeRect(13, 13, w-26, h-26);
+    // Scattered sakura petals (dots)
+    const petalColors = ['#ffc0cb','#ffb3c6','#e9b4fd','#c4b5fd','#ffd6e7'];
+    for (let i = 0; i < 40; i++) {
+      const px=(i*173)%w, py=(i*131)%h;
+      ctx.fillStyle = petalColors[i%5] + '55';
+      ctx.beginPath(); ctx.ellipse(px,py,5,3,(i*0.5),0,Math.PI*2); ctx.fill();
+    }
+  }
+  else if (template === 'vaporwave-dream') {
+    // Synthwave retrowave sunset
+    const vg = ctx.createLinearGradient(0,0,0,h*0.65);
+    vg.addColorStop(0,'#0a0020'); vg.addColorStop(0.5,'#6e1f7f'); vg.addColorStop(1,'#e0607e');
+    ctx.fillStyle = vg; ctx.fillRect(0,0,w,h*0.65);
+    // Sun
+    const sx=w/2, sy=h*0.28;
+    const sg = ctx.createRadialGradient(sx,sy,0,sx,sy,h*0.12);
+    sg.addColorStop(0,'#ffe066'); sg.addColorStop(0.5,'#ff6ec7'); sg.addColorStop(1,'transparent');
+    ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(sx,sy,h*0.12,0,Math.PI*2); ctx.fill();
+    // Stripes on sun
+    ctx.fillStyle='#0a0020';
+    for(let i=0;i<5;i++){ctx.fillRect(sx-h*0.12,sy+i*h*0.022,h*0.24,h*0.01);}
+    // Grid floor
+    const fg=ctx.createLinearGradient(0,h*0.65,0,h);
+    fg.addColorStop(0,'#b040b0'); fg.addColorStop(1,'#200040');
+    ctx.fillStyle=fg; ctx.fillRect(0,h*0.65,w,h*0.35);
+    ctx.strokeStyle='rgba(255,110,199,0.5)'; ctx.lineWidth=1;
+    const vp={x:w/2,y:h*0.65};
+    for(let i=-8;i<=8;i++){ctx.beginPath();ctx.moveTo(vp.x,vp.y);ctx.lineTo(vp.x+i*(w/6),h);ctx.stroke();}
+    for(let i=0;i<7;i++){const yy=h*0.65+i*(h*0.35/6);ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(w,yy);ctx.stroke();}
+    // Neon frame border
+    ctx.strokeStyle='#ff6ec7'; ctx.lineWidth=3; ctx.strokeRect(2,2,w-4,h-4);
+    ctx.strokeStyle='#bd00ff'; ctx.lineWidth=1; ctx.strokeRect(6,6,w-12,h-12);
+  }
+  else if (template === 'kawaii-shojo') {
+    // Soft pink pastel with floral accents
+    const pg = ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)*0.7);
+    pg.addColorStop(0,'#ffffff'); pg.addColorStop(0.6,'#ffd6e7'); pg.addColorStop(1,'#ffb3c6');
+    ctx.fillStyle=pg; ctx.fillRect(0,0,w,h);
+    // Scattered hearts
+    const drawHeart=(hx,hy,hs,ha)=>{
+      ctx.save(); ctx.globalAlpha=ha; ctx.fillStyle='#ff6b9d';
+      ctx.font=`${hs}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('♥',hx,hy); ctx.restore();
+    };
+    for(let i=0;i<20;i++){drawHeart((i*137+30)%w,(i*89+20)%h,8+i%8,0.1+i%3*0.08);}
+    // Lace border
+    ctx.strokeStyle='#ff6b9d'; ctx.lineWidth=3; ctx.strokeRect(2,2,w-4,h-4);
+    ctx.strokeStyle='rgba(255,107,157,0.4)'; ctx.lineWidth=1.5; ctx.strokeRect(8,8,w-16,h-16);
+    // Dot pattern border
+    ctx.fillStyle='rgba(255,107,157,0.5)';
+    for(let i=0;i<w;i+=14){ctx.beginPath();ctx.arc(i,5,2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(i,h-5,2,0,Math.PI*2);ctx.fill();}
+    for(let i=0;i<h;i+=14){ctx.beginPath();ctx.arc(5,i,2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(w-5,i,2,0,Math.PI*2);ctx.fill();}
+  }
+  else if (template === 'gothic-horror') {
+    // Dark gothic with spiderweb corners
+    ctx.fillStyle='#0d0d0d'; ctx.fillRect(0,0,w,h);
+    // Dark red vignette
+    const dv=ctx.createRadialGradient(w/2,h/2,h*0.3,w/2,h/2,Math.max(w,h)*0.7);
+    dv.addColorStop(0,'transparent'); dv.addColorStop(1,'rgba(90,0,0,0.55)');
+    ctx.fillStyle=dv; ctx.fillRect(0,0,w,h);
+    // Spiderweb corners
+    const drawWeb=(cx,cy,flip)=>{
+      ctx.save(); ctx.strokeStyle='rgba(160,0,0,0.4)'; ctx.lineWidth=0.8;
+      for(let r=0;r<5;r++){const rr=(r+1)*18;
+        ctx.beginPath(); ctx.arc(cx,cy,rr,flip?0:Math.PI/2,flip?Math.PI/2:0,!flip); ctx.stroke();
+      }
+      for(let a=0;a<5;a++){const ang=a*(Math.PI/2/4)+(flip?0:Math.PI/2);
+        ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(ang)*(flip?1:-1)*80,cy+Math.sin(ang)*80);ctx.stroke();
+      }
+      ctx.restore();
+    };
+    drawWeb(0,0,true); drawWeb(w,0,false); drawWeb(0,h,false); drawWeb(w,h,true);
+    // Red glow border
+    ctx.shadowColor='#8b0000'; ctx.shadowBlur=15;
+    ctx.strokeStyle='#8b0000'; ctx.lineWidth=3; ctx.strokeRect(2,2,w-4,h-4);
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(139,0,0,0.3)'; ctx.lineWidth=1; ctx.strokeRect(8,8,w-16,h-16);
+  }
+  else if (template === 'festival-sunset') {
+    // Coachella desert sunset
+    const fs=ctx.createLinearGradient(0,0,0,h*0.6);
+    fs.addColorStop(0,'#1a0533'); fs.addColorStop(0.3,'#6b1b5e'); fs.addColorStop(0.6,'#e84393'); fs.addColorStop(1,'#ff8c00');
+    ctx.fillStyle=fs; ctx.fillRect(0,0,w,h*0.6);
+    // Palm silhouettes
+    ctx.fillStyle='rgba(10,5,20,0.85)';
+    const drawPalm=(px,ph)=>{
+      ctx.fillRect(px-4,ph*0.35,8,h*0.25);
+      ctx.beginPath(); ctx.arc(px,ph*0.35,28,Math.PI,0); ctx.fill();
+      for(let a=-60;a<=60;a+=30){
+        const ar=a*Math.PI/180;
+        ctx.beginPath(); ctx.moveTo(px,ph*0.35);
+        ctx.quadraticCurveTo(px+Math.sin(ar)*50,ph*0.35-35,px+Math.sin(ar)*80,ph*0.35-20+Math.cos(ar)*10);
+        ctx.lineWidth=3; ctx.strokeStyle='rgba(10,5,20,0.85)'; ctx.stroke();
+      }
+    };
+    drawPalm(35,h); drawPalm(w-35,h);
+    // Sand ground
+    const sg2=ctx.createLinearGradient(0,h*0.6,0,h);
+    sg2.addColorStop(0,'#d4a86a'); sg2.addColorStop(1,'#b8955a');
+    ctx.fillStyle=sg2; ctx.fillRect(0,h*0.6,w,h*0.4);
+    // Orange glow border
+    ctx.strokeStyle='#ff8c00'; ctx.lineWidth=3; ctx.strokeRect(2,2,w-4,h-4);
+    ctx.strokeStyle='rgba(232,67,147,0.4)'; ctx.lineWidth=1; ctx.strokeRect(8,8,w-16,h-16);
+  }
+  else if (template === 'sign-pride') {
+    // Sign Language Pride — clean pastel blue-white
+    const spg=ctx.createLinearGradient(0,0,w,h);
+    spg.addColorStop(0,'#e8f4fd'); spg.addColorStop(0.5,'#ffffff'); spg.addColorStop(1,'#dbeafe');
+    ctx.fillStyle=spg; ctx.fillRect(0,0,w,h);
+    // ASL hand icons border decoration (text emoji)
+    const hands=['🤟','✋','✌️','👋','🤙','👏'];
+    ctx.font='18px serif'; ctx.textBaseline='middle'; ctx.textAlign='center';
+    for(let i=0;i<Math.ceil(w/32);i++){ctx.fillText(hands[i%hands.length],16+i*32,14);ctx.fillText(hands[(i+3)%hands.length],16+i*32,h-14);}
+    for(let i=0;i<Math.ceil(h/32);i++){ctx.fillText(hands[(i+2)%hands.length],14,30+i*32);ctx.fillText(hands[(i+1)%hands.length],w-14,30+i*32);}
+    // Blue border
+    ctx.strokeStyle='#aec6cf'; ctx.lineWidth=3; ctx.strokeRect(2,2,w-4,h-4);
+    ctx.strokeStyle='rgba(174,198,207,0.5)'; ctx.lineWidth=1; ctx.strokeRect(26,26,w-52,h-52);
   }
 }
 
@@ -4877,17 +5144,35 @@ function drawFrameDecorations(ctx, template, mode, coords) {
   let phrase = "GestureFlow • Stay Connected! 🤟✨";
   
   if (template === 'arcade') {
-    fontColor = '#FFFF00';
-    fontColorSec = '#EC4899';
+    fontColor = '#FFFF00'; fontColorSec = '#EC4899';
     phrase = "LET'S PLAY! GAMER READY 👾🕹️";
   } else if (template === 'grunge') {
-    fontColor = '#B91C1C';
-    fontColorSec = '#7C2D12';
+    fontColor = '#B91C1C'; fontColorSec = '#7C2D12';
     phrase = "SAKUBOX SPECIAL EDITION 💋";
   } else if (template === 'cyber') {
-    fontColor = '#22D3EE';
-    fontColorSec = '#F43F5E';
+    fontColor = '#22D3EE'; fontColorSec = '#F43F5E';
     phrase = "Spill isyarat cintamu! 💫🛸";
+  } else if (template === 'y2k-chrome') {
+    fontColor = '#444'; fontColorSec = '#888';
+    phrase = "Y2K ERA ⚡ STAY CHROME 🔗";
+  } else if (template === 'kpop-card') {
+    fontColor = '#7c3aed'; fontColorSec = '#a78bfa';
+    phrase = "GestureFlow ✦ No.1 Winner 🏆";
+  } else if (template === 'vaporwave-dream') {
+    fontColor = '#ff6ec7'; fontColorSec = '#bd00ff';
+    phrase = "DREAM WAVE ▶ esthétique 🌸";
+  } else if (template === 'kawaii-shojo') {
+    fontColor = '#ff6b9d'; fontColorSec = '#ff8fa3';
+    phrase = "kawaii & blessed ♥ 🌸✨";
+  } else if (template === 'gothic-horror') {
+    fontColor = '#8b0000'; fontColorSec = '#5a0000';
+    phrase = "in the dark, we sign 🕸️🖤";
+  } else if (template === 'festival-sunset') {
+    fontColor = '#ff8c00'; fontColorSec = '#e84393';
+    phrase = "GOOD VIBES ONLY 🌴🎶";
+  } else if (template === 'sign-pride') {
+    fontColor = '#1d4ed8'; fontColorSec = '#3b82f6';
+    phrase = "BAHASA ISYARAT MENYATUKAN 🤟💙";
   }
 
   if (template === 'newspaper') {
