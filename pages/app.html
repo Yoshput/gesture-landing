@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" crossorigin="anonymous"></script>
 <style>
 /* ══════════════════════════════════════════════
    DESIGN SYSTEM — Educational / Clean / Modern
@@ -973,6 +974,8 @@ canvas { display: block; width: 100%; height: 100%; }
     .pb-frame-btn {
       border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
       background: rgba(255, 255, 255, 0.03) !important;
+      color: #cbd5e1 !important;
+      cursor: pointer !important;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .pb-frame-btn:hover {
@@ -990,6 +993,7 @@ canvas { display: block; width: 100%; height: 100%; }
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
       background: rgba(255, 255, 255, 0.03) !important;
       color: #94a3b8 !important;
+      cursor: pointer !important;
       transition: all 0.2s ease !important;
     }
     .pb-filter-btn:hover {
@@ -1007,6 +1011,7 @@ canvas { display: block; width: 100%; height: 100%; }
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
       background: rgba(255, 255, 255, 0.03) !important;
       color: #94a3b8 !important;
+      cursor: pointer !important;
       transition: all 0.2s ease !important;
     }
     .pb-bg-btn:hover {
@@ -1019,6 +1024,33 @@ canvas { display: block; width: 100%; height: 100%; }
       color: #e2b4ff !important;
       box-shadow: 0 0 8px rgba(189, 0, 255, 0.3) !important;
     }
+    /* Layout buttons */
+    .pb-layout-btn {
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      background: rgba(255, 255, 255, 0.03) !important;
+      color: #94a3b8 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+    .pb-layout-btn:hover {
+      background: rgba(20, 184, 166, 0.1) !important;
+      color: #99f6e4 !important;
+    }
+    .pb-layout-btn.active {
+      border-color: #14b8a6 !important;
+      background: rgba(20, 184, 166, 0.15) !important;
+      color: #99f6e4 !important;
+      box-shadow: 0 0 8px rgba(20, 184, 166, 0.25) !important;
+    }
+    /* Accordion */
+    .pb-accordion summary { list-style: none; }
+    .pb-accordion summary::-webkit-details-marker { display: none; }
+    .pb-accordion[open] summary span:last-child { transform: rotate(180deg); }
+    .pb-accordion summary span:last-child { transition: transform 0.2s ease; display: inline-block; }
+    /* Sidebar scrollbar */
+    .pb-sidebar::-webkit-scrollbar { width: 3px; }
+    .pb-sidebar::-webkit-scrollbar-thumb { background: rgba(189,0,255,0.35); border-radius: 99px; }
+    .pb-sidebar::-webkit-scrollbar-track { background: transparent; }
     @keyframes pb-flash {
       0% { opacity: 0; }
       15% { opacity: 0.95; }
@@ -1087,145 +1119,176 @@ canvas { display: block; width: 100%; height: 100%; }
     </div>
 
     <!-- Control Panel (Right Column - Span 1) -->
-    <div class="card p-6 flex flex-col justify-between" style="background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(20px); border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 24px; box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45); color: #FFFFFF;">
-      <div class="space-y-6">
-        <div>
-          <h2 class="font-bold text-xl text-white flex items-center gap-2" style="font-family: 'Outfit', sans-serif; letter-spacing: -0.5px;">
-            <span style="filter: drop-shadow(0 0 8px #bd00ff)">🎨</span> Editor & Bingkai
-          </h2>
-          <p class="text-xs text-slate-400 mt-1">Sesuaikan filter dan template photostrip kamu</p>
-        </div>
-
-        <!-- Frame Template Selector -->
-        <div class="space-y-3">
-          <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center justify-between">
-            1. Pilih Bingkai (Template)
-            <span class="normal-case font-normal text-slate-500 flex items-center gap-1" title="Lambaikan tangan terbuka ke kiri/kanan saat kamera aktif untuk ganti frame">
-              <span style="font-size:10px;">✋ Swipe ganti frame</span>
-            </span>
-          </label>
-          <div class="grid grid-cols-2 gap-2.5" id="pbFrameSelect">
-            <button class="pb-frame-btn active rounded-xl p-2.5 text-left transition" data-frame="white">
-              <div class="w-full h-8 bg-white border border-slate-300 rounded mb-1.5 shadow-inner"></div>
-              <p class="text-xs font-bold text-white">Classic Polaroid</p>
-              <p class="text-[9px] text-slate-400 truncate">Vibe bersih & polaroid</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="retro-polaroid">
-              <div class="w-full h-8 border border-amber-900/50 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background-color:#FCF9F2; color:#D2143A;">🎞️</div>
-              <p class="text-xs font-bold text-white">Polaroid 1970</p>
-              <p class="text-[9px] text-slate-400 truncate">Warm analog vibes</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="arcade-neon">
-              <div class="w-full h-8 bg-[#06011A] border border-pink-500/50 rounded mb-1.5 flex items-center justify-center text-[10px] text-yellow-400">👾</div>
-              <p class="text-xs font-bold text-white">BAMBEAR Gamers</p>
-              <p class="text-[9px] text-slate-400 truncate">Retro neon arcade</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="manga-speed">
-              <div class="w-full h-8 bg-white border border-black rounded mb-1.5 flex items-center justify-center text-[10px] text-black font-extrabold">💥</div>
-              <p class="text-xs font-bold text-white">Manga Speedlines</p>
-              <p class="text-[9px] text-slate-400 truncate">Action panel mode</p>
-            </button>
-            <button class="pb-frame-btn col-span-2 rounded-xl p-2.5 text-left transition" data-frame="flow-neon">
-              <div class="w-full h-8 rounded mb-1.5" style="background: linear-gradient(135deg, #bd00ff 0%, #00f0ff 100%); opacity: 0.85;"></div>
-              <p class="text-xs font-bold text-white">GestureFlow Neon</p>
-              <p class="text-[9px] text-slate-400 truncate">Exclusive holographic</p>
-            </button>
-            <!-- ── NEW FRAMES ── -->
-            <button class="pb-frame-btn col-span-2 rounded-xl p-2.5 text-left transition" data-frame="koran-png">
-              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[11px] font-black" style="background:#F5EDD3; color:#1a1a1a; border:1px solid #8B7355; font-family:serif;">📰 KABAR HARI INI</div>
-              <p class="text-xs font-bold text-white">Gesture Isyarat Koran</p>
-              <p class="text-[9px] text-slate-400 truncate">Edisi koran eksklusif</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="y2k-chrome">
-              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#c0c0c0,#e8e8e8,#a0a0a0); border:1px solid #888;">⚡</div>
-              <p class="text-xs font-bold text-white">Y2K Chrome</p>
-              <p class="text-[9px] text-slate-400 truncate">Metalik tribal 2000s</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="kpop-card">
-              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#e6e6fa,#f0e6ff); border:1px solid #c4b5fd;">🌸</div>
-              <p class="text-xs font-bold text-white">K-Pop Photocard</p>
-              <p class="text-[9px] text-slate-400 truncate">Idol concept teaser</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="vaporwave-dream">
-              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#0a0020,#6e1f7f,#e0607e);">🌅</div>
-              <p class="text-xs font-bold text-white">Vaporwave Dream</p>
-              <p class="text-[9px] text-slate-400 truncate">Retrowave synthwave</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="kawaii-shojo">
-              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#ffd6e7,#ffb3c6); border:1px solid #ffb3c6;">🌷</div>
-              <p class="text-xs font-bold text-white">Kawaii Shojo</p>
-              <p class="text-[9px] text-slate-400 truncate">Soft pink anime vibes</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="gothic-horror">
-              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:#0d0d0d; color:#8b0000; border:1px solid #8b0000;">🕸️</div>
-              <p class="text-xs font-bold text-white">Gothic Horror</p>
-              <p class="text-[9px] text-slate-400 truncate">Dark spooky Junji Ito</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="festival-sunset">
-              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#ff8c00,#e91e63); border:none;">🌴</div>
-              <p class="text-xs font-bold text-white">Coachella Sunset</p>
-              <p class="text-[9px] text-slate-400 truncate">Festival vibes</p>
-            </button>
-            <button class="pb-frame-btn rounded-xl p-2.5 text-left transition" data-frame="sign-pride">
-              <div class="w-full h-8 rounded mb-1.5 flex items-center justify-center text-[10px]" style="background:linear-gradient(135deg,#aec6cf,#e0f0ff); border:1px solid #aec6cf;">🤟</div>
-              <p class="text-xs font-bold text-white">Sign Language Pride</p>
-              <p class="text-[9px] text-slate-400 truncate">Inklusif & estetik</p>
-            </button>
-          </div>
-        </div>
-
-        <!-- Filter Selector -->
-        <div class="space-y-3">
-          <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">2. Pilih Filter Kamera</label>
-          <div class="grid grid-cols-4 gap-1.5" id="pbFilterSelect">
-            <button class="pb-filter-btn active text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="normal">Normal</button>
-            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="bright">☀️ Cerah</button>
-            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="dark">🌙 Gelap</button>
-            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="grayscale">🎬 B&W</button>
-            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="cyan">🌐 Cyan</button>
-            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="amber">🍂 Amber</button>
-            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="vaporwave">🌸 Vibe</button>
-            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="lofi">☕ Lofi</button>
-          </div>
-        </div>
+    <div class="pb-sidebar card p-4 flex flex-col gap-3" style="background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(20px); border: 1.5px solid rgba(255, 255, 255, 0.08); border-radius: 24px; box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45); color: #FFFFFF; position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(189,0,255,0.3) transparent;">
+      <!-- Header -->
+      <div>
+        <h2 class="font-bold text-base text-white flex items-center gap-2" style="font-family: 'Outfit', sans-serif; letter-spacing: -0.5px;">
+          <span style="filter: drop-shadow(0 0 8px #bd00ff)">🎨</span> Editor & Bingkai
+        </h2>
+        <p class="text-[10px] text-slate-500 mt-0.5">Pilih bingkai, filter, layout & background</p>
       </div>
 
-      <!-- Background AI Swap -->
-      <div class="space-y-2 mt-3" id="pbBgSwapSection">
-        <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-          🤖 AI Background Swap
-          <span id="pbBgAiStatus" class="text-[9px] font-normal text-slate-500 normal-case">(Matikan kamera dulu untuk ganti)</span>
+      <!-- 1. Frame Template Selector (compact chips) -->
+      <div class="space-y-1.5">
+        <label class="text-[9px] font-bold text-slate-400 tracking-wider uppercase flex items-center justify-between">
+          1. Bingkai
+          <span class="text-slate-600 normal-case font-normal text-[9px]">✋ Swipe ganti</span>
         </label>
-        <div class="grid grid-cols-4 gap-1.5" id="pbBgSelect">
-          <button class="pb-bg-btn active text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="none" title="Background asli kamera" style="font-size:9px;">🎥 Off</button>
-          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="studio" title="Studio Korea minimal putih" style="font-size:9px;">🤍 Studio</button>
-          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="cyberpunk" title="Cyberpunk Neon City" style="font-size:9px;">🌆 Cyber</button>
-          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="vaporwave" title="Vaporwave Dream" style="font-size:9px;">🌸 Vibe</button>
-          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="forest" title="Aesthetic Forest" style="font-size:9px;">🌿 Forest</button>
-          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="space" title="Outer Space" style="font-size:9px;">🌌 Space</button>
-          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="cafe" title="Lofi Cafe" style="font-size:9px;">☕ Cafe</button>
-          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="beach" title="Tropical Beach Sunset" style="font-size:9px;">🏖️ Beach</button>
+        <div class="grid grid-cols-3 gap-1" id="pbFrameSelect">
+          <button class="pb-frame-btn active rounded-lg px-1 py-1.5 text-center transition" data-frame="white" style="font-size:9px;">🃏 Classic</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="retro-polaroid" style="font-size:9px;">🎞️ Retro</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="arcade-neon" style="font-size:9px;">👾 Arcade</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="manga-speed" style="font-size:9px;">💥 Manga</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="flow-neon" style="font-size:9px;">✨ Neon</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="koran-png" style="font-size:9px;">📰 Koran</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="y2k-chrome" style="font-size:9px;">⚡ Y2K</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="kpop-card" style="font-size:9px;">🌸 K-Pop</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="vaporwave-dream" style="font-size:9px;">🌅 Vapor</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="kawaii-shojo" style="font-size:9px;">🌷 Kawaii</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="gothic-horror" style="font-size:9px;">🕸️ Gothic</button>
+          <button class="pb-frame-btn rounded-lg px-1 py-1.5 text-center transition" data-frame="festival-sunset" style="font-size:9px;">🌴 Fest</button>
+          <button class="pb-frame-btn col-span-3 rounded-lg px-1 py-1.5 text-center transition" data-frame="sign-pride" style="font-size:9px;">🤟 Sign Language Pride</button>
         </div>
       </div>
+
+      <!-- 2. Filter Selector -->
+      <div class="space-y-1.5">
+        <label class="text-[9px] font-bold text-slate-400 tracking-wider uppercase">2. Filter Kamera</label>
+        <div class="grid grid-cols-4 gap-1" id="pbFilterSelect">
+          <button class="pb-filter-btn active text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-filter="normal">Normal</button>
+          <button class="pb-filter-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-filter="bright">☀️ Cerah</button>
+          <button class="pb-filter-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-filter="dark">🌙 Gelap</button>
+          <button class="pb-filter-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-filter="grayscale">🎬 B&W</button>
+          <button class="pb-filter-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-filter="cyan">🌐 Cyan</button>
+          <button class="pb-filter-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-filter="amber">🍂 Amber</button>
+          <button class="pb-filter-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-filter="vaporwave">🌸 Vibe</button>
+          <button class="pb-filter-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-filter="lofi">☕ Lofi</button>
+        </div>
+      </div>
+
+      <!-- 3. Background AI Swap (accordion) -->
+      <details class="pb-accordion" open>
+        <summary class="text-[9px] font-bold text-slate-400 tracking-wider uppercase cursor-pointer flex items-center justify-between select-none pb-1.5 border-b border-slate-800">
+          <span>🤖 AI Background</span><span class="text-slate-600 text-[10px]">▾</span>
+        </summary>
+        <div class="grid grid-cols-4 gap-1 mt-2" id="pbBgSelect">
+          <button class="pb-bg-btn active text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-bg="none">🎥 Off</button>
+          <button class="pb-bg-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-bg="studio">🤍 Studio</button>
+          <button class="pb-bg-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-bg="cyberpunk">🌆 Cyber</button>
+          <button class="pb-bg-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-bg="vaporwave">🌸 Vibe</button>
+          <button class="pb-bg-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-bg="forest">🌿 Forest</button>
+          <button class="pb-bg-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-bg="space">🌌 Space</button>
+          <button class="pb-bg-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-bg="cafe">☕ Cafe</button>
+          <button class="pb-bg-btn text-[9px] font-semibold py-1.5 px-1 rounded-lg border text-center transition" data-bg="beach">🏖️ Beach</button>
+        </div>
+      </details>
+
+      <!-- 4. Layout Foto (accordion) -->
+      <details class="pb-accordion" open>
+        <summary class="text-[9px] font-bold text-slate-400 tracking-wider uppercase cursor-pointer flex items-center justify-between select-none pb-1.5 border-b border-slate-800">
+          <span>🖼️ Layout Foto</span><span class="text-slate-600 text-[10px]">▾</span>
+        </summary>
+        <div class="grid grid-cols-3 gap-1 mt-2" id="pbLayoutSelect">
+          <button class="pb-layout-btn active text-center rounded-lg py-1.5 px-1 border transition" data-layout="single" data-shots="1" style="font-size:9px;">
+            <div class="text-sm">🃏</div><div class="font-bold text-[9px]">Kartu</div><div class="text-[8px] opacity-60">1 foto</div>
+          </button>
+          <button class="pb-layout-btn text-center rounded-lg py-1.5 px-1 border transition" data-layout="strip" data-shots="4" style="font-size:9px;">
+            <div class="text-sm">🎞️</div><div class="font-bold text-[9px]">Strip</div><div class="text-[8px] opacity-60">4 foto</div>
+          </button>
+          <button class="pb-layout-btn text-center rounded-lg py-1.5 px-1 border transition" data-layout="grid2x2" data-shots="4" style="font-size:9px;">
+            <div class="text-sm">⊞</div><div class="font-bold text-[9px]">Grid 2×2</div><div class="text-[8px] opacity-60">4 foto</div>
+          </button>
+          <button class="pb-layout-btn text-center rounded-lg py-1.5 px-1 border transition" data-layout="duo-polaroid" data-shots="2" style="font-size:9px;">
+            <div class="text-sm">🎭</div><div class="font-bold text-[9px]">Duo</div><div class="text-[8px] opacity-60">2 foto</div>
+          </button>
+          <button class="pb-layout-btn text-center rounded-lg py-1.5 px-1 border transition" data-layout="film-roll" data-shots="4" style="font-size:9px;">
+            <div class="text-sm">🎬</div><div class="font-bold text-[9px]">Film Roll</div><div class="text-[8px] opacity-60">4 foto</div>
+          </button>
+          <button class="pb-layout-btn text-center rounded-lg py-1.5 px-1 border transition" data-layout="manga-panel" data-shots="4" style="font-size:9px;">
+            <div class="text-sm">💥</div><div class="font-bold text-[9px]">Manga</div><div class="text-[8px] opacity-60">4 panel</div>
+          </button>
+          <button class="pb-layout-btn col-span-3 text-center rounded-lg py-1.5 px-1 border transition" data-layout="sticker-strip" data-shots="4" style="font-size:9px;">
+            🎪 Sticker Strip <span class="opacity-60">— 4 foto + stiker auto</span>
+          </button>
+        </div>
+      </details>
+
+      <!-- 5. Kustomisasi & AI (accordion) -->
+      <details class="pb-accordion" open>
+        <summary class="text-[9px] font-bold text-slate-400 tracking-wider uppercase cursor-pointer flex items-center justify-between select-none pb-1.5 border-b border-slate-800">
+          <span>⚙️ Custom & AI Features</span><span class="text-slate-600 text-[10px]">▾</span>
+        </summary>
+        <div class="space-y-3 mt-2">
+          <!-- Retro Date Stamp Editor -->
+          <div>
+            <label class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">📅 Polaroid Date Stamp Text</label>
+            <input type="text" id="pbCustomDate" placeholder="Default: Tanggal hari ini" class="w-full text-[10px] bg-slate-900 border border-slate-800 rounded-lg py-1.5 px-2 text-slate-200 outline-none focus:border-violet-500 transition" value="" maxlength="20">
+          </div>
+
+          <!-- Sign Language Translator Overlay -->
+          <div class="flex items-center justify-between py-1">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold text-slate-300">🤟 Sign Subtitle Overlay</span>
+              <span class="text-[8px] text-slate-500">Munculkan terjemahan gestur di foto</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="pbToggleSignSubtitle" class="sr-only peer" checked>
+              <div class="w-8 h-4 bg-slate-800 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-violet-600 peer-checked:to-pink-600"></div>
+            </label>
+          </div>
+
+          <!-- QR Code Otomatis -->
+          <div class="flex items-center justify-between py-1">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold text-slate-300">🔗 Auto QR Code</span>
+              <span class="text-[8px] text-slate-500">Tambahkan QR Code download di foto</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="pbToggleQRCode" class="sr-only peer" checked>
+              <div class="w-8 h-4 bg-slate-800 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-violet-600 peer-checked:to-pink-600"></div>
+            </label>
+          </div>
+
+          <!-- AI Pose Scorecard -->
+          <div class="flex items-center justify-between py-1">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold text-slate-300">📊 AI Pose Scorecard</span>
+              <span class="text-[8px] text-slate-500">Tampilkan penilaian skor pose di foto</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="pbToggleScorecard" class="sr-only peer" checked>
+              <div class="w-8 h-4 bg-slate-800 rounded-full peer peer-focus:ring-0 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-violet-600 peer-checked:to-pink-600"></div>
+            </label>
+          </div>
+
+          <!-- Voice-Activated Shutter Info -->
+          <div class="flex items-center justify-between py-1 border-t border-slate-800/60 pt-1.5">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold text-slate-300">🎙️ AI Voice Shutter</span>
+              <span class="text-[8px] text-slate-500">Katakan "Menyala", "Kece" atau "Cheese"</span>
+            </div>
+            <span class="text-[8px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded border border-emerald-500/25">Aktif</span>
+          </div>
+        </div>
+      </details>
 
       <!-- Action Buttons -->
-      <div class="space-y-2.5 mt-6 pt-4 border-t border-slate-800">
+      <div class="space-y-2 pt-3 border-t border-slate-800">
         <div class="flex gap-2">
-          <button id="pbBtnSingle" onclick="takePhoto('single')" disabled class="flex-1 flex flex-col items-center justify-center gap-0.5 py-3 rounded-xl transition" style="background: linear-gradient(135deg, #bd00ff 0%, #ff007a 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(189, 0, 255, 0.35);">
+          <button id="pbBtnSingle" onclick="takePhoto('single')" disabled class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl transition" style="background: linear-gradient(135deg, #bd00ff 0%, #ff007a 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(189, 0, 255, 0.35);">
             <span class="text-xs font-bold">📸 Foto Tunggal</span>
-            <span class="text-[9px] font-normal opacity-85">1 Jepretan Kartu</span>
+            <span class="text-[9px] font-normal opacity-85">1 Jepretan</span>
           </button>
-          <button id="pbBtnStrip" onclick="takePhoto('strip')" disabled class="flex-1 flex flex-col items-center justify-center gap-0.5 py-3 rounded-xl transition" style="background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);">
+          <button id="pbBtnStrip" onclick="takePhoto('strip')" disabled class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl transition" style="background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);">
             <span class="text-xs font-bold">🎞️ Photostrip</span>
-            <span class="text-[9px] font-normal opacity-85">4 Jepretan Strip</span>
+            <span class="text-[9px] font-normal opacity-85">4 Jepretan</span>
           </button>
         </div>
-        
         <button id="pbBtnBoomerang" onclick="recordBoomerang()" disabled
-          class="w-full py-2.5 rounded-xl transition font-semibold text-xs" style="background: linear-gradient(135deg, rgba(189,0,255,0.15) 0%, rgba(0,240,255,0.15) 100%); border: 1.5px solid rgba(0,240,255,0.3); color: #00f0ff; cursor: pointer;">
-          🎬 Rekam Boomerang GIF (2 detik)
+          class="w-full py-2 rounded-xl transition font-semibold text-xs" style="background: linear-gradient(135deg, rgba(189,0,255,0.15) 0%, rgba(0,240,255,0.15) 100%); border: 1.5px solid rgba(0,240,255,0.3); color: #00f0ff; cursor: pointer;">
+          🎬 Boomerang GIF
         </button>
-        <button id="pbBtnStop" onclick="stopPhotobooth()" disabled class="w-full py-2.5 rounded-xl transition font-semibold text-xs mt-1" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.3); color: #f87171; cursor: pointer;">
+        <button id="pbBtnStop" onclick="stopPhotobooth()" disabled class="w-full py-2 rounded-xl transition font-semibold text-xs" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.3); color: #f87171; cursor: pointer;">
           ⏹️ Hentikan Kamera
         </button>
       </div>
@@ -3841,6 +3904,7 @@ async function startPhotobooth() {
     
     await pbSt.cam.start();
     pbSt.running = true;
+    startSpeechRecognition();
     
     if (btnSingle) btnSingle.disabled = false;
     if (btnStrip) btnStrip.disabled = false;
@@ -3864,6 +3928,7 @@ async function stopPhotobooth() {
   
   pbSt.detecting = false;
   pbSt.running = false;
+  stopSpeechRecognition();
   
   try {
     if (pbSt.cam) {
@@ -3989,6 +4054,7 @@ function onPhotoboothResults(results) {
   let handsDetected = 0;
   let activeGesture = null;
   let peaceLandmarks = null; // track finger tip positions for stickers
+  pbSt.lastTranslatedGesture = null;
   
   if (results.multiHandLandmarks) {
     handsDetected = results.multiHandLandmarks.length;
@@ -4006,6 +4072,10 @@ function onPhotoboothResults(results) {
       if (index === 0) {
         activeGesture = detectHandGesture(lm);
         if (activeGesture === 'peace') peaceLandmarks = lm;
+        
+        // Translate sign gesture on first hand
+        const fullGesture = detectGesture(lm);
+        pbSt.lastTranslatedGesture = fullGesture ? fullGesture.name : null;
 
         // ── Swipe gesture detection ──
         if (!pbSt.countdownActive) {
@@ -4448,7 +4518,11 @@ function drawTextColumn(ctx, text, x, y, width, lineHeight) {
 // ── Trigger capture process ───────────────────
 function takePhoto(mode) {
   if (pbSt.countdownActive || !pbSt.running) return;
-  runPhotoboothCapture(mode);
+  // Use layout-selected mode if caller passes old 'single'/'strip' defaults
+  const effectiveMode = (mode === 'single' && pbSt.mode && pbSt.mode !== 'single') ? pbSt.mode
+                      : (mode === 'strip'  && pbSt.mode && pbSt.mode !== 'strip')  ? pbSt.mode
+                      : mode;
+  runPhotoboothCapture(effectiveMode);
 }
 
 // ── Capture Loop with async/await ──────────────
@@ -4457,7 +4531,11 @@ async function runPhotoboothCapture(mode) {
   pbSt.photos = [];
   pbSt.countdownActive = true;
   
-  const totalPhotos = mode === 'strip' ? 4 : 1;
+  const shotsMap = {
+    'single': 1, 'strip': 4, 'grid2x2': 4,
+    'duo-polaroid': 2, 'film-roll': 4, 'manga-panel': 4, 'sticker-strip': 4
+  };
+  const totalPhotos = shotsMap[mode] ?? 1;
   
   const btnSingle = document.getElementById('pbBtnSingle');
   const btnStrip = document.getElementById('pbBtnStrip');
@@ -4506,6 +4584,15 @@ async function runPhotoboothCapture(mode) {
     snapCvs.height = cvsPB.height;
     const snapCtx = snapCvs.getContext('2d');
     snapCtx.drawImage(cvsPB, 0, 0);
+    
+    // Save last translated gesture if subtitle option is checked
+    const toggleSub = document.getElementById('pbToggleSignSubtitle');
+    if (toggleSub && toggleSub.checked && pbSt.lastTranslatedGesture) {
+      snapCvs.gestureText = pbSt.lastTranslatedGesture;
+    } else {
+      snapCvs.gestureText = null;
+    }
+    
     pbSt.photos.push(snapCvs);
     
     toast(`📸 Foto ${i+1}/${totalPhotos} berhasil diambil!`, 's');
@@ -4522,6 +4609,157 @@ async function runPhotoboothCapture(mode) {
     compileFinalImage();
   } else {
     enableCaptureButtons();
+  }
+}
+
+// ── AI Voice Shutter Speech Recognition ────────
+let pbSpeechRec = null;
+function startSpeechRecognition() {
+  if (pbSt.speechActive) return;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn("Speech Recognition not supported in this browser.");
+    return;
+  }
+  
+  pbSpeechRec = new SpeechRecognition();
+  pbSpeechRec.continuous = true;
+  pbSpeechRec.interimResults = false;
+  pbSpeechRec.lang = 'id-ID';
+  
+  pbSpeechRec.onresult = (event) => {
+    const lastResult = event.results[event.results.length - 1];
+    const text = lastResult[0].transcript.trim().toLowerCase();
+    console.log("🎙️ Voice Command Detected:", text);
+    
+    const triggers = ['menyala', 'cheese', 'ciyus', 'ciyuss', 'kece', 'foto', 'jepret', 'pose', 'senyum'];
+    const matched = triggers.some(trigger => text.includes(trigger));
+    
+    if (matched && pbSt.running && !pbSt.countdownActive) {
+      toast(`🎙️ Suara terdeteksi: "${text}". Memulai jepretan! 📸`, 's');
+      takePhoto(pbSt.mode);
+    }
+  };
+  
+  pbSpeechRec.onerror = (event) => {
+    console.error("Speech Recognition Error:", event.error);
+    if (event.error === 'not-allowed') {
+      pbSt.speechActive = false;
+    }
+  };
+  
+  pbSpeechRec.onend = () => {
+    if (pbSt.running && pbSt.speechActive) {
+      try {
+        pbSpeechRec.start();
+      } catch(e) {
+        console.error(e);
+      }
+    }
+  };
+  
+  try {
+    pbSt.speechActive = true;
+    pbSpeechRec.start();
+    console.log("Speech recognition started.");
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function stopSpeechRecognition() {
+  pbSt.speechActive = false;
+  if (pbSpeechRec) {
+    try {
+      pbSpeechRec.stop();
+    } catch(e) {
+      console.error(e);
+    }
+  }
+}
+
+// ── AI Pose Scorecard Drawing Helper ───────────
+function drawFinalScorecard(ctx, x, y, w, h, fontColor, fontColorSec) {
+  const toggleScore = document.getElementById('pbToggleScorecard');
+  if (!toggleScore || !toggleScore.checked) return false;
+  
+  // Seed using active photos details or random
+  const seed = pbSt.photos.length > 0 ? (pbSt.photos[0].gestureText || 'Aesthetic').length : 7;
+  const rng = (s) => { let v = s; return () => { v = (v * 9301 + 49297) % 233280; return v / 233280; }; };
+  const myRng = rng(seed + 42);
+  
+  const accuracy = Math.floor(85 + myRng() * 14);
+  const vibeList = ['Skena Approved ☕', 'Kece Parah 🔥', 'Menyala Abangku ⚡', 'Aesthetic Gen-Z ✨', 'Retro Vibe 👾', 'Glow Up 🌟'];
+  const vibe = vibeList[Math.floor(myRng() * vibeList.length)];
+  
+  ctx.save();
+  // Border & Background
+  ctx.strokeStyle = fontColorSec;
+  ctx.lineWidth = 1;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 8); ctx.fill(); ctx.stroke();
+  
+  // Texts
+  ctx.fillStyle = fontColor;
+  ctx.font = 'bold 9px "Plus Jakarta Sans", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('🤖 AI POSE EVALUATION', x + 8, y + 6);
+  
+  ctx.font = '500 8px "Plus Jakarta Sans", sans-serif';
+  ctx.fillStyle = fontColorSec;
+  ctx.fillText(`Akurasi : ${accuracy}%`, x + 8, y + 20);
+  ctx.fillText(`Vibe    : ${vibe}`, x + 8, y + 32);
+  ctx.restore();
+  return true;
+}
+
+// ── Subtitle Drawing Helper for Gestures ───────
+function drawPhotoSubtitle(ctx, img, x, y, w, h) {
+  if (!img || !img.gestureText) return;
+  ctx.save();
+  ctx.fillStyle = '#FDE047'; // Aesthetic yellow
+  ctx.font = 'bold 15px "Plus Jakarta Sans", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 3.5;
+  const subX = x + w / 2;
+  const subY = y + h - 16;
+  ctx.strokeText(`[ Isyarat: ${img.gestureText} ]`, subX, subY);
+  ctx.fillText(`[ Isyarat: ${img.gestureText} ]`, subX, subY);
+  ctx.restore();
+}
+
+// ── Client-Side Sync QR Code Drawing Helper ────
+function drawFinalQRCode(ctx, x, y, size) {
+  const toggleQR = document.getElementById('pbToggleQRCode');
+  if (!toggleQR || !toggleQR.checked) return false;
+  if (typeof QRious === 'undefined') {
+    console.warn('QRious library not loaded');
+    return false;
+  }
+  try {
+    const qr = new QRious({
+      value: window.location.href, // Resolves to local development URL or live Vercel URL
+      size: size,
+      level: 'H'
+    });
+    ctx.save();
+    // Background card for scannability
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(x - 4, y - 4, size + 8, size + 8);
+    // Thin border
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x - 4, y - 4, size + 8, size + 8);
+    // Draw QR onto canvas
+    ctx.drawImage(qr.canvas, x, y, size, size);
+    ctx.restore();
+    return true;
+  } catch(e) {
+    console.error('Error generating QR code:', e);
+    return false;
   }
 }
 
@@ -4557,10 +4795,15 @@ function compileFinalImage() {
       ctx.save();
       ctx.beginPath(); ctx.rect(30, 265, 540, 330); ctx.clip();
       drawImageProp(ctx, photo, 30, 265, 540, 330);
+      drawPhotoSubtitle(ctx, photo, 30, 265, 540, 330);
       ctx.restore();
       // Overlay the Koran PNG frame on top
       loadKoran.then(koranImg => {
         if (koranImg) ctx.drawImage(koranImg, 0, 0, 600, 900);
+        
+        // Draw AI Scorecard
+        drawFinalScorecard(ctx, 30, 810, 180, 50, '#1a1a1a', '#8B7355');
+        
         // Watermark
         ctx.fillStyle='rgba(100,80,50,0.6)';
         ctx.font='bold 9px "Times New Roman", serif';
@@ -4579,7 +4822,9 @@ function compileFinalImage() {
         const photo = pbSt.photos[i];
         const sy = slotY0 + i*(slotH+slotGap);
         ctx.save(); ctx.beginPath(); ctx.rect(30,sy,540,slotH); ctx.clip();
-        drawImageProp(ctx,photo,30,sy,540,slotH); ctx.restore();
+        drawImageProp(ctx,photo,30,sy,540,slotH);
+        drawPhotoSubtitle(ctx,photo,30,sy,540,slotH);
+        ctx.restore();
         // Thin koran-style divider
         if(i<3){ctx.strokeStyle='#8B7355';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(30,sy+slotH+slotGap/2);ctx.lineTo(570,sy+slotH+slotGap/2);ctx.stroke();}
       }
@@ -4591,6 +4836,10 @@ function compileFinalImage() {
       ctx.fillText('KABAR HARI INI  •  EDISI DOKUMENTASI  •  FOTO KEBERSAMAAN', 300, 60);
       ctx.fillStyle='rgba(100,80,50,0.6)'; ctx.font='bold 9px serif';
       ctx.fillText('GestureFlow • Bahasa Isyarat Menyatukan 🤟', 300, 1590);
+      
+      // Draw AI Scorecard
+      drawFinalScorecard(ctx, 30, 1530, 180, 45, '#1a1a1a', '#8B7355');
+      
       drawFrameDecorations(ctx,'koran-png','strip',[]);
     }
     // Show preview modal
@@ -4629,6 +4878,7 @@ function compileFinalImage() {
       ctx.save();
       ctx.filter = 'grayscale(100%) contrast(1.2) brightness(1.03)';
       drawImageProp(ctx, img, targetX, targetY, targetW, targetH);
+      drawPhotoSubtitle(ctx, img, targetX, targetY, targetW, targetH);
       ctx.restore();
       
       // Photo frame border
@@ -4659,6 +4909,7 @@ function compileFinalImage() {
         ctx.save();
         ctx.filter = 'grayscale(100%) contrast(1.2) brightness(1.03)';
         drawImageProp(ctx, img, targetX, targetY, photoW, photoH);
+        drawPhotoSubtitle(ctx, img, targetX, targetY, photoW, photoH);
         ctx.restore();
         
         ctx.strokeStyle = '#1E293B';
@@ -4719,6 +4970,7 @@ function compileFinalImage() {
       ctx.clip();
       
       drawImageProp(ctx, img, targetX, targetY, targetW, targetH);
+      drawPhotoSubtitle(ctx, img, targetX, targetY, targetW, targetH);
       ctx.restore();
       
       // Draw neon border stroke
@@ -4738,6 +4990,162 @@ function compileFinalImage() {
       
       drawFrameDecorations(ctx, template, mode, [{x: targetX, y: targetY, w: targetW, h: targetH}]);
       
+    } else if (mode === 'grid2x2') {
+      // ── GRID 2×2 LAYOUT ────────────────────────
+      canvas.width  = 880;
+      canvas.height = 880;
+      drawFrameBackground(ctx, template, 880, 880);
+      const cell = 400, pad = 24, gap = 16;
+      const offX = pad, offY = pad;
+      const coords = [];
+      for (let i = 0; i < 4; i++) {
+        const col = i % 2, row = Math.floor(i / 2);
+        const x = offX + col * (cell + gap);
+        const y = offY + row * (cell + gap);
+        coords.push({x, y, w: cell, h: cell});
+        ctx.shadowColor = 'rgba(0,0,0,0.12)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+        ctx.fillStyle = template === 'gothic-horror' ? '#1a0000' : template === 'arcade-neon' ? '#06011A' : template === 'flow-neon' ? '#0C0A1E' : '#FFFFFF';
+        ctx.beginPath(); ctx.roundRect(x - 6, y - 6, cell + 12, cell + 12, 10); ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, cell, cell, 6); ctx.clip();
+        drawImageProp(ctx, pbSt.photos[i], x, y, cell, cell);
+        drawPhotoSubtitle(ctx, pbSt.photos[i], x, y, cell, cell);
+        ctx.restore();
+        if (template === 'flow-neon') { ctx.strokeStyle='#00F0FF'; ctx.lineWidth=2; ctx.strokeRect(x-6,y-6,cell+12,cell+12); }
+        else if (template === 'arcade-neon') { ctx.strokeStyle='#EC4899'; ctx.lineWidth=2; ctx.strokeRect(x-6,y-6,cell+12,cell+12); }
+      }
+      drawFrameDecorations(ctx, template, 'grid2x2', coords);
+
+    } else if (mode === 'duo-polaroid') {
+      // ── DUO POLAROID LAYOUT ──────────────────────
+      canvas.width  = 900;
+      canvas.height = 620;
+      drawFrameBackground(ctx, template, 900, 620);
+      const photos = pbSt.photos;
+      const angles = [-4, 4];
+      const cxArr = [180, 720], cyArr = [310, 310];
+      const pw = 340, ph = 260;
+      for (let i = 0; i < 2; i++) {
+        ctx.save();
+        ctx.translate(cxArr[i], cyArr[i]);
+        ctx.rotate(angles[i] * Math.PI / 180);
+        ctx.shadowColor='rgba(0,0,0,0.2)'; ctx.shadowBlur=18; ctx.shadowOffsetY=8;
+        ctx.fillStyle = template === 'retro-polaroid' ? '#FCF9F2' : template === 'kpop-card' ? '#f8f4ff' : '#FFFFFF';
+        ctx.beginPath(); ctx.roundRect(-pw/2 - 16, -ph/2 - 16, pw + 32, ph + 72, 4); ctx.fill();
+        ctx.shadowColor='transparent';
+        ctx.save(); ctx.beginPath(); ctx.roundRect(-pw/2, -ph/2, pw, ph, 3); ctx.clip();
+        drawImageProp(ctx, photos[i], -pw/2, -ph/2, pw, ph);
+        drawPhotoSubtitle(ctx, photos[i], -pw/2, -ph/2, pw, ph);
+        ctx.restore();
+        ctx.fillStyle = template === 'retro-polaroid' ? '#D2143A' : template === 'flow-neon' ? '#00F0FF' : '#64748B';
+        ctx.font = 'bold 13px "Plus Jakarta Sans", sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(i === 0 ? '📸 Foto 1' : '📸 Foto 2', 0, ph/2 + 28);
+        ctx.restore();
+      }
+      ctx.fillStyle = '#94a3b8'; ctx.font = '11px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🤟 GestureFlow', 450, 580);
+      drawFrameDecorations(ctx, template, 'duo-polaroid', []);
+
+    } else if (mode === 'film-roll') {
+      // ── FILM ROLL LAYOUT ──────────────────────────
+      const W = 1400, H = 520;
+      canvas.width = W; canvas.height = H;
+      ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, W, 55); ctx.fillRect(0, H-55, W, 55);
+      ctx.fillStyle = '#2d2d2d';
+      for (let x = 18; x < W; x += 48) {
+        ctx.beginPath(); ctx.roundRect(x, 10, 28, 35, 4); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(x, H-45, 28, 35, 4); ctx.fill();
+      }
+      const fw = 300, fh = 380, fy = (H-fh)/2;
+      const startX = 28;
+      const frameGap = (W - startX*2 - fw*4) / 3;
+      for (let i = 0; i < 4; i++) {
+        const fx = startX + i*(fw + frameGap);
+        ctx.fillStyle='#111'; ctx.fillRect(fx-4, fy-4, fw+8, fh+8);
+        ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, fw, fh); ctx.clip();
+        drawImageProp(ctx, pbSt.photos[i], fx, fy, fw, fh);
+        drawPhotoSubtitle(ctx, pbSt.photos[i], fx, fy, fw, fh);
+        ctx.restore();
+        ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='bold 10px monospace';
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(`${(i+1).toString().padStart(2,'0')}A`, fx+fw/2, H-48);
+      }
+      ctx.fillStyle='rgba(255,220,0,0.7)'; ctx.font='bold 9px monospace';
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText('GESTUREFLOW PHOTOBOOTH  •  KODAK 400  •  ✨ STAY CONNECTED 🤟', 20, H-20);
+      drawFrameDecorations(ctx, template, 'film-roll', []);
+
+    } else if (mode === 'manga-panel') {
+      // ── MANGA PANEL LAYOUT ────────────────────────
+      const W = 880, H = 1100;
+      canvas.width = W; canvas.height = H;
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle = '#e5e5e5'; ctx.lineWidth = 1.2;
+      const cx2 = W/2, cy2 = H/2;
+      for (let i = 0; i < 48; i++) {
+        const a = (i/48)*Math.PI*2;
+        ctx.beginPath(); ctx.moveTo(cx2, cy2);
+        ctx.lineTo(cx2 + Math.cos(a)*W, cy2 + Math.sin(a)*H); ctx.stroke();
+      }
+      const panels = [
+        {x:20, y:20, w:W-40, h:480},
+        {x:20, y:520, w:260, h:380},
+        {x:300, y:520, w:260, h:380},
+        {x:580, y:520, w:W-600, h:380},
+      ];
+      panels.forEach((p, i) => {
+        ctx.fillStyle = '#000'; ctx.fillRect(p.x-4, p.y-4, p.w+8, p.h+8);
+        ctx.save(); ctx.beginPath(); ctx.rect(p.x, p.y, p.w, p.h); ctx.clip();
+        drawImageProp(ctx, pbSt.photos[i], p.x, p.y, p.w, p.h);
+        drawPhotoSubtitle(ctx, pbSt.photos[i], p.x, p.y, p.w, p.h);
+        ctx.restore();
+      });
+      ctx.save(); ctx.globalAlpha=0.07;
+      ctx.fillStyle='#000'; ctx.font='bold 160px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('ACTION!', W/2, H-220); ctx.restore();
+      ctx.fillStyle='#000'; ctx.font='bold 11px sans-serif';
+      ctx.textAlign='right'; ctx.textBaseline='bottom';
+      ctx.fillText('GestureFlow • MANGA PANEL 💥', W-16, H-8);
+
+    } else if (mode === 'sticker-strip') {
+      // ── STICKER STRIP LAYOUT ──────────────────────
+      canvas.width  = 520;
+      canvas.height = 1600;
+      drawFrameBackground(ctx, template, 520, 1600);
+      const pw2=440, ph2=320, lm=40, tm=50, gp=28;
+      const stripCoords = [];
+      for (let i=0; i<4; i++) {
+        const sx=lm, sy=tm+i*(ph2+gp);
+        stripCoords.push({x:sx,y:sy,w:pw2,h:ph2});
+        ctx.shadowColor='rgba(0,0,0,0.1)'; ctx.shadowBlur=8; ctx.shadowOffsetY=3;
+        ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.roundRect(sx-6,sy-6,pw2+12,ph2+12,10); ctx.fill();
+        ctx.shadowColor='transparent';
+        ctx.save(); ctx.beginPath(); ctx.roundRect(sx,sy,pw2,ph2,6); ctx.clip();
+        drawImageProp(ctx, pbSt.photos[i], sx, sy, pw2, ph2);
+        drawPhotoSubtitle(ctx, pbSt.photos[i], sx, sy, pw2, ph2);
+        ctx.restore();
+      }
+      const emojiSet=['❤️','✨','🌟','💖','🌸','🎉','✌️','🤙','💎','🔥','⚡','🎈','🌺','💫','🎀'];
+      const stickerRng = (seed) => { let s=seed; return ()=>{s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff;}; };
+      const rng = stickerRng(Date.now()%9999);
+      for (let i=0; i<40; i++) {
+        const ex = 6 + rng()*(520-12);
+        const ey = rng()*1600;
+        const inPhoto = stripCoords.some(c => ex>c.x-10 && ex<c.x+c.w+10 && ey>c.y-6 && ey<c.y+c.h+6);
+        if (inPhoto) continue;
+        const es = 14 + rng()*18;
+        const er = (rng()-0.5)*Math.PI*0.8;
+        ctx.save(); ctx.translate(ex,ey); ctx.rotate(er);
+        ctx.font=`${es}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(emojiSet[Math.floor(rng()*emojiSet.length)], 0, 0); ctx.restore();
+      }
+      drawFrameDecorations(ctx, template, 'sticker-strip', stripCoords);
+
     } else {
       // Photostrip (4 Photos)
       canvas.width = 480;
@@ -4806,6 +5214,7 @@ function compileFinalImage() {
         ctx.clip();
         
         drawImageProp(ctx, img, targetX, targetY, photoW, photoH);
+        drawPhotoSubtitle(ctx, img, targetX, targetY, photoW, photoH);
         ctx.restore();
       }
       
@@ -5271,32 +5680,72 @@ function drawFrameDecorations(ctx, template, mode, coords) {
 
     if (template === 'retro-polaroid') {
       // ── POLAROID 1970: Warm analog date stamp ──
-      const now = new Date();
-      const yy = String(now.getFullYear()).slice(2);
-      const mm = String(now.getMonth()+1).padStart(2,'0');
-      const dd = String(now.getDate()).padStart(2,'0');
+      const dateInput = document.getElementById('pbCustomDate');
+      let dateText = '';
+      if (dateInput && dateInput.value.trim()) {
+        dateText = dateInput.value.trim();
+      } else {
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(2);
+        const mm = String(now.getMonth()+1).padStart(2,'0');
+        const dd = String(now.getDate()).padStart(2,'0');
+        dateText = `'${yy}.${mm}.${dd}`;
+      }
       ctx.fillStyle = '#C2410C';
       ctx.font = 'bold 15px "Courier New", monospace';
+      
       if (mode === 'single') {
-        ctx.textAlign = 'right';
-        ctx.fillText(`'${yy}.${mm}.${dd}`, w - 48, h - 62);
-        ctx.fillStyle = '#7C2D12';
-        ctx.font = 'italic 11px Georgia, serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('GF // MEMORY SHOT', 48, h - 62);
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 10px "Courier New", monospace';
-        ctx.fillStyle = '#A16207';
-        ctx.fillText('GESTUREFLOW ANALOG SYSTEM', w/2, h - 40);
+        const qrSize = 55;
+        const hasQR = drawFinalQRCode(ctx, w - 48 - qrSize, h - 105, qrSize);
+        if (hasQR) {
+          ctx.fillStyle = '#C2410C';
+          ctx.font = 'bold 13px "Courier New", monospace';
+          ctx.textAlign = 'right';
+          ctx.fillText(dateText, w - 48, h - 35);
+          
+          ctx.fillStyle = '#7C2D12';
+          ctx.font = 'italic 11px Georgia, serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('GF // MEMORY SHOT', 48, h - 90);
+          
+          ctx.font = 'bold 9px "Courier New", monospace';
+          ctx.fillStyle = '#A16207';
+          ctx.fillText('GESTUREFLOW ANALOG SYSTEM', 48, h - 70);
+          ctx.fillText('Scan to view online', 48, h - 50);
+        } else {
+          ctx.textAlign = 'right';
+          ctx.fillText(dateText, w - 48, h - 62);
+          ctx.fillStyle = '#7C2D12';
+          ctx.font = 'italic 11px Georgia, serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('GF // MEMORY SHOT', 48, h - 62);
+          ctx.textAlign = 'center';
+          ctx.font = 'bold 10px "Courier New", monospace';
+          ctx.fillStyle = '#A16207';
+          ctx.fillText('GESTUREFLOW ANALOG SYSTEM', w/2, h - 40);
+        }
       } else {
-        ctx.textAlign = 'center';
-        ctx.fillText(`'${yy}.${mm}.${dd}`, w/2, 1415);
-        ctx.fillStyle = '#7C2D12';
-        ctx.font = 'bold italic 10px "Courier New", monospace';
-        ctx.fillText('ANALOG SYSTEM 1970', w/2, 30);
-        ctx.fillStyle = '#A16207';
-        ctx.font = '8px "Courier New", monospace';
-        ctx.fillText('GestureFlow Memories', w/2, 1435);
+        const qrSize = 55;
+        const hasQR = drawFinalQRCode(ctx, w - 48 - qrSize, 1395, qrSize);
+        if (hasQR) {
+          ctx.textAlign = 'left';
+          ctx.fillText(dateText, 48, 1405);
+          ctx.fillStyle = '#7C2D12';
+          ctx.font = 'bold italic 9px "Courier New", monospace';
+          ctx.fillText('ANALOG SYSTEM 1970', 48, 1425);
+          ctx.fillStyle = '#A16207';
+          ctx.font = '7px "Courier New", monospace';
+          ctx.fillText('GestureFlow Memories', 48, 1442);
+        } else {
+          ctx.textAlign = 'center';
+          ctx.fillText(dateText, w/2, 1415);
+          ctx.fillStyle = '#7C2D12';
+          ctx.font = 'bold italic 10px "Courier New", monospace';
+          ctx.fillText('ANALOG SYSTEM 1970', w/2, 30);
+          ctx.fillStyle = '#A16207';
+          ctx.font = '8px "Courier New", monospace';
+          ctx.fillText('GestureFlow Memories', w/2, 1435);
+        }
       }
     }
     else if (template === 'arcade-neon') {
@@ -5368,23 +5817,45 @@ function drawFrameDecorations(ctx, template, mode, coords) {
     else {
       // ── DEFAULT: white, grunge, arcade, cyber ──
       if (mode === 'single') {
+        const qrSize = 55;
+        const qrX = w - 40 - qrSize;
+        const qrY = h - 65 - qrSize;
+        const hasQR = drawFinalQRCode(ctx, qrX, qrY, qrSize);
+        
         ctx.fillStyle = fontColorSec;
         ctx.font = '800 11px "Plus Jakarta Sans", sans-serif';
-        ctx.fillText('AESTHETIC PHOTOBOOTH', w/2, h - 185);
-        ctx.fillStyle = fontColor;
-        ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
-        ctx.fillText(phrase, w/2, h - 145);
-        ctx.fillStyle = fontColorSec;
-        ctx.font = '800 12px "JetBrains Mono", monospace';
-        ctx.fillText('🤟 Web Gesture Isyarat 🤟', w/2, h - 95);
-        const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
-        ctx.font = '600 11px "JetBrains Mono", monospace';
-        ctx.fillText(dateStr, w/2, h - 65);
-        ctx.font = '22px serif';
-        ctx.fillText('✨', 60, h - 200);
-        ctx.fillText('🌈', w - 60, h - 200);
-        ctx.fillText('📸', 60, h - 55);
-        ctx.fillText('✌️', w - 60, h - 55);
+        if (hasQR) {
+          ctx.textAlign = 'left';
+          ctx.fillText('AESTHETIC PHOTOBOOTH', 40, h - 145);
+          ctx.fillStyle = fontColor;
+          ctx.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(phrase, 40, h - 115);
+          ctx.fillStyle = fontColorSec;
+          ctx.font = '800 10px "JetBrains Mono", monospace';
+          ctx.fillText('🤟 Web Gesture Isyarat 🤟', 40, h - 85);
+          const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+          ctx.font = '600 9px "JetBrains Mono", monospace';
+          ctx.fillText(dateStr, 40, h - 65);
+          ctx.font = '16px serif';
+          ctx.fillText('✨', 40, h - 45);
+        } else {
+          ctx.textAlign = 'center';
+          ctx.fillText('AESTHETIC PHOTOBOOTH', w/2, h - 185);
+          ctx.fillStyle = fontColor;
+          ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(phrase, w/2, h - 145);
+          ctx.fillStyle = fontColorSec;
+          ctx.font = '800 12px "JetBrains Mono", monospace';
+          ctx.fillText('🤟 Web Gesture Isyarat 🤟', w/2, h - 95);
+          const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+          ctx.font = '600 11px "JetBrains Mono", monospace';
+          ctx.fillText(dateStr, w/2, h - 65);
+          ctx.font = '22px serif';
+          ctx.fillText('✨', 60, h - 200);
+          ctx.fillText('🌈', w - 60, h - 200);
+          ctx.fillText('📸', 60, h - 55);
+          ctx.fillText('✌️', w - 60, h - 55);
+        }
       } else {
         ctx.fillStyle = fontColorSec;
         ctx.font = '800 10px "Plus Jakarta Sans", sans-serif';
@@ -5395,12 +5866,37 @@ function drawFrameDecorations(ctx, template, mode, coords) {
         for (let i = 0; i < 3; i++) {
           ctx.fillText(emojis[i], 240, gaps[i]);
         }
+        
+        const qrSize = 60;
+        const qrX = w - 40 - qrSize;
+        const qrY = h - 20 - qrSize;
+        const hasQR = drawFinalQRCode(ctx, qrX, qrY, qrSize);
+        
         ctx.fillStyle = fontColor;
-        ctx.font = 'bold 14px "Plus Jakarta Sans", sans-serif';
-        ctx.fillText(phrase, 240, 1405);
-        ctx.fillStyle = fontColorSec;
-        ctx.font = '800 10px "JetBrains Mono", monospace';
-        ctx.fillText('🤟 Web Gesture Isyarat 🤟', 240, 1435);
+        if (hasQR) {
+          ctx.textAlign = 'left';
+          ctx.font = 'bold 13px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(phrase, 40, h - 55);
+          ctx.fillStyle = fontColorSec;
+          ctx.font = '800 9px "JetBrains Mono", monospace';
+          ctx.fillText('🤟 GestureFlow Web', 40, h - 35);
+          ctx.font = '600 8px "JetBrains Mono", monospace';
+          ctx.fillText('Scan untuk unduh / share', 40, h - 20);
+        } else {
+          ctx.textAlign = 'center';
+          ctx.font = 'bold 14px "Plus Jakarta Sans", sans-serif';
+          ctx.fillText(phrase, 240, 1405);
+          ctx.fillStyle = fontColorSec;
+          ctx.font = '800 10px "JetBrains Mono", monospace';
+          ctx.fillText('🤟 Web Gesture Isyarat 🤟', 240, 1435);
+        }
+      }
+      
+      // Draw AI Pose Scorecard at the bottom of the card/strip
+      if (mode === 'single') {
+        drawFinalScorecard(ctx, 40, h - 110, 180, 50, fontColor, fontColorSec);
+      } else {
+        drawFinalScorecard(ctx, 40, h - 75, 180, 50, fontColor, fontColorSec);
       }
     }
   }
@@ -5735,10 +6231,15 @@ function closePbPreview() {
 function enableCaptureButtons() {
   if (pbSt.running) {
     const btnSingle = document.getElementById('pbBtnSingle');
-    const btnStrip = document.getElementById('pbBtnStrip');
-    const btnStop = document.getElementById('pbBtnStop');
+    const btnStrip  = document.getElementById('pbBtnStrip');
+    const btnStop   = document.getElementById('pbBtnStop');
     if (btnSingle) btnSingle.disabled = false;
-    if (btnStrip) btnStrip.disabled = false;
+    // Strip button only visible when mode is 'single' (original dual-button UX)
+    if (btnStrip) {
+      const isDefaultMode = !pbSt.mode || pbSt.mode === 'single';
+      btnStrip.style.display = isDefaultMode ? 'flex' : 'none';
+      btnStrip.disabled = false;
+    }
     if (btnStop) btnStop.disabled = false;
   }
 }
@@ -5755,7 +6256,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         btn.classList.add('active');
         pbSt.frame = btn.dataset.frame;
-        toast(`Bingkai diganti: ${btn.querySelector('p').textContent} 🖼️`, 'i');
+        const name = btn.textContent.trim();
+        toast(`🖼️ Bingkai: ${name}`, 'i');
       });
     });
   }
@@ -5796,6 +6298,39 @@ document.addEventListener('DOMContentLoaded', () => {
             toast(`🤖 Background: ${btn.textContent.trim()} aktif!`, 's');
           }
         }
+      });
+    });
+  }
+
+  // Bind Layout selectors
+  const layoutContainer = document.getElementById('pbLayoutSelect');
+  if (layoutContainer) {
+    layoutContainer.querySelectorAll('.pb-layout-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        layoutContainer.querySelectorAll('.pb-layout-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const layout = btn.dataset.layout;
+        const shots  = parseInt(btn.dataset.shots) || 1;
+        pbSt.mode = layout;
+        // Update both capture buttons to reflect layout
+        const btnSingle = document.getElementById('pbBtnSingle');
+        const btnStrip  = document.getElementById('pbBtnStrip');
+        const layoutNames = {
+          'single': '📸 Foto Tunggal', 'strip': '🎞️ Photostrip',
+          'grid2x2': '⊞ Grid 2×2', 'duo-polaroid': '🎭 Duo Polaroid',
+          'film-roll': '🎬 Film Roll', 'manga-panel': '💥 Manga Panel',
+          'sticker-strip': '🎪 Sticker Strip'
+        };
+        if (btnSingle) {
+          const spans = btnSingle.querySelectorAll('span');
+          if (spans[0]) spans[0].textContent = layoutNames[layout] || '📸 Ambil Foto';
+          if (spans[1]) spans[1].textContent = `${shots} Jepretan`;
+        }
+        // Hide/show old strip button for cleanliness
+        if (btnStrip) btnStrip.style.display = layout === 'single' ? 'flex' : 'none';
+        // Wire both buttons to same mode
+        if (btnSingle) btnSingle.onclick = () => takePhoto(layout);
+        toast(`🖼️ Layout: ${layoutNames[layout] || layout} (${shots} foto)`, 'i');
       });
     });
   }
