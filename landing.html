@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="GestureFlow — Belajar bahasa isyarat dengan AI real-time. Deteksi A–Z, 0–9, gesture umum langsung dari browser.">
+<meta name="theme-color" content="#2563EB">
+<title>GestureFlow — Belajar Bahasa Isyarat dengan AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#2563EB;--primary-dark:#1D4ED8;--primary-lt:#EFF6FF;
+  --secondary:#14B8A6;--accent:#F59E0B;--success:#22C55E;
+  --tx:#0F172A;--tx2:#475569;--tx3:#94A3B8;
+  --bg:#F8FAFC;--surf:#FFFFFF;--bord:#E2E8F0;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+
+/* ── Navbar ── */
+nav{background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--bord);position:fixed;top:0;width:100%;z-index:50;}
+
+/* ── Hero gradient bg ── */
+.hero-blob-1{position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(37,99,235,.12),transparent 70%);top:-100px;right:-100px;pointer-events:none;}
+.hero-blob-2{position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(20,184,166,.1),transparent 70%);bottom:-80px;left:-80px;pointer-events:none;}
+
+/* ── Gradient text ── */
+.grad{background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:all .18s;text-decoration:none;border:none;white-space:nowrap;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.3);}
+.btn-primary:hover{background:var(--primary-dark);box-shadow:0 6px 20px rgba(37,99,235,.4);transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary);}
+.btn-outline:hover{background:var(--primary-lt);}
+.btn-lg{padding:16px 32px;font-size:16px;border-radius:14px;}
+
+/* ── Cards ── */
+.card{background:var(--surf);border:1px solid var(--bord);border-radius:20px;box-shadow:0 1px 3px rgba(15,23,42,.06);}
+.card-hover{transition:box-shadow .2s,transform .2s;cursor:pointer;}
+.card-hover:hover{box-shadow:0 8px 24px rgba(15,23,42,.1);transform:translateY(-3px);}
+
+/* ── Feature icon ── */
+.feat-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+
+/* ── Badge ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:99px;font-size:12.5px;font-weight:600;}
+.badge-primary{background:var(--primary-lt);color:var(--primary);}
+.badge-success{background:#f0fdf4;color:#15803d;}
+.badge-warning{background:#fffbeb;color:#b45309;}
+
+/* ── Steps ── */
+.step-num{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* ── Stats ── */
+.stat-card{text-align:center;padding:32px 20px;}
+
+/* ── FAQ ── */
+details{border:1px solid var(--bord);border-radius:14px;background:var(--surf);}
+details[open]{box-shadow:0 4px 12px rgba(15,23,42,.08);}
+summary{padding:18px 20px;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;}
+summary::after{content:'＋';font-size:18px;color:var(--primary);transition:transform .2s;}
+details[open] summary::after{content:'－';}
+details p{padding:0 20px 18px;color:var(--tx2);font-size:14px;line-height:1.7;}
+
+/* ── Testimonials ── */
+.testi{background:var(--surf);border:1px solid var(--bord);border-radius:16px;padding:24px;}
+
+/* ── Roadmap ── */
+.phase-line{position:absolute;top:28px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--success),var(--primary),var(--secondary),rgba(245,158,11,.4));z-index:0;}
+
+/* ── Animations ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.fade-up{animation:fadeUp .6s ease-out both;}
+.float{animation:float 3s ease-in-out infinite;}
+.delay-1{animation-delay:.1s;}.delay-2{animation-delay:.2s;}.delay-3{animation-delay:.3s;}
+
+/* ── Nav link ── */
+.nav-link{font-size:14px;font-weight:500;color:var(--tx2);text-decoration:none;transition:color .15s;padding:6px 0;}
+.nav-link:hover{color:var(--primary);}
+
+/* ── Section ── */
+section{padding:80px 16px;}
+.sec-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:var(--primary-lt);color:var(--primary);border-radius:99px;font-size:13px;font-weight:700;margin-bottom:16px;}
+h2.sec-title{font-size:clamp(28px,4vw,40px);font-weight:800;color:var(--tx);line-height:1.2;margin-bottom:12px;}
+p.sec-sub{font-size:16px;color:var(--tx2);max-width:560px;}
+
+/* ── Hero hand animation ── */
+.hero-demo{background:linear-gradient(135deg,var(--primary-lt),#f0fdfa);border-radius:24px;padding:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:260px;}
+
+/* ── Quick access cards ── */
+.qa-card{border:1.5px solid var(--bord);border-radius:18px;padding:24px;background:var(--surf);text-decoration:none;display:block;transition:all .2s;}
+.qa-card:hover{border-color:var(--primary);background:var(--primary-lt);transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,.12);}
+
+/* ── Footer ── */
+footer{background:var(--tx);color:#94a3b8;}
+
+/* ── Mobile ── */
+@media(max-width:640px){
+  section{padding:56px 16px;}
+  .btn-lg{padding:14px 24px;font-size:15px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav>
+  <div style="max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">🤟</div>
+      <span style="font-weight:800;font-size:16px;color:var(--primary)">GestureFlow</span>
+      <span class="badge badge-primary" style="font-size:11px">v3.0</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:24px">
+      <nav style="display:flex;gap:20px" class="hidden-mobile">
+        <a href="#fitur" class="nav-link">Fitur</a>
+        <a href="#cara-kerja" class="nav-link">Cara Kerja</a>
+        <a href="#roadmap" class="nav-link">Roadmap</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+      </nav>
+      <a href="pages/app.html" class="btn btn-primary" style="padding:9px 20px;font-size:13.5px">Mulai Belajar →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section style="padding-top:120px;padding-bottom:80px;position:relative;overflow:hidden;min-height:100vh;display:flex;align-items:center">
+  <div class="hero-blob-1"></div>
+  <div class="hero-blob-2"></div>
+  <div style="max-width:1200px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center" class="hero-grid">
+    <!-- Left -->
+    <div class="fade-up">
+      <div class="sec-tag">🤟 AI-Powered • Real-Time • Browser-Based</div>
+      <h1 style="font-size:clamp(36px,5vw,56px);font-weight:800;line-height:1.15;color:var(--tx);margin-bottom:20px">
+        Belajar Bahasa Isyarat<br>dengan <span class="grad">AI Real-Time</span>
+      </h1>
+      <p style="font-size:17px;color:var(--tx2);line-height:1.7;margin-bottom:32px;max-width:480px">
+        Latih kemampuan bahasa isyarat menggunakan teknologi AI MediaPipe secara langsung dari browser. Tidak perlu install, gratis, dan mudah digunakan.
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px">
+        <a href="pages/app.html" class="btn btn-primary btn-lg">🚀 Mulai Belajar Gratis</a>
+        <a href="#cara-kerja" class="btn btn-outline btn-lg">▶ Lihat Cara Kerja</a>
+      </div>
+      <!-- Stats -->
+      <div style="display:flex;gap:32px;flex-wrap:wrap">
+        <div>
+          <p style="font-size:28px;font-weight:800;color:var(--primary)">42+</p>
+          <p style="font-size:13px;color:var(--tx3)">Gesture & Huruf</p>
+        </div>
+        <div>
+          <p style="font-size:28px;font-weight:800;color:var(--secondary)">6</p>
+          <p style="font-size:13px;color:var(--tx3)">Mode Latihan</p>
+        </div>
+        <div>
+          <p style="font-size:28px;font-weight:800;color:var(--accent)">0</p>
+          <p style="font-size:13px;color:var(--tx3)">Instalasi Diperlukan</p>
+        </div>
+      </div>
+    </div>
+    <!-- Right — Demo visual -->
+    <div class="fade-up delay-2">
+      <div class="hero-demo float">
+        <div style="font-size:80px;line-height:1">🤟</div>
+        <div style="display:flex;gap:8px">
+          <span class="badge badge-success">✅ Tangan Terdeteksi</span>
+          <span class="badge badge-primary">21 FPS</span>
+        </div>
+        <div style="width:100%;background:#e2e8f0;height:8px;border-radius:99px;overflow:hidden">
+          <div style="width:85%;height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:99px;animation:float 2s ease-in-out infinite alternate"></div>
+        </div>
+        <p style="font-size:13px;color:var(--tx3)">Hold Stability: 85% — Tahan 0.8 detik</p>
+        <div style="font-size:40px;font-weight:900;font-family:monospace;color:var(--primary)">A</div>
+        <p style="font-size:13px;color:var(--tx2);font-weight:600">Huruf Terdeteksi ✨</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ QUICK ACCESS ══ -->
+<section style="background:var(--surf);padding:60px 16px" id="akses">
+  <div style="max-width:1200px;margin:0 auto">
+    <h2 style="text-align:center;font-size:22px;font-weight:800;color:var(--tx);margin-bottom:8px">⚡ Akses Cepat Fitur</h2>
+    <p style="text-align:center;color:var(--tx3);font-size:14px;margin-bottom:32px">Pilih mode yang ingin kamu latih</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+      <a href="pages/app.html" class="qa-card" onclick="localStorage.setItem('gf_tab','gesture')">
+        <div style="font-size:32px;margin-bottom:10px">🎯</div>
+        <h3 style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:4px">Gesture Mode</h3>
+        <p style="font-size:13px;color:var(--tx3)">Deteksi & analisis gesture realtime + kalimat builder</p>
+        <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--primary)">Buka →</div>
+      </a>
+      <a href="pages/app.html" class="qa-card" onclick="localStorage.setItem('gf_tab','alphabet')">
+        <div style="font-size:32px;margin-bottom:10px">🔤</div>
+        <h3 style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:4px">A–Z Training</h3>
+        <p style="font-size:13px;color:var(--tx3)">Latihan 26 huruf ASL dengan progress & streak</p>
+        <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--primary)">Latihan →</div>
+      </a>
+      <a href="pages/app.html" class="qa-card" onclick="localStorage.setItem('gf_tab','numeric')">
+        <div style="font-size:32px;margin-bottom:10px">🔢</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <h3 style="font-size:15px;font-weight:700;color:var(--tx)">0–9 Angka</h3>
+          <span class="badge" style="background:#f0fdfa;color:#0f766e;font-size:10px">NEW</span>
+        </div>
+        <p style="font-size:13px;color:var(--tx3)">Kenali angka ASL 0–9 dengan model numerik khusus</p>
+        <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--secondary)">Coba →</div>
+      </a>
+      <a href="pages/app.html" class="qa-card" onclick="localStorage.setItem('gf_tab','game')">
+        <div style="font-size:32px;margin-bottom:10px">🎮</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <h3 style="font-size:15px;font-weight:700;color:var(--tx)">Game & Kuis</h3>
+          <span class="badge" style="background:#f0fdf4;color:#15803d;font-size:10px">NEW</span>
+        </div>
+        <p style="font-size:13px;color:var(--tx3)">Tantangan gesture dengan skor, timer per soal, streak & level</p>
+        <div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--success)">Main →</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FEATURES ══ -->
+<section id="fitur" style="background:var(--bg)">
+  <div style="max-width:1200px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:48px">
+      <div class="sec-tag">✨ Fitur Lengkap</div>
+      <h2 class="sec-title" style="text-align:center">Semua yang kamu butuhkan<br>untuk belajar bahasa isyarat</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
+      <!-- Feature cards -->
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#eff6ff;margin-bottom:16px">🎯</div>
+        <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Deteksi Realtime</h3>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Deteksi gesture tangan secara real-time menggunakan MediaPipe AI yang akurat langsung di browser tanpa instalasi.</p>
+      </div>
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#eff6ff;margin-bottom:16px">🔤</div>
+        <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">A–Z Alphabet Training</h3>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Latihan 26 huruf ASL lengkap dengan progress tracker, hold stability, streak, feedback salah/benar, dan TTS.</p>
+      </div>
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#f0fdfa;margin-bottom:16px">🔢</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <h3 style="font-size:16px;font-weight:700;color:var(--tx)">Pengenalan Angka 0–9</h3>
+          <span class="badge" style="background:#f0fdfa;color:#0f766e;font-size:10px">NEW</span>
+        </div>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Deteksi angka 0–9 berbasis koordinat tangan ASL dengan dataset gesture numerik tersendiri.</p>
+      </div>
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#f0fdf4;margin-bottom:16px">🎮</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <h3 style="font-size:16px;font-weight:700;color:var(--tx)">Game & Kuis Interaktif</h3>
+          <span class="badge" style="background:#f0fdf4;color:#15803d;font-size:10px">NEW</span>
+        </div>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Tantangan gesture real-time dengan skor, timer per soal, streak, level, 3 mode: A–Z, 0–9, Gesture.</p>
+      </div>
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#fffbeb;margin-bottom:16px">⚡</div>
+        <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">XP & Gamifikasi</h3>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Sistem XP, level, achievement, badge, dan daily challenge untuk motivasi belajar setiap hari.</p>
+      </div>
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#fef2f2;margin-bottom:16px">✏️</div>
+        <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Teks → Gesture</h3>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Ketik teks dan lihat visualisasi gesture per huruf secara otomatis. Cocok untuk belajar mandiri.</p>
+      </div>
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#f0fdfa;margin-bottom:16px">🔊</div>
+        <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Text-to-Speech</h3>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Gesture otomatis diucapkan dengan suara natural. Queue-based TTS tanpa overlap, toggle on/off.</p>
+      </div>
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#eff6ff;margin-bottom:16px">📊</div>
+        <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Dashboard Analytics</h3>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Statistik sesi, akurasi per huruf, gesture breakdown, roadmap pengembangan, dan status modul.</p>
+      </div>
+      <div class="card card-hover p-6">
+        <div class="feat-icon" style="background:#f0fdf4;margin-bottom:16px">🛠️</div>
+        <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:8px">Developer Mode</h3>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6">Toggle mode developer untuk lihat FPS, confidence score, landmark detail, dan debug info secara real-time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ HOW IT WORKS ══ -->
+<section id="cara-kerja" style="background:var(--surf)">
+  <div style="max-width:900px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:48px">
+      <div class="sec-tag">🔍 Cara Kerja</div>
+      <h2 class="sec-title" style="text-align:center">Mudah digunakan dalam<br>3 langkah sederhana</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div class="card p-6" style="display:flex;gap:20px;align-items:flex-start">
+        <div class="step-num">1</div>
+        <div>
+          <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Buka Aplikasi & Izinkan Kamera</h3>
+          <p style="font-size:14px;color:var(--tx2);line-height:1.6">Tidak perlu instalasi apapun. Cukup buka browser, klik Mulai Kamera, dan izinkan akses kamera. Semua berjalan di browser — data tidak dikirim ke server.</p>
+        </div>
+      </div>
+      <div class="card p-6" style="display:flex;gap:20px;align-items:flex-start">
+        <div class="step-num">2</div>
+        <div>
+          <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Pilih Mode Latihan</h3>
+          <p style="font-size:14px;color:var(--tx2);line-height:1.6">Pilih antara Gesture Mode, A–Z Training, 0–9 Angka, Game & Kuis, atau Text→Gesture sesuai kebutuhan belajarmu.</p>
+        </div>
+      </div>
+      <div class="card p-6" style="display:flex;gap:20px;align-items:flex-start">
+        <div class="step-num">3</div>
+        <div>
+          <h3 style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:6px">Tunjukkan Gesture & Dapatkan Feedback</h3>
+          <p style="font-size:14px;color:var(--tx2);line-height:1.6">MediaPipe AI mendeteksi posisi 21 titik tangan secara real-time. Tahan gesture 0.8 detik, dapatkan XP, dan pantau progress di Dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TECH STACK ══ -->
+<section style="background:var(--bg)">
+  <div style="max-width:1000px;margin:0 auto;text-align:center">
+    <div class="sec-tag">⚙️ Teknologi</div>
+    <h2 class="sec-title" style="text-align:center;margin-bottom:40px">Dibangun dengan teknologi<br>modern & terpercaya</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px">
+      <div class="card p-5 text-center">
+        <div style="font-size:32px;margin-bottom:8px">🧠</div>
+        <p style="font-weight:700;font-size:14px;color:var(--tx)">MediaPipe Hands</p>
+        <p style="font-size:12px;color:var(--tx3)">21 landmark AI</p>
+      </div>
+      <div class="card p-5 text-center">
+        <div style="font-size:32px;margin-bottom:8px">⚡</div>
+        <p style="font-weight:700;font-size:14px;color:var(--tx)">JavaScript</p>
+        <p style="font-size:12px;color:var(--tx3)">Vanilla + ES2022</p>
+      </div>
+      <div class="card p-5 text-center">
+        <div style="font-size:32px;margin-bottom:8px">🎨</div>
+        <p style="font-weight:700;font-size:14px;color:var(--tx)">TailwindCSS</p>
+        <p style="font-size:12px;color:var(--tx3)">Utility-first CSS</p>
+      </div>
+      <div class="card p-5 text-center">
+        <div style="font-size:32px;margin-bottom:8px">📷</div>
+        <p style="font-weight:700;font-size:14px;color:var(--tx)">WebRTC</p>
+        <p style="font-size:12px;color:var(--tx3)">Browser camera</p>
+      </div>
+      <div class="card p-5 text-center">
+        <div style="font-size:32px;margin-bottom:8px">🔊</div>
+        <p style="font-weight:700;font-size:14px;color:var(--tx)">Web Speech API</p>
+        <p style="font-size:12px;color:var(--tx3)">Text-to-speech</p>
+      </div>
+      <div class="card p-5 text-center">
+        <div style="font-size:32px;margin-bottom:8px">📦</div>
+        <p style="font-weight:700;font-size:14px;color:var(--tx)">Zero Backend</p>
+        <p style="font-size:12px;color:var(--tx3)">100% client-side</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TESTIMONIALS ══ -->
+<section style="background:var(--surf)">
+  <div style="max-width:1000px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="sec-tag">💬 Testimoni</div>
+      <h2 class="sec-title" style="text-align:center">Apa kata pengguna?</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
+      <div class="testi">
+        <div style="display:flex;gap:2px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6;margin-bottom:16px">"Aplikasinya sangat membantu! Saya bisa belajar huruf ASL dalam waktu singkat. Game mode-nya bikin ketagihan!"</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">A</div>
+          <div>
+            <p style="font-size:13px;font-weight:700;color:var(--tx)">Ahmad R.</p>
+            <p style="font-size:12px;color:var(--tx3)">Mahasiswa Pendidikan</p>
+          </div>
+        </div>
+      </div>
+      <div class="testi">
+        <div style="display:flex;gap:2px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6;margin-bottom:16px">"Deteksinya akurat dan responsif. Saya pakai ini untuk penelitian bahasa isyarat. Dashboard analytics-nya sangat berguna."</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--secondary),var(--success));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">S</div>
+          <div>
+            <p style="font-size:13px;font-weight:700;color:var(--tx)">Sari W.</p>
+            <p style="font-size:12px;color:var(--tx3)">Peneliti Aksesibilitas</p>
+          </div>
+        </div>
+      </div>
+      <div class="testi">
+        <div style="display:flex;gap:2px;margin-bottom:12px">⭐⭐⭐⭐⭐</div>
+        <p style="font-size:14px;color:var(--tx2);line-height:1.6;margin-bottom:16px">"Fitur Text→Gesture sangat unik! Saya bisa lihat langsung visualisasi gesture untuk kata yang ingin saya pelajari."</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#f97316);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">B</div>
+          <div>
+            <p style="font-size:13px;font-weight:700;color:var(--tx)">Budi P.</p>
+            <p style="font-size:12px;color:var(--tx3)">Guru SLB Jakarta</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ROADMAP ══ -->
+<section id="roadmap" style="background:var(--bg)">
+  <div style="max-width:1000px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:52px">
+      <div class="sec-tag">🗺️ Roadmap</div>
+      <h2 class="sec-title" style="text-align:center">Progress pengembangan</h2>
+    </div>
+    <div style="position:relative;padding:0 16px">
+      <div class="phase-line"></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;position:relative;z-index:1">
+        <div style="text-align:center">
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--success);box-shadow:0 0 14px rgba(34,197,94,.5);margin:0 auto 16px"></div>
+          <span class="badge badge-success" style="font-size:11px;margin-bottom:8px;display:inline-block">✅ Tahap 1</span>
+          <p style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Game & Kuis</p>
+          <p style="font-size:12px;color:var(--tx3)">Evaluasi alfabet real-time</p>
+        </div>
+        <div style="text-align:center">
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--primary);box-shadow:0 0 14px rgba(37,99,235,.5);margin:0 auto 16px"></div>
+          <span class="badge badge-primary" style="font-size:11px;margin-bottom:8px;display:inline-block">✅ Tahap 2</span>
+          <p style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Angka 0–9</p>
+          <p style="font-size:12px;color:var(--tx3)">Model numerik ASL</p>
+        </div>
+        <div style="text-align:center">
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--secondary);box-shadow:0 0 14px rgba(20,184,166,.5);margin:0 auto 16px"></div>
+          <span class="badge badge-success" style="font-size:11px;margin-bottom:8px;display:inline-block;background:#f0fdfa;color:#0f766e">✅ Tahap 3</span>
+          <p style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">UI Redesign</p>
+          <p style="font-size:12px;color:var(--tx3)">Educational theme final</p>
+        </div>
+        <div style="text-align:center">
+          <div style="width:20px;height:20px;border-radius:50%;border:2px solid rgba(245,158,11,.5);background:rgba(245,158,11,.08);margin:0 auto 16px"></div>
+          <span class="badge badge-warning" style="font-size:11px;margin-bottom:8px;display:inline-block">🔜 Tahap 4</span>
+          <p style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px">Beta PWA</p>
+          <p style="font-size:12px;color:var(--tx3)">Multi-device testing</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FAQ ══ -->
+<section id="faq" style="background:var(--surf)">
+  <div style="max-width:760px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="sec-tag">❓ FAQ</div>
+      <h2 class="sec-title" style="text-align:center">Pertanyaan yang sering ditanyakan</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <details>
+        <summary>Apakah GestureFlow gratis digunakan?</summary>
+        <p>Ya, GestureFlow sepenuhnya gratis. Tidak perlu registrasi, tidak perlu install, cukup buka browser dan mulai belajar.</p>
+      </details>
+      <details>
+        <summary>Apakah data saya aman? Apakah kamera direkam?</summary>
+        <p>Data kamera Anda tidak pernah dikirim ke server. Semua pemrosesan dilakukan secara lokal di browser menggunakan MediaPipe WebAssembly. GestureFlow berjalan 100% client-side.</p>
+      </details>
+      <details>
+        <summary>Browser apa yang didukung?</summary>
+        <p>GestureFlow mendukung Chrome (direkomendasikan), Firefox, Edge, dan Safari iOS 15+. Untuk performa terbaik, gunakan Chrome di desktop atau Android.</p>
+      </details>
+      <details>
+        <summary>Mengapa gesture saya tidak terdeteksi?</summary>
+        <p>Pastikan: (1) Pencahayaan cukup terang, (2) Tangan terlihat penuh dalam frame kamera, (3) Telapak menghadap kamera, (4) Tahan gesture minimal 0.8 detik hingga stability bar penuh.</p>
+      </details>
+      <details>
+        <summary>Apakah bisa digunakan di HP?</summary>
+        <p>Ya! GestureFlow mendukung Android dan iPhone. Resolusi kamera otomatis disesuaikan (640×480 di HP, 1280×720 di desktop) untuk performa optimal.</p>
+      </details>
+      <details>
+        <summary>Huruf J dan Z kenapa tidak bisa dideteksi secara statis?</summary>
+        <p>J dan Z adalah huruf ASL yang membutuhkan gerakan (motion), bukan posisi statis. GestureFlow memiliki sistem trajectory detection — gerakkan jari membentuk huruf J atau Z, dan sistem akan mendeteksi polanya. Durasi gerakan sekitar 1.5 detik.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA ══ -->
+<section style="background:linear-gradient(135deg,var(--primary),var(--secondary));padding:80px 16px">
+  <div style="max-width:700px;margin:0 auto;text-align:center">
+    <div style="font-size:48px;margin-bottom:16px">🤟</div>
+    <h2 style="font-size:clamp(28px,4vw,40px);font-weight:800;color:#fff;margin-bottom:16px">Mulai Belajar Bahasa Isyarat Sekarang</h2>
+    <p style="font-size:16px;color:rgba(255,255,255,.85);margin-bottom:32px;line-height:1.6">Gratis selamanya. Tidak perlu instalasi. Langsung dari browser kamu.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="pages/app.html" class="btn" style="background:#fff;color:var(--primary);font-size:15px;padding:14px 32px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.15)">
+        🚀 Mulai Belajar Gratis
+      </a>
+      <a href="#fitur" class="btn" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.4);font-size:15px;padding:14px 32px;border-radius:14px">
+        Lihat Semua Fitur
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer style="background:var(--tx);padding:48px 16px 32px">
+  <div style="max-width:1200px;margin:0 auto">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:40px" class="footer-grid">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px">🤟</div>
+          <span style="font-weight:800;font-size:16px;color:#fff">GestureFlow</span>
+        </div>
+        <p style="font-size:13px;color:#64748b;line-height:1.7;max-width:280px">Aplikasi web edukasi bahasa isyarat berbasis AI real-time. Dibangun dengan MediaPipe Hands, JavaScript, dan TailwindCSS.</p>
+      </div>
+      <div>
+        <p style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px">Fitur</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="pages/app.html" style="font-size:13px;color:#94a3b8;text-decoration:none" onclick="localStorage.setItem('gf_tab','gesture')">Gesture Mode</a>
+          <a href="pages/app.html" style="font-size:13px;color:#94a3b8;text-decoration:none" onclick="localStorage.setItem('gf_tab','alphabet')">A–Z Training</a>
+          <a href="pages/app.html" style="font-size:13px;color:#94a3b8;text-decoration:none" onclick="localStorage.setItem('gf_tab','numeric')">0–9 Angka</a>
+          <a href="pages/app.html" style="font-size:13px;color:#94a3b8;text-decoration:none" onclick="localStorage.setItem('gf_tab','game')">Game & Kuis</a>
+          <a href="pages/app.html" style="font-size:13px;color:#94a3b8;text-decoration:none" onclick="localStorage.setItem('gf_tab','text2gest')">Teks → Gesture</a>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px">Info</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="#cara-kerja" style="font-size:13px;color:#94a3b8;text-decoration:none">Cara Kerja</a>
+          <a href="#roadmap" style="font-size:13px;color:#94a3b8;text-decoration:none">Roadmap</a>
+          <a href="#faq" style="font-size:13px;color:#94a3b8;text-decoration:none">FAQ</a>
+          <a href="pages/app.html" style="font-size:13px;color:#94a3b8;text-decoration:none" onclick="localStorage.setItem('gf_tab','dashboard')">Dashboard</a>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid #1e293b;padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:gap">
+      <p style="font-size:13px;color:#475569">© 2025 GestureFlow v3.0 — Tugas Besar Pengembangan Aplikasi Web</p>
+      <div style="display:flex;gap:12px">
+        <span style="background:#1e293b;color:#94a3b8;padding:4px 10px;border-radius:6px;font-size:11px;font-family:monospace">MediaPipe ✓</span>
+        <span style="background:#1e293b;color:#94a3b8;padding:4px 10px;border-radius:6px;font-size:11px;font-family:monospace">Zero Backend ✓</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+@media(max-width:768px){
+  .hero-grid{grid-template-columns:1fr!important;}
+  .footer-grid{grid-template-columns:1fr!important;}
+  .hidden-mobile{display:none!important;}
+  .phase-line{display:none;}
+}
+</style>
+<script>
+// Deep-link support from landing to app tab
+document.querySelectorAll('a[href="pages/app.html"]').forEach(a=>{
+  a.addEventListener('click', ()=>{
+    const tab = a.getAttribute('onclick');
+    // tab handled by onclick inline
+  });
+});
+// Smooth reveal on scroll
+if ('IntersectionObserver' in window) {
+  const obs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting) { e.target.style.opacity=1; e.target.style.transform='none'; }
+    });
+  },{threshold:.1});
+  document.querySelectorAll('.card,.testi,details').forEach(el=>{
+    el.style.opacity='0'; el.style.transform='translateY(16px)';
+    el.style.transition='opacity .4s ease, transform .4s ease';
+    obs.observe(el);
+  });
+}
+</script>
+</body>
+</html>
