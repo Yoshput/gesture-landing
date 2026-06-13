@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js" crossorigin="anonymous"></script>
 <style>
 /* ══════════════════════════════════════════════
    DESIGN SYSTEM — Educational / Clean / Modern
@@ -658,11 +659,14 @@ canvas { display: block; width: 100%; height: 100%; }
         <div class="flex justify-between text-xs mb-1" style="color:var(--tx3)"><span>Hold Stability</span><span id="numStabLbl" class="font-mono">–</span></div>
         <div class="prog-bar" style="height:10px"><div id="numStabBar" class="stab-bar prog-fill" style="width:0%;background:linear-gradient(90deg,var(--secondary),var(--success))"></div></div>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 mb-2">
         <button id="numBtnStart" onclick="startNum()" class="btn btn-secondary flex-1">▶ Start</button>
         <button id="numBtnStop" onclick="stopNum()" disabled class="btn btn-danger flex-1">⏹ Stop</button>
         <button id="numBtnSkip" onclick="skipNum()" disabled class="btn btn-ghost flex-1">⏭ Skip</button>
       </div>
+      <button onclick="downloadDatasetNum()" class="btn btn-secondary btn-sm w-full" style="opacity:.8">
+        📥 Download Dataset Gesture Snapshot
+      </button>
     </div>
 
     <div class="card p-5 space-y-4">
@@ -1109,13 +1113,15 @@ canvas { display: block; width: 100%; height: 100%; }
         <!-- Filter Selector -->
         <div class="space-y-3">
           <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">2. Pilih Filter Kamera</label>
-          <div class="grid grid-cols-3 gap-1.5" id="pbFilterSelect">
+          <div class="grid grid-cols-4 gap-1.5" id="pbFilterSelect">
             <button class="pb-filter-btn active text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="normal">Normal</button>
             <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="bright">☀️ Cerah</button>
             <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="dark">🌙 Gelap</button>
             <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="grayscale">🎬 B&W</button>
             <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="cyan">🌐 Cyan</button>
             <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="amber">🍂 Amber</button>
+            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="vaporwave">🌸 Vibe</button>
+            <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="lofi">☕ Lofi</button>
           </div>
         </div>
       </div>
@@ -1133,7 +1139,11 @@ canvas { display: block; width: 100%; height: 100%; }
           </button>
         </div>
         
-        <button id="pbBtnStop" onclick="stopPhotobooth()" disabled class="w-full py-2.5 rounded-xl transition font-semibold text-xs mt-2" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.3); color: #f87171; cursor: pointer;">
+        <button id="pbBtnBoomerang" onclick="recordBoomerang()" disabled
+          class="w-full py-2.5 rounded-xl transition font-semibold text-xs" style="background: linear-gradient(135deg, rgba(189,0,255,0.15) 0%, rgba(0,240,255,0.15) 100%); border: 1.5px solid rgba(0,240,255,0.3); color: #00f0ff; cursor: pointer;">
+          🎬 Rekam Boomerang GIF (2 detik)
+        </button>
+        <button id="pbBtnStop" onclick="stopPhotobooth()" disabled class="w-full py-2.5 rounded-xl transition font-semibold text-xs mt-1" style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.3); color: #f87171; cursor: pointer;">
           ⏹️ Hentikan Kamera
         </button>
       </div>
@@ -1608,7 +1618,8 @@ function detectASL(lm) {
   // ═══════════════════════════════════════════
   // GROUP 6: All 4 fingers curled — A / E / O / S / T / N / M
   // ═══════════════════════════════════════════
-  if (a4c) {
+  const isZeroCurlLetter = (f.Ic && f.Mc && f.Rc) || a4c;
+  if (isZeroCurlLetter) {
     const iTip = tipDist(lm, 8,  5);
     const mTip = tipDist(lm, 12, 9);
     const rTip = tipDist(lm, 16, 13);
@@ -1616,7 +1627,7 @@ function detectASL(lm) {
     const avgTip = (iTip + mTip + rTip + pTip) / 4;
 
     // O: round shape, all tips at medium dist from MCPs, thumb meets index
-    if (avgTip > 0.52 && t2i < 0.48) return 'O';
+    if (avgTip > 0.42 && t2i < 0.58) return 'O';
 
     // Projection of thumb tip onto index-pinky knuckle line to find tucked position
     const dxK = lm[17].x - lm[5].x;
@@ -1766,13 +1777,13 @@ function detectNumber(lm) {
   if (f.I && f.M && f.R && f.P && f.Tc) return '4';
 
   // 0 — all fingers curled into O shape  ✓
-  if (a4c) {
+  const isZeroCurlNumber = (f.Ic && f.Mc && f.Rc) || a4c;
+  if (isZeroCurlNumber) {
     const iTip = tipDist(lm, 8,  5);
     const mTip = tipDist(lm, 12, 9);
     const avgTip = (iTip + mTip) / 2;
     // O-shape: tips at medium distance + thumb close to index tip
-    if (avgTip > 0.50 && t2i < 0.50) return '0';
-    return null;  // tight fist = not a number
+    if (avgTip > 0.40 && t2i < 0.60) return '0';
   }
 
   // 1 — only index finger up  ✓
@@ -2352,7 +2363,32 @@ function numCorrect(n) {
   updateNumUI(); renderNumGrid();
   showResultOverlay('numResOv','numResEmoji','numResTxt','✅',`Angka ${n} Benar!`,'var(--neon3)');
   speak('Angka ' + n + ', benar!');
+  
+  // Auto-save snapshot for dataset
+  try {
+    const snap = cvsNum.toDataURL('image/jpeg', 0.85);
+    if (!window._datasetSnapsNum) window._datasetSnapsNum = {};
+    window._datasetSnapsNum[n] = snap;
+  } catch(e){}
+
   setTimeout(() => { hideResultOverlay('numResOv'); nextNum(); }, 1100);
+}
+
+// Download all captured gesture snapshots as number dataset
+function downloadDatasetNum() {
+  const snaps = window._datasetSnapsNum || {};
+  const keys = Object.keys(snaps);
+  if (!keys.length) { toast('Belum ada snapshot. Latihan angka 0–9 dulu!', 'w'); return; }
+  keys.forEach((num, i) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.download = `gesture_number_${num}_${Date.now()}.jpg`;
+      a.href = snaps[num];
+      a.click();
+    }, i * 200);
+  });
+  toast(`📥 Download ${keys.length} snapshot gesture angka!`, 's');
+  speak('Dataset gesture angka berhasil diunduh');
 }
 
 function nextNum() {
@@ -2835,9 +2871,12 @@ function renderAZVisualGuide() {
   el.innerHTML = Object.entries(ASL_SVG).map(([l, cfg]) => {
     const info = ASL[l];
     const svg  = svgHand(cfg, l);
+    const svgDataUrl = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
     return `<div class="cursor-pointer rounded-xl p-2 text-center border border-gray-800/50 bg-black/20 hover:border-purple-500/60 transition"
                  onclick="speak('Huruf ${l}. ${cfg.note}', true)" title="${info?.desc||''}">
-      <div class="mb-1">${svg}</div>
+      <div class="mb-1.5 flex items-center justify-center">
+        <img src="../public/assets/img/A-Z/${l}.jpg" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-16 h-16 object-cover rounded-lg mx-auto" />
+      </div>
       <div class="text-sm font-black nt2">${l}</div>
       <div class="text-xs text-gray-600 leading-tight mt-0.5" style="font-size:10px">${cfg.note}</div>
     </div>`;
@@ -2849,9 +2888,12 @@ function renderNumVisualGuide() {
   if (!el) return;
   el.innerHTML = Object.entries(NUM_SVG).map(([n, cfg]) => {
     const svg = svgHand(cfg, n, '#22d3ee');
+    const svgDataUrl = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
     return `<div class="cursor-pointer rounded-xl p-2 text-center border border-gray-800/50 bg-black/20 hover:border-cyan-500/60 transition"
                  onclick="speak('Angka ${n}. ${cfg.note}', true)" title="${NUM_SVG[n]?.note||''}">
-      <div class="mb-1">${svg}</div>
+      <div class="mb-1.5 flex items-center justify-center">
+        <img src="../public/assets/img/0-9/${n}.jpg" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-16 h-16 object-cover rounded-lg mx-auto" />
+      </div>
       <div class="text-2xl font-black nt3 font-mono">${n}</div>
       <div class="text-xs text-gray-600 leading-tight mt-0.5" style="font-size:10px">${cfg.note}</div>
     </div>`;
@@ -3670,6 +3712,8 @@ async function startPhotobooth() {
     if (btnSingle) btnSingle.disabled = false;
     if (btnStrip) btnStrip.disabled = false;
     if (btnStop) btnStop.disabled = false;
+    const btnBoom = document.getElementById('pbBtnBoomerang');
+    if (btnBoom) btnBoom.disabled = false;
     
     pbLoad.classList.add('hidden');
     toast('📷 Kamera Photobooth aktif! Silakan berpose', 's');
@@ -3709,6 +3753,8 @@ async function stopPhotobooth() {
   if (btnSingle) btnSingle.disabled = true;
   if (btnStrip) btnStrip.disabled = true;
   if (btnStop) btnStop.disabled = true;
+  const btnBoom = document.getElementById('pbBtnBoomerang');
+  if (btnBoom) btnBoom.disabled = true;
   if (pbPH) pbPH.classList.remove('hidden');
   if (pbHandCount) pbHandCount.textContent = '0 Tangan';
   
@@ -3743,31 +3789,58 @@ function onPhotoboothResults(results) {
   // 1. Draw camera feed
   drawFramePB(ctx, vidPB, cvsPB, pbSt.filter);
   
-  // 2. Draw multiple hand skeletons
+  // 2. Draw multiple hand skeletons + detect gestures
   let handsDetected = 0;
   let activeGesture = null;
+  let peaceLandmarks = null; // track finger tip positions for stickers
   
   if (results.multiHandLandmarks) {
     handsDetected = results.multiHandLandmarks.length;
     const handColors = [
-      { cc: '#BD00FF', pc: '#FF007A' }, // Purple-Pink Glow
-      { cc: '#00F0FF', pc: '#93C5FD' }, // Cyan-Blue Glow
-      { cc: '#14B8A6', pc: '#99F6E4' }, // Teal
-      { cc: '#EF4444', pc: '#FCA5A5' }  // Red
+      { cc: '#BD00FF', pc: '#FF007A' },
+      { cc: '#00F0FF', pc: '#93C5FD' },
+      { cc: '#14B8A6', pc: '#99F6E4' },
+      { cc: '#EF4444', pc: '#FCA5A5' }
     ];
     
     results.multiHandLandmarks.forEach((lm, index) => {
       const colors = handColors[index % handColors.length];
       drawSkeleton(ctx, lm, cvsPB, colors.cc, colors.pc);
       
-      // Classify gesture for first hand
       if (index === 0) {
         activeGesture = detectHandGesture(lm);
+        if (activeGesture === 'peace') peaceLandmarks = lm;
       }
     });
   }
   
-  // 3. Process AI Gesture Shutter Trigger (Peace Sign ✌️)
+  // 3. Floating stickers when Peace ✌️ detected
+  if (peaceLandmarks && !pbSt.countdownActive) {
+    const W = cvsPB.width, H = cvsPB.height;
+    const tipX = peaceLandmarks[8].x * W; // index fingertip
+    const tipY = peaceLandmarks[8].y * H;
+    const tip2X = peaceLandmarks[12].x * W; // middle fingertip
+    const tip2Y = peaceLandmarks[12].y * H;
+    const t = Date.now() / 1000;
+    
+    const stickers = [
+      { x: tipX + Math.sin(t * 3) * 22,     y: tipY - 40 - Math.abs(Math.sin(t * 2.5)) * 25,  e: '❤️', s: 18 },
+      { x: tip2X + Math.cos(t * 2.5) * 20,  y: tip2Y - 35 - Math.abs(Math.cos(t * 3)) * 20,   e: '✨', s: 16 },
+      { x: tipX - 30 + Math.sin(t * 4) * 15, y: tipY - 60 - Math.abs(Math.sin(t * 3.5)) * 18, e: '💖', s: 14 },
+      { x: tip2X + 28 + Math.cos(t * 3) * 12, y: tip2Y - 55 - Math.abs(Math.cos(t * 2)) * 22, e: '🌟', s: 15 },
+    ];
+    
+    ctx.save();
+    stickers.forEach(sk => {
+      ctx.font = `${sk.s}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(sk.e, sk.x, sk.y);
+    });
+    ctx.restore();
+  }
+  
+  // 4. AI Gesture Shutter Trigger (Peace Sign ✌️ held 1.5s)
   if (activeGesture === 'peace' && !pbSt.countdownActive) {
     if (!pbSt.gestureStartTime) {
       pbSt.gestureStartTime = Date.now();
@@ -3775,35 +3848,29 @@ function onPhotoboothResults(results) {
     const elapsed = Date.now() - pbSt.gestureStartTime;
     const progress = Math.min(elapsed / 1500, 1);
     
-    // Draw real-time UI overlay on canvas
     ctx.save();
     ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
     ctx.beginPath();
     ctx.roundRect(cvsPB.width/2 - 160, 24, 320, 48, 14);
     ctx.fill();
-    
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
-    
-    // Neon active progress line at the bottom of the card
     ctx.strokeStyle = '#00f0ff';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(cvsPB.width/2 - 160 + 14, 68);
     ctx.lineTo(cvsPB.width/2 - 160 + 14 + (320 - 28) * progress, 68);
     ctx.stroke();
-    
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`✌️ Peace! Shutter aktif dalam ${Math.ceil((1500 - elapsed)/1000 * 10)/10}s`, cvsPB.width/2, 44);
+    ctx.fillText(`✌️ Peace! Shutter aktif dalam ${Math.ceil((1500 - elapsed) / 100) / 10}s`, cvsPB.width/2, 44);
     ctx.restore();
     
     if (elapsed >= 1500) {
       pbSt.gestureStartTime = null;
-      // Triggers immediate photo capture
       takePhoto(pbSt.mode);
     }
   } else {
@@ -3842,6 +3909,10 @@ function getFilterCSS(filter) {
       return 'hue-rotate(180deg) saturate(1.3) contrast(1.05)';
     case 'amber':
       return 'sepia(50%) saturate(1.2) contrast(1.1) brightness(1.02)';
+    case 'vaporwave':
+      return 'hue-rotate(270deg) saturate(1.8) contrast(1.1) brightness(0.9)';
+    case 'lofi':
+      return 'sepia(30%) contrast(0.9) brightness(0.85) saturate(0.8)';
     case 'normal':
     default:
       return 'none';
@@ -4477,49 +4548,142 @@ function drawFrameDecorations(ctx, template, mode, coords) {
     }
   } 
   else {
-    // Draw normal frames decorations
-    if (mode === 'single') {
-      ctx.fillStyle = fontColorSec;
-      ctx.font = '800 11px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText('AESTHETIC PHOTOBOOTH', 300, 615);
-      
-      ctx.fillStyle = fontColor;
-      ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText(phrase, 300, 655);
-      
-      ctx.fillStyle = fontColorSec;
-      ctx.font = '800 12px "JetBrains Mono", monospace';
-      ctx.fillText('🤟 Web Gesture Isyarat 🤟', 300, 705);
-      
-      const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
-      ctx.font = '600 11px "JetBrains Mono", monospace';
-      ctx.fillText(dateStr, 300, 735);
-      
-      ctx.font = '22px serif';
-      ctx.fillText('✨', 60, 595);
-      ctx.fillText('🌈', 540, 595);
-      ctx.fillText('📸', 60, 735);
-      ctx.fillText('✌️', 540, 735);
-      
-    } else {
-      ctx.fillStyle = fontColorSec;
-      ctx.font = '800 10px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText('AESTHETIC PHOTOBOOTH', 240, 30);
-      
-      ctx.font = '16px serif';
-      const gaps = [382, 718, 1054];
-      const emojis = ['🤟', '⚡', '✨'];
-      for (let i = 0; i < 3; i++) {
-        ctx.fillText(emojis[i], 240, gaps[i]);
+    const w = ctx.canvas.width;
+    const h = ctx.canvas.height;
+
+    if (template === 'retro-polaroid') {
+      // ── POLAROID 1970: Warm analog date stamp ──
+      const now = new Date();
+      const yy = String(now.getFullYear()).slice(2);
+      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const dd = String(now.getDate()).padStart(2,'0');
+      ctx.fillStyle = '#C2410C';
+      ctx.font = 'bold 15px "Courier New", monospace';
+      if (mode === 'single') {
+        ctx.textAlign = 'right';
+        ctx.fillText(`'${yy}.${mm}.${dd}`, w - 48, h - 62);
+        ctx.fillStyle = '#7C2D12';
+        ctx.font = 'italic 11px Georgia, serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('GF // MEMORY SHOT', 48, h - 62);
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 10px "Courier New", monospace';
+        ctx.fillStyle = '#A16207';
+        ctx.fillText('GESTUREFLOW ANALOG SYSTEM', w/2, h - 40);
+      } else {
+        ctx.textAlign = 'center';
+        ctx.fillText(`'${yy}.${mm}.${dd}`, w/2, 1415);
+        ctx.fillStyle = '#7C2D12';
+        ctx.font = 'bold italic 10px "Courier New", monospace';
+        ctx.fillText('ANALOG SYSTEM 1970', w/2, 30);
+        ctx.fillStyle = '#A16207';
+        ctx.font = '8px "Courier New", monospace';
+        ctx.fillText('GestureFlow Memories', w/2, 1435);
       }
-      
-      ctx.fillStyle = fontColor;
-      ctx.font = 'bold 14px "Plus Jakarta Sans", sans-serif';
-      ctx.fillText(phrase, 240, 1405);
-      
-      ctx.fillStyle = fontColorSec;
-      ctx.font = '800 10px "JetBrains Mono", monospace';
-      ctx.fillText('🤟 Web Gesture Isyarat 🤟', 240, 1435);
+    }
+    else if (template === 'arcade-neon') {
+      // ── BAMBEAR GAMERS: Pixel game UI ──
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 13px "Courier New", monospace';
+      if (mode === 'single') {
+        ctx.fillText('👾 INSERT COIN TO PLAY 👾', w/2, h - 85);
+        ctx.fillStyle = '#FF69B4';
+        ctx.fillText('✦ PLAYER 1 READY ✦', w/2, h - 58);
+        ctx.fillStyle = '#00FFFF';
+        ctx.font = 'bold 9px "Courier New", monospace';
+        ctx.fillText('GestureFlow Arcade Mode', w/2, h - 36);
+      } else {
+        ctx.fillText('👾 PLAYER 1 START 👾', w/2, 32);
+        ctx.fillStyle = '#FF69B4';
+        ctx.fillText('✦ GAME OVER ✦', w/2, 1408);
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 9px "Courier New", monospace';
+        ctx.fillText('PRESS START TO PLAY AGAIN', w/2, 1430);
+      }
+    }
+    else if (template === 'manga-speed') {
+      // ── MANGA SPEEDLINES: Action SFX text ──
+      ctx.fillStyle = '#000000';
+      if (mode === 'single') {
+        ctx.font = '900 26px "Arial Black", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('カシャ！', 32, 72);
+        ctx.textAlign = 'right';
+        ctx.fillText('ドキドキ', w - 32, h - 72);
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 11px "Courier New", monospace';
+        ctx.fillText('GESTUREFLOW SHONEN', w/2, h - 40);
+        ctx.font = '800 9px monospace';
+        ctx.fillStyle = '#555555';
+        ctx.fillText('MANGA SERIES Vol.01', w/2, h - 24);
+      } else {
+        ctx.font = '900 18px "Arial Black", sans-serif';
+        ctx.fillText('カシャ！', w/2, 30);
+        ctx.fillText('バーン！', w/2, 1408);
+        ctx.font = 'bold 8px monospace';
+        ctx.fillStyle = '#555555';
+        ctx.fillText('GESTUREFLOW MANGA SERIES', w/2, 1432);
+      }
+    }
+    else if (template === 'flow-neon') {
+      // ── GESTUREFLOW NEON: Holographic identity ──
+      ctx.fillStyle = '#00F0FF';
+      ctx.font = 'bold 14px "Courier New", monospace';
+      if (mode === 'single') {
+        ctx.fillText('🤟 GESTUREFLOW 🤟', w/2, h - 88);
+        ctx.fillStyle = '#BD00FF';
+        ctx.font = 'bold 11px "Courier New", monospace';
+        ctx.fillText('AI GESTURE RECOGNITION', w/2, h - 62);
+        ctx.fillStyle = 'rgba(0,240,255,0.6)';
+        ctx.font = '9px "Courier New", monospace';
+        ctx.fillText('LEVEL UP YOUR SIGNS ✦', w/2, h - 38);
+      } else {
+        ctx.fillText('🤟 FLOW STATE 🤟', w/2, 30);
+        ctx.fillStyle = '#BD00FF';
+        ctx.font = 'bold 11px "Courier New", monospace';
+        ctx.fillText('INTELLIGENT PHOTOSTRIP', w/2, 1408);
+        ctx.fillStyle = 'rgba(0,240,255,0.6)';
+        ctx.font = '9px "Courier New", monospace';
+        ctx.fillText('LEVEL UP YOUR XP! ✦', w/2, 1430);
+      }
+    }
+    else {
+      // ── DEFAULT: white, grunge, arcade, cyber ──
+      if (mode === 'single') {
+        ctx.fillStyle = fontColorSec;
+        ctx.font = '800 11px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('AESTHETIC PHOTOBOOTH', w/2, h - 185);
+        ctx.fillStyle = fontColor;
+        ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(phrase, w/2, h - 145);
+        ctx.fillStyle = fontColorSec;
+        ctx.font = '800 12px "JetBrains Mono", monospace';
+        ctx.fillText('🤟 Web Gesture Isyarat 🤟', w/2, h - 95);
+        const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+        ctx.font = '600 11px "JetBrains Mono", monospace';
+        ctx.fillText(dateStr, w/2, h - 65);
+        ctx.font = '22px serif';
+        ctx.fillText('✨', 60, h - 200);
+        ctx.fillText('🌈', w - 60, h - 200);
+        ctx.fillText('📸', 60, h - 55);
+        ctx.fillText('✌️', w - 60, h - 55);
+      } else {
+        ctx.fillStyle = fontColorSec;
+        ctx.font = '800 10px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText('AESTHETIC PHOTOBOOTH', 240, 30);
+        ctx.font = '16px serif';
+        const gaps = [382, 718, 1054];
+        const emojis = ['🤟', '⚡', '✨'];
+        for (let i = 0; i < 3; i++) {
+          ctx.fillText(emojis[i], 240, gaps[i]);
+        }
+        ctx.fillStyle = fontColor;
+        ctx.font = 'bold 14px "Plus Jakarta Sans", sans-serif';
+        ctx.fillText(phrase, 240, 1405);
+        ctx.fillStyle = fontColorSec;
+        ctx.font = '800 10px "JetBrains Mono", monospace';
+        ctx.fillText('🤟 Web Gesture Isyarat 🤟', 240, 1435);
+      }
     }
   }
 }
@@ -4534,6 +4698,78 @@ function downloadFinal() {
   a.click();
   toast('📸 Foto disimpan! Share ke medsos ya! 🎉', 's');
 }
+
+// ── Boomerang GIF Recorder ─────────────────────
+async function recordBoomerang() {
+  if (!pbSt.running || pbSt.countdownActive) return;
+  const btn  = document.getElementById('pbBtnBoomerang');
+  const cvsPB = document.getElementById('cvsPB');
+
+  if (typeof GIF === 'undefined') {
+    toast('⚠️ gif.js belum dimuat. Coba refresh halaman.', 'e');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏺ Merekam... berpose!'; }
+  toast('🎬 Merekam 2 detik Boomerang... Berpose sekarang!', 'i');
+
+  const DURATION = 2000;
+  const INTERVAL = 80;   // ~25 fps
+  const frames = [];
+  const t0 = Date.now();
+
+  while (Date.now() - t0 < DURATION) {
+    const snap = document.createElement('canvas');
+    snap.width  = cvsPB.width;
+    snap.height = cvsPB.height;
+    snap.getContext('2d').drawImage(cvsPB, 0, 0);
+    frames.push(snap);
+    await sleep(INTERVAL);
+  }
+
+  // Boomerang = forward frames + reversed frames
+  const boom = [...frames, ...[...frames].reverse()];
+
+  if (btn) btn.textContent = '⚙️ Mengompres GIF...';
+
+  const scale = Math.min(1, 480 / cvsPB.width);
+  const gifW  = Math.round(cvsPB.width  * scale);
+  const gifH  = Math.round(cvsPB.height * scale);
+
+  const gif = new GIF({
+    workers: 2,
+    quality: 12,
+    width:   gifW,
+    height:  gifH,
+    workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+  });
+
+  boom.forEach(frame => {
+    const tmp = document.createElement('canvas');
+    tmp.width  = gifW;
+    tmp.height = gifH;
+    tmp.getContext('2d').drawImage(frame, 0, 0, gifW, gifH);
+    gif.addFrame(tmp, { delay: INTERVAL, copy: true });
+  });
+
+  gif.on('progress', p => {
+    if (btn) btn.textContent = `⚙️ Mengompres... ${Math.round(p * 100)}%`;
+  });
+
+  gif.on('finished', blob => {
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href     = url;
+    a.download = `gestureflow-boomerang-${Date.now()}.gif`;
+    a.click();
+    URL.revokeObjectURL(url);
+    if (btn) { btn.disabled = false; btn.textContent = '🎬 Rekam Boomerang GIF (2 detik)'; }
+    toast('🎬 Boomerang GIF siap! Upload ke IG Story 🔥', 's');
+  });
+
+  gif.render();
+}
+
 
 // ── Share to Instagram Story (Web Share API) ──
 async function shareToIG() {
