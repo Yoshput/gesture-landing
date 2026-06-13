@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js" crossorigin="anonymous"></script>
 <style>
 /* ══════════════════════════════════════════════
@@ -1001,6 +1002,23 @@ canvas { display: block; width: 100%; height: 100%; }
       color: #00f0ff !important;
       box-shadow: 0 0 8px rgba(0, 240, 255, 0.2) !important;
     }
+    /* Background Swap buttons */
+    .pb-bg-btn {
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      background: rgba(255, 255, 255, 0.03) !important;
+      color: #94a3b8 !important;
+      transition: all 0.2s ease !important;
+    }
+    .pb-bg-btn:hover {
+      background: rgba(189, 0, 255, 0.1) !important;
+      color: #e2b4ff !important;
+    }
+    .pb-bg-btn.active {
+      border-color: #bd00ff !important;
+      background: rgba(189, 0, 255, 0.15) !important;
+      color: #e2b4ff !important;
+      box-shadow: 0 0 8px rgba(189, 0, 255, 0.3) !important;
+    }
     @keyframes pb-flash {
       0% { opacity: 0; }
       15% { opacity: 0.95; }
@@ -1080,7 +1098,12 @@ canvas { display: block; width: 100%; height: 100%; }
 
         <!-- Frame Template Selector -->
         <div class="space-y-3">
-          <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">1. Pilih Bingkai (Template)</label>
+          <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center justify-between">
+            1. Pilih Bingkai (Template)
+            <span class="normal-case font-normal text-slate-500 flex items-center gap-1" title="Lambaikan tangan terbuka ke kiri/kanan saat kamera aktif untuk ganti frame">
+              <span style="font-size:10px;">✋ Swipe ganti frame</span>
+            </span>
+          </label>
           <div class="grid grid-cols-2 gap-2.5" id="pbFrameSelect">
             <button class="pb-frame-btn active rounded-xl p-2.5 text-left transition" data-frame="white">
               <div class="w-full h-8 bg-white border border-slate-300 rounded mb-1.5 shadow-inner"></div>
@@ -1123,6 +1146,24 @@ canvas { display: block; width: 100%; height: 100%; }
             <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="vaporwave">🌸 Vibe</button>
             <button class="pb-filter-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-filter="lofi">☕ Lofi</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Background AI Swap -->
+      <div class="space-y-2 mt-3" id="pbBgSwapSection">
+        <label class="text-[10px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+          🤖 AI Background Swap
+          <span id="pbBgAiStatus" class="text-[9px] font-normal text-slate-500 normal-case">(Matikan kamera dulu untuk ganti)</span>
+        </label>
+        <div class="grid grid-cols-4 gap-1.5" id="pbBgSelect">
+          <button class="pb-bg-btn active text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="none" title="Background asli kamera" style="font-size:9px;">🎥 Off</button>
+          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="studio" title="Studio Korea minimal putih" style="font-size:9px;">🤍 Studio</button>
+          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="cyberpunk" title="Cyberpunk Neon City" style="font-size:9px;">🌆 Cyber</button>
+          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="vaporwave" title="Vaporwave Dream" style="font-size:9px;">🌸 Vibe</button>
+          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="forest" title="Aesthetic Forest" style="font-size:9px;">🌿 Forest</button>
+          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="space" title="Outer Space" style="font-size:9px;">🌌 Space</button>
+          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="cafe" title="Lofi Cafe" style="font-size:9px;">☕ Cafe</button>
+          <button class="pb-bg-btn text-xs font-semibold py-2 px-1 rounded-lg border text-center transition" data-bg="beach" title="Tropical Beach Sunset" style="font-size:9px;">🏖️ Beach</button>
         </div>
       </div>
 
@@ -1216,7 +1257,23 @@ canvas { display: block; width: 100%; height: 100%; }
             🔄 Retake
           </button>
         </div>
-        <!-- Row 2: Share IG Story -->
+        <!-- Row 2: Sticker Bomb + Share -->
+        <div class="flex gap-2">
+          <button onclick="stickerBomb()"
+                  id="pbStickerBombBtn"
+                  class="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold py-2.5 px-3 rounded-xl transition-all active:scale-95"
+                  style="background: linear-gradient(135deg, #ff007a 0%, #ff6b35 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255,0,122,0.35);">
+            🎉 Sticker Bomb!
+          </button>
+          <button onclick="shareWA()"
+                  id="pbShareWABtn"
+                  class="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold py-2.5 px-3 rounded-xl transition-all active:scale-95"
+                  style="background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(37,211,102,0.35);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            WA Share
+          </button>
+        </div>
+        <!-- Row 3: Share IG Story -->
         <button onclick="shareToIG()"
                 id="pbShareBtn"
                 class="w-full flex items-center justify-center gap-2 text-sm font-bold py-3 px-4 rounded-xl text-white transition-all shadow-md active:scale-95"
@@ -3689,16 +3746,51 @@ async function startPhotobooth() {
       pbSt.hands.onResults(onPhotoboothResults);
     }
     
+    // Lazy initialize SelfieSegmentation
+    if (!pbSt.seg && typeof SelfieSegmentation !== 'undefined') {
+      pbSt.seg = new SelfieSegmentation({
+        locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`
+      });
+      pbSt.seg.setOptions({ modelSelection: 1 });
+      pbSt.seg.onResults(results => {
+        if (!results.segmentationMask) return;
+        // Store mask in offscreen canvas for compositing
+        const vid2 = document.getElementById('vidPB');
+        const mw = vid2.videoWidth || 640, mh = vid2.videoHeight || 480;
+        if (!pbSt.segMaskCvs) {
+          pbSt.segMaskCvs = document.createElement('canvas');
+        }
+        pbSt.segMaskCvs.width = mw;
+        pbSt.segMaskCvs.height = mh;
+        const mg = pbSt.segMaskCvs.getContext('2d');
+        // Draw segmentation mask with some edge feathering
+        mg.clearRect(0, 0, mw, mh);
+        mg.filter = 'blur(4px)';
+        mg.drawImage(results.segmentationMask, 0, 0, mw, mh);
+        mg.filter = 'none';
+        pbSt.segMask = pbSt.segMaskCvs;
+      });
+    }
+    
     pbSt.detecting = true;
     const isMobile = window.innerWidth < 768;
     const vidPB = document.getElementById('vidPB');
     const cvsPB = document.getElementById('cvsPB');
     
     if (!pbSt.cam) {
+      pbSt._segFrameCount = 0;
       pbSt.cam = new Camera(vidPB, {
         onFrame: async () => {
-          if (pbSt.hands && pbSt.detecting && pbSt.running) {
+          if (!pbSt.running) return;
+          if (pbSt.hands && pbSt.detecting) {
             await pbSt.hands.send({ image: vidPB });
+          }
+          // Run segmentation every 3rd frame to reduce CPU load
+          if (pbSt.seg && pbSt.bgType && pbSt.bgType !== 'none') {
+            pbSt._segFrameCount = (pbSt._segFrameCount || 0) + 1;
+            if (pbSt._segFrameCount % 3 === 0) {
+              await pbSt.seg.send({ image: vidPB });
+            }
           }
         },
         width: isMobile ? 640 : 1280,
@@ -3778,6 +3870,69 @@ function detectHandGesture(lm) {
   return null;
 }
 
+// ── Swipe Frame Detector ───────────────────────
+// Returns 'swipe-left' | 'swipe-right' | null
+// Strategy: track wrist (lm[0]) x-position per frame,
+// detect rapid horizontal movement while palm is open.
+function detectSwipe(lm, canvasW) {
+  // Is palm open? (all 4 fingers extended)
+  const allExtended = [
+    lm[8].y < lm[6].y,   // index
+    lm[12].y < lm[10].y, // middle
+    lm[16].y < lm[14].y, // ring
+    lm[20].y < lm[18].y  // pinky
+  ].every(Boolean);
+  if (!allExtended) return null;
+
+  const now = Date.now();
+  const wristX = lm[0].x; // normalized 0-1
+
+  if (!pbSt._swipe) pbSt._swipe = { prevX: wristX, prevT: now, triggered: false };
+
+  const sw = pbSt._swipe;
+  const dt = now - sw.prevT;     // ms since last sample
+  const dx = wristX - sw.prevX; // positive = hand moved right in normalized space
+                                  // (but canvas is mirrored, so visual right = dx < 0)
+
+  // Update sample every ~80ms for velocity calculation
+  if (dt > 80) {
+    const velocity = dx / (dt / 1000); // units/s in normalized space
+    sw.prevX = wristX;
+    sw.prevT = now;
+
+    // Threshold: |velocity| > 0.55 units/s to count as swipe
+    // Because canvas is mirrored: dx < 0 = visual left swipe (→ prev frame)
+    //                              dx > 0 = visual right swipe (→ next frame)
+    if (!sw.triggered) {
+      if (velocity < -0.55) { sw.triggered = true; return 'swipe-left'; }
+      if (velocity >  0.55) { sw.triggered = true; return 'swipe-right'; }
+    }
+  }
+
+  // Reset trigger flag after hand slows down
+  if (Math.abs(dx) < 0.02) sw.triggered = false;
+
+  return null;
+}
+
+// ── Switch Frame by Direction ──────────────────
+function switchFrame(dir) {
+  const container = document.getElementById('pbFrameSelect');
+  if (!container) return;
+  const btns = Array.from(container.querySelectorAll('.pb-frame-btn'));
+  const activeIdx = btns.findIndex(b => b.classList.contains('active'));
+  let nextIdx;
+  if (dir === 'next') {
+    nextIdx = (activeIdx + 1) % btns.length;
+  } else {
+    nextIdx = (activeIdx - 1 + btns.length) % btns.length;
+  }
+  // Simulate click on next button
+  btns[nextIdx].click();
+  // Scroll into view if needed
+  btns[nextIdx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // ── Results Handler ───────────────────────────
 function onPhotoboothResults(results) {
   if (!pbSt.running) return;
@@ -3810,6 +3965,20 @@ function onPhotoboothResults(results) {
       if (index === 0) {
         activeGesture = detectHandGesture(lm);
         if (activeGesture === 'peace') peaceLandmarks = lm;
+
+        // ── Swipe gesture detection ──
+        if (!pbSt.countdownActive) {
+          const swDir = detectSwipe(lm, cvsPB.width);
+          const now = Date.now();
+          if (swDir && (!pbSt._swipeCooldown || now - pbSt._swipeCooldown > 1500)) {
+            pbSt._swipeCooldown = now;
+            // Visual right swipe = hand moves right = dx>0 = next frame
+            // Visual left swipe  = hand moves left  = dx<0 = prev frame
+            const frameDir = swDir === 'swipe-right' ? 'next' : 'prev';
+            pbSt._lastSwipe = { dir: frameDir, time: now };
+            switchFrame(frameDir);
+          }
+        }
       }
     });
   }
@@ -3876,25 +4045,289 @@ function onPhotoboothResults(results) {
   } else {
     pbSt.gestureStartTime = null;
   }
+
+  // 5. Swipe HUD Feedback (show arrow briefly after swipe)
+  if (pbSt._lastSwipe && Date.now() - pbSt._lastSwipe.time < 800) {
+    const W = cvsPB.width, H = cvsPB.height;
+    const isNext = pbSt._lastSwipe.dir === 'next';
+    const age = Date.now() - pbSt._lastSwipe.time; // 0–800ms
+    const alpha = 1 - age / 800;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Glowing pill background
+    const pillW = 220, pillH = 52, pillX = W/2 - pillW/2, pillY = H - 90;
+    ctx.fillStyle = 'rgba(10, 12, 28, 0.85)';
+    ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pillH, 16); ctx.fill();
+    const borderGrad = ctx.createLinearGradient(pillX, pillY, pillX + pillW, pillY);
+    borderGrad.addColorStop(0, isNext ? '#00f0ff' : '#bd00ff');
+    borderGrad.addColorStop(1, isNext ? '#3b82f6' : '#ff007a');
+    ctx.strokeStyle = borderGrad;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(pillX, pillY, pillW, pillH, 16); ctx.stroke();
+
+    // Arrow + text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 22px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const arrow = isNext ? '👉' : '👈';
+    ctx.fillText(arrow, W/2 - (isNext ? 50 : -50), pillY + pillH/2);
+
+    ctx.fillStyle = isNext ? '#00f0ff' : '#bd00ff';
+    ctx.font = 'bold 11px "Plus Jakarta Sans", sans-serif';
+    ctx.fillText(isNext ? 'Frame Berikutnya →' : '← Frame Sebelumnya', W/2 + (isNext ? 14 : -14), pillY + pillH/2);
+
+    ctx.restore();
+  }
   
   const pbHandCount = document.getElementById('pbHandCount');
   if (pbHandCount) pbHandCount.textContent = `${handsDetected} Tangan`;
 }
 
-// ── Custom Camera Drawer with Filter ──────────
+// ── Background Composer (AI Swap) ─────────────
+function drawBgCanvas(bgType, w, h) {
+  // Creates (or reuses) an offscreen canvas with the chosen background drawn
+  if (!pbSt._bgCache) pbSt._bgCache = {};
+  if (pbSt._bgCache.type === bgType && pbSt._bgCache.w === w && pbSt._bgCache.h === h) {
+    return pbSt._bgCache.cvs;
+  }
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  
+  switch (bgType) {
+    case 'studio': {
+      // Korean minimal studio — clean warm white with soft vignette
+      const grad = g.createRadialGradient(w/2, h*0.4, 0, w/2, h*0.4, Math.max(w,h)*0.75);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.55, '#f5f0f0');
+      grad.addColorStop(1, '#d8d0cc');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, w, h);
+      // subtle floor line
+      const floor = g.createLinearGradient(0, h*0.72, 0, h);
+      floor.addColorStop(0, 'rgba(200,190,185,0.0)');
+      floor.addColorStop(1, 'rgba(180,165,155,0.55)');
+      g.fillStyle = floor;
+      g.fillRect(0, h*0.72, w, h);
+      break;
+    }
+    case 'cyberpunk': {
+      g.fillStyle = '#050816';
+      g.fillRect(0, 0, w, h);
+      // neon grid floor
+      const lineColor = 'rgba(0,240,255,0.18)';
+      g.strokeStyle = lineColor;
+      g.lineWidth = 1;
+      const gSize = Math.round(w / 18);
+      for (let x = 0; x <= w; x += gSize) {
+        g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke();
+      }
+      for (let y = 0; y <= h; y += gSize) {
+        g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+      }
+      // city silhouette
+      g.fillStyle = '#0a0d1e';
+      const bw = w / 9;
+      const buildings = [
+        {x:0,     bh:h*0.55}, {x:bw,   bh:h*0.35}, {x:bw*2, bh:h*0.48},
+        {x:bw*3, bh:h*0.28}, {x:bw*4, bh:h*0.60}, {x:bw*5, bh:h*0.38},
+        {x:bw*6, bh:h*0.50}, {x:bw*7, bh:h*0.32}, {x:bw*8, bh:h*0.45}
+      ];
+      buildings.forEach(b => g.fillRect(b.x, h - b.bh, bw - 2, b.bh));
+      // neon horizon glow
+      const glow = g.createLinearGradient(0, h*0.35, 0, h*0.55);
+      glow.addColorStop(0, 'rgba(189,0,255,0.0)');
+      glow.addColorStop(0.5, 'rgba(189,0,255,0.22)');
+      glow.addColorStop(1, 'rgba(0,240,255,0.0)');
+      g.fillStyle = glow;
+      g.fillRect(0, 0, w, h);
+      break;
+    }
+    case 'vaporwave': {
+      // Retrowave synthwave sunset
+      const sky = g.createLinearGradient(0, 0, 0, h * 0.65);
+      sky.addColorStop(0, '#0a0020');
+      sky.addColorStop(0.5, '#6e1f7f');
+      sky.addColorStop(1, '#e0607e');
+      g.fillStyle = sky; g.fillRect(0, 0, w, h * 0.65);
+      // sun
+      const cx = w / 2, sy = h * 0.42;
+      const sunGrad = g.createRadialGradient(cx, sy, 0, cx, sy, h * 0.16);
+      sunGrad.addColorStop(0, '#ffe066');
+      sunGrad.addColorStop(0.5, '#ff6ec7');
+      sunGrad.addColorStop(1, 'rgba(255,110,199,0)');
+      g.fillStyle = sunGrad;
+      g.beginPath(); g.arc(cx, sy, h * 0.16, 0, Math.PI * 2); g.fill();
+      // horizontal stripes on sun (retrowave style)
+      g.fillStyle = '#0a0020';
+      for (let i = 0; i < 6; i++) {
+        const sy2 = sy + i * (h * 0.025);
+        g.fillRect(cx - h*0.16, sy2, h*0.32, h * 0.012);
+      }
+      // grid floor
+      const floor2 = g.createLinearGradient(0, h * 0.65, 0, h);
+      floor2.addColorStop(0, '#b040b0');
+      floor2.addColorStop(1, '#200040');
+      g.fillStyle = floor2; g.fillRect(0, h * 0.65, w, h * 0.35);
+      g.strokeStyle = 'rgba(255,110,199,0.55)';
+      g.lineWidth = 1;
+      const vp = { x: w / 2, y: h * 0.65 };
+      for (let i = -10; i <= 10; i++) {
+        g.beginPath(); g.moveTo(vp.x, vp.y); g.lineTo(vp.x + i * (w/6), h); g.stroke();
+      }
+      for (let i = 0; i < 8; i++) {
+        const yy = h * 0.65 + i * (h * 0.35 / 7);
+        g.beginPath(); g.moveTo(0, yy); g.lineTo(w, yy); g.stroke();
+      }
+      break;
+    }
+    case 'forest': {
+      // Dreamy forest — soft greens with bokeh
+      const fgrad = g.createLinearGradient(0, 0, 0, h);
+      fgrad.addColorStop(0, '#0d2b1e');
+      fgrad.addColorStop(0.5, '#1a4c2e');
+      fgrad.addColorStop(1, '#0a1f14');
+      g.fillStyle = fgrad; g.fillRect(0, 0, w, h);
+      // bokeh circles
+      const bokehs = [
+        {x:0.1,y:0.2,r:0.08,a:0.18,c:'#a8ff78'},{x:0.85,y:0.15,r:0.06,a:0.12,c:'#78ffd6'},
+        {x:0.5,y:0.1,r:0.07,a:0.10,c:'#c8ff78'},{x:0.3,y:0.3,r:0.05,a:0.14,c:'#78ff9e'},
+        {x:0.7,y:0.25,r:0.09,a:0.09,c:'#acff78'},{x:0.15,y:0.6,r:0.1,a:0.08,c:'#78ffc8'},
+        {x:0.88,y:0.55,r:0.07,a:0.11,c:'#d8ff78'}
+      ];
+      bokehs.forEach(b => {
+        const bg2 = g.createRadialGradient(b.x*w, b.y*h, 0, b.x*w, b.y*h, b.r*w);
+        bg2.addColorStop(0, b.c.replace(')', `,${b.a})`).replace('rgb','rgba'));
+        bg2.addColorStop(1, 'transparent');
+        g.fillStyle = b.c + Math.round(b.a * 255).toString(16).padStart(2,'0');
+        g.beginPath(); g.arc(b.x*w, b.y*h, b.r*w, 0, Math.PI*2); g.fill();
+      });
+      // misty overlay
+      const mist = g.createLinearGradient(0, h*0.5, 0, h);
+      mist.addColorStop(0, 'rgba(100,200,150,0.0)');
+      mist.addColorStop(1, 'rgba(180,255,200,0.18)');
+      g.fillStyle = mist; g.fillRect(0, 0, w, h);
+      break;
+    }
+    case 'space': {
+      // Outer space — deep dark with stars and nebula
+      g.fillStyle = '#020408'; g.fillRect(0, 0, w, h);
+      // stars
+      const rng = (seed => { let s = seed; return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; }; })(42);
+      for (let i = 0; i < 280; i++) {
+        const sx = rng() * w, sy2 = rng() * h, ss = rng() * 1.8 + 0.2, sa = rng() * 0.6 + 0.4;
+        g.fillStyle = `rgba(255,255,255,${sa})`;
+        g.beginPath(); g.arc(sx, sy2, ss, 0, Math.PI*2); g.fill();
+      }
+      // nebula
+      const neb1 = g.createRadialGradient(w*0.3, h*0.4, 0, w*0.3, h*0.4, w*0.35);
+      neb1.addColorStop(0, 'rgba(100,0,200,0.18)'); neb1.addColorStop(1, 'transparent');
+      g.fillStyle = neb1; g.fillRect(0,0,w,h);
+      const neb2 = g.createRadialGradient(w*0.75, h*0.3, 0, w*0.75, h*0.3, w*0.3);
+      neb2.addColorStop(0, 'rgba(0,120,255,0.14)'); neb2.addColorStop(1, 'transparent');
+      g.fillStyle = neb2; g.fillRect(0,0,w,h);
+      break;
+    }
+    case 'cafe': {
+      // Lofi cafe — warm wooden interior
+      g.fillStyle = '#2a1a0e'; g.fillRect(0, 0, w, h);
+      // wood texture gradient
+      const wg = g.createLinearGradient(0, 0, w, h);
+      wg.addColorStop(0, '#3d2510'); wg.addColorStop(0.5, '#5c3820'); wg.addColorStop(1, '#3a2008');
+      g.fillStyle = wg; g.fillRect(0, 0, w, h);
+      // soft window light
+      const wl = g.createRadialGradient(w*0.75, 0, 0, w*0.75, 0, h*0.9);
+      wl.addColorStop(0, 'rgba(255,220,140,0.28)'); wl.addColorStop(1, 'transparent');
+      g.fillStyle = wl; g.fillRect(0,0,w,h);
+      // bokeh warm lights
+      [[0.1,0.1,0.06,'#ffcc55'],[0.9,0.08,0.05,'#ffaa33'],[0.5,0.05,0.04,'#ffe066'],
+       [0.2,0.8,0.07,'#ff8833'],[0.8,0.85,0.06,'#ffcc55']].forEach(([bx,by,br,bc]) => {
+        const bkg = g.createRadialGradient(bx*w,by*h,0,bx*w,by*h,br*w);
+        bkg.addColorStop(0, bc+'55'); bkg.addColorStop(1,'transparent');
+        g.fillStyle = bkg; g.fillRect(0,0,w,h);
+      });
+      break;
+    }
+    case 'beach': {
+      // Tropical Beach Sunset
+      const sky2 = g.createLinearGradient(0, 0, 0, h * 0.55);
+      sky2.addColorStop(0, '#1a0533'); sky2.addColorStop(0.4, '#c0392b');
+      sky2.addColorStop(0.7, '#e67e22'); sky2.addColorStop(1, '#f39c12');
+      g.fillStyle = sky2; g.fillRect(0, 0, w, h * 0.55);
+      // sun
+      const sgrad = g.createRadialGradient(w/2, h*0.38, 0, w/2, h*0.38, h*0.12);
+      sgrad.addColorStop(0, '#fff5aa'); sgrad.addColorStop(0.6, '#ffd700'); sgrad.addColorStop(1,'transparent');
+      g.fillStyle = sgrad; g.fillRect(0,0,w,h);
+      // ocean
+      const ocean = g.createLinearGradient(0, h*0.55, 0, h*0.78);
+      ocean.addColorStop(0, '#1a6b8a'); ocean.addColorStop(1, '#0a3d55');
+      g.fillStyle = ocean; g.fillRect(0, h*0.55, w, h*0.23);
+      // ocean glow
+      const og = g.createLinearGradient(0, h*0.54, 0, h*0.60);
+      og.addColorStop(0,'rgba(255,200,80,0.45)'); og.addColorStop(1,'transparent');
+      g.fillStyle = og; g.fillRect(0, h*0.54, w, h*0.08);
+      // sand
+      const sand = g.createLinearGradient(0, h*0.78, 0, h);
+      sand.addColorStop(0, '#d4a86a'); sand.addColorStop(1, '#b8955a');
+      g.fillStyle = sand; g.fillRect(0, h*0.78, w, h*0.22);
+      break;
+    }
+    default: break;
+  }
+  pbSt._bgCache = { type: bgType, w, h, cvs: c };
+  return c;
+}
+
+// ── Custom Camera Drawer with Filter + BG Swap ─
 function drawFramePB(ctx, vid, cvs, filterType) {
   const w = vid.videoWidth || 640, h = vid.videoHeight || 480;
   if (cvs.width !== w || cvs.height !== h) { cvs.width = w; cvs.height = h; }
   
-  ctx.save();
-  ctx.clearRect(0, 0, w, h);
-  ctx.scale(-1, 1);
-  ctx.translate(-w, 0);
+  const bgType = pbSt.bgType || 'none';
   
-  // Apply Canvas filter properties
-  ctx.filter = getFilterCSS(filterType);
-  ctx.drawImage(vid, 0, 0, w, h);
-  ctx.restore();
+  if (bgType !== 'none' && pbSt.segMask) {
+    // ── AI Background Swap mode ──
+    // 1. Draw background
+    const bgCvs = drawBgCanvas(bgType, w, h);
+    ctx.save();
+    ctx.scale(-1, 1); ctx.translate(-w, 0);
+    if (bgCvs) ctx.drawImage(bgCvs, 0, 0, w, h);
+    ctx.restore();
+    
+    // 2. Apply segmentation mask: only draw person pixels
+    // Use the segmentation mask stored from the last SelfieSegmentation result
+    const maskCvs = pbSt.segMask; // offscreen canvas with mask
+    
+    // Draw person layer with destination-in composite on temp canvas
+    const tmp = document.createElement('canvas');
+    tmp.width = w; tmp.height = h;
+    const tg = tmp.getContext('2d');
+    tg.save();
+    tg.filter = getFilterCSS(filterType);
+    tg.scale(-1, 1); tg.translate(-w, 0);
+    tg.drawImage(vid, 0, 0, w, h);
+    tg.restore();
+    // Apply mask (keep only person pixels)
+    tg.globalCompositeOperation = 'destination-in';
+    tg.save();
+    tg.scale(-1, 1); tg.translate(-w, 0);
+    tg.drawImage(maskCvs, 0, 0, w, h);
+    tg.restore();
+    // Composite person onto background
+    ctx.drawImage(tmp, 0, 0);
+  } else {
+    // ── Normal mode (no background swap) ──
+    ctx.save();
+    ctx.clearRect(0, 0, w, h);
+    ctx.scale(-1, 1);
+    ctx.translate(-w, 0);
+    ctx.filter = getFilterCSS(filterType);
+    ctx.drawImage(vid, 0, 0, w, h);
+    ctx.restore();
+  }
 }
 
 function getFilterCSS(filter) {
@@ -4772,6 +5205,152 @@ async function recordBoomerang() {
 
 
 // ── Share to Instagram Story (Web Share API) ──
+// ── Sticker Bomb ───────────────────────────
+function stickerBomb() {
+  const canvas = document.getElementById('cvsFinal');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+
+  // 30+ sticker pool across themes
+  const stickerPool = [
+    // Kawaii / cute
+    '❤️','💖','✨','🌟','💕','💞','🌸','🌷','🌹','🌶️',
+    // Gesture / sign language vibes
+    '✌️','🤙','🤗','👋','👏','🤞','👌','👍',
+    // Fun & celebration
+    '🎉','🎈','🥳','🎆','🎇','🧨','💎','🏆',
+    // Aesthetic
+    '🌙','⭐','🌊','🦋','🍃','🍁','🌙','💧','🔥','⚡',
+    // Y2K / cyber
+    '👾','🤖','✈️','🌌','💊','📷','🎨','📍'
+  ];
+
+  const count = 28 + Math.floor(Math.random() * 8); // 28-35 stickers
+  const placed = [];
+
+  // Helper: check if a new sticker overlaps too much with existing ones
+  function overlaps(nx, ny, nr) {
+    return placed.some(p => Math.hypot(p.x - nx, p.y - ny) < (p.r + nr) * 0.6);
+  }
+
+  const btn = document.getElementById('pbStickerBombBtn');
+  if (btn) { btn.textContent = '⏳ Bombing...'; btn.disabled = true; }
+
+  let drawn = 0;
+  const maxAttempts = count * 12;
+  let attempts = 0;
+
+  // Avoid center-ish area (where the person is) — bias to edges
+  function randomPos(size) {
+    const zone = Math.random();
+    let x, y;
+    if (zone < 0.3) {
+      // Top strip
+      x = size + Math.random() * (w - size * 2);
+      y = size + Math.random() * h * 0.22;
+    } else if (zone < 0.6) {
+      // Bottom strip
+      x = size + Math.random() * (w - size * 2);
+      y = h * 0.78 + Math.random() * (h * 0.2 - size);
+    } else if (zone < 0.8) {
+      // Left strip
+      x = size + Math.random() * w * 0.18;
+      y = size + Math.random() * (h - size * 2);
+    } else {
+      // Right strip
+      x = w * 0.82 + Math.random() * (w * 0.16 - size);
+      y = size + Math.random() * (h - size * 2);
+    }
+    return { x, y };
+  }
+
+  while (drawn < count && attempts < maxAttempts) {
+    attempts++;
+    const emoji = stickerPool[Math.floor(Math.random() * stickerPool.length)];
+    const size = 18 + Math.random() * 28; // 18–46px
+    const rot  = (Math.random() - 0.5) * Math.PI * 0.6; // -54° to +54°
+    const { x, y } = randomPos(size);
+
+    if (overlaps(x, y, size)) continue;
+
+    placed.push({ x, y, r: size });
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    // Subtle shadow for depth
+    ctx.shadowColor = 'rgba(0,0,0,0.25)';
+    ctx.shadowBlur  = 4;
+    ctx.shadowOffsetX = 1.5;
+    ctx.shadowOffsetY = 1.5;
+    ctx.font = `${size}px serif`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 0, 0);
+    ctx.restore();
+    drawn++;
+  }
+
+  // Add subtle sparkle trail: tiny stars scattered over stickers
+  for (let i = 0; i < 18; i++) {
+    const sx = Math.random() * w, sy = Math.random() * h;
+    const ss = 1.5 + Math.random() * 2.5;
+    ctx.save();
+    ctx.globalAlpha = 0.35 + Math.random() * 0.45;
+    ctx.fillStyle = ['#fff','#ffe066','#00f0ff','#ff6ec7','#a78bfa'][Math.floor(Math.random()*5)];
+    ctx.beginPath(); ctx.arc(sx, sy, ss, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  if (btn) {
+    btn.textContent = '✅ Bombing Done!';
+    setTimeout(() => { btn.textContent = '🎉 Sticker Bomb!'; btn.disabled = false; }, 2000);
+  }
+  toast(`🎉 ${drawn} stiker estetik udah ditebar ke foto kamu!`, 's');
+}
+
+// ── WhatsApp Share ──────────────────────
+function shareWA() {
+  const canvas = document.getElementById('cvsFinal');
+  if (!canvas) { toast('⚠️ Tidak ada foto untuk di-share', 'w'); return; }
+
+  const btn = document.getElementById('pbShareWABtn');
+
+  // Try Web Share API first (works on Android)
+  if (navigator.canShare) {
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], `gestureflow-${Date.now()}.png`, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          if (btn) btn.textContent = '⏳ Sharing...';
+          await navigator.share({
+            files: [file],
+            title: 'GestureFlow Photobooth 🤟',
+            text: 'Hasil photobooth keren dari GestureFlow! 🤟✨ Belajar bahasa isyarat sambil foto estetik! #GestureFlow'
+          });
+          toast('🎉 Berhasil share!', 's');
+        } catch (e) {
+          if (e.name !== 'AbortError') fallbackWAShare();
+        } finally {
+          if (btn) btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> WA Share';
+        }
+        return;
+      }
+      fallbackWAShare();
+    }, 'image/png');
+  } else {
+    fallbackWAShare();
+  }
+}
+
+function fallbackWAShare() {
+  // Download photo then open WA with pre-filled message
+  downloadFinal();
+  const msg = encodeURIComponent('Hei! Cek hasil photobooth GestureFlow saya 🤟✨ #GestureFlow #BahasaIsyarat\nhttps://gesture-landing.vercel.app');
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+  toast('📲 Foto diunduh! WA terbuka dengan pesan otomatis ✅', 's');
+}
+
 async function shareToIG() {
   const canvas = document.getElementById('cvsFinal');
   if (!canvas) return;
@@ -4907,6 +5486,31 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.classList.add('active');
         pbSt.filter = btn.dataset.filter;
         toast(`Filter diganti: ${btn.textContent} 🎨`, 'i');
+      });
+    });
+  }
+
+  // Bind Background AI Swap selectors
+  const bgContainer = document.getElementById('pbBgSelect');
+  if (bgContainer) {
+    bgContainer.querySelectorAll('.pb-bg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        bgContainer.querySelectorAll('.pb-bg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const newBg = btn.dataset.bg;
+        pbSt.bgType = newBg;
+        // Invalidate bg cache so it redraws
+        pbSt._bgCache = {};
+        if (newBg === 'none') {
+          pbSt.segMask = null;
+          toast('🎥 Background asli kamera aktif', 'i');
+        } else {
+          if (!pbSt.seg) {
+            toast('⚠️ Hidupkan kamera dulu agar AI bisa jalan', 'w');
+          } else {
+            toast(`🤖 Background: ${btn.textContent.trim()} aktif!`, 's');
+          }
+        }
       });
     });
   }
