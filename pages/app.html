@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GestureFlow — Belajar Bahasa Isyarat</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class'
+  }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -22,12 +27,12 @@
   --primary:      #2563EB;
   --primary-light:#EFF6FF;
   --primary-dark: #1D4ED8;
-  --secondary:    #14B8A6;
-  --secondary-lt: #F0FDFA;
+  --secondary:    #10b981;
+  --secondary-lt: #ecfdf5;
   --accent:       #F59E0B;
   --accent-lt:    #FFFBEB;
-  --success:      #22C55E;
-  --success-lt:   #F0FDF4;
+  --success:      #10b981;
+  --success-lt:   #ecfdf5;
   --danger:       #EF4444;
   --danger-lt:    #FEF2F2;
 
@@ -57,11 +62,32 @@
   --r-lg: 16px;
   --r-xl: 20px;
   --r-2xl:24px;
+  --nav-bg: rgba(255,255,255,.95);
+}
+
+[data-theme="dark"] {
+  --bg:           #0f172a;
+  --surf:         #1e293b;
+  --surf2:        #334155;
+  --surf3:        #475569;
+  --bord:         #334155;
+  --bord2:        #475569;
+  --tx:           #f8fafc;
+  --tx2:          #cbd5e1;
+  --tx3:          #94a3b8;
+  --tx4:          #475569;
+  --primary-light:rgba(37,99,235,0.15);
+  --primary-dark: #3b82f6;
+  --secondary-lt: rgba(16,185,129,0.15);
+  --success-lt:   rgba(16,185,129,0.15);
+  --danger-lt:    rgba(239,68,68,0.15);
+  --accent-lt:    rgba(245,158,11,0.15);
+  --nav-bg:       rgba(15,23,42,0.95);
 }
 
 /* Reset & Base */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; font-size: 16px; }
+html { scroll-behavior: smooth; font-size: 15px; }
 body {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   background: var(--bg);
@@ -89,7 +115,7 @@ body {
 
 /* ── Navigation ── */
 nav {
-  background: rgba(255,255,255,.95);
+  background: var(--nav-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--bord);
@@ -275,6 +301,87 @@ canvas { display: block; width: 100%; height: 100%; }
 }
 .letter-card.active { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 
+/* ── Text to Gesture Revamp ── */
+.t2g-timeline {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px 2px;
+  scroll-behavior: smooth;
+}
+.t2g-timeline::-webkit-scrollbar {
+  height: 6px;
+}
+.t2g-timeline::-webkit-scrollbar-track {
+  background: transparent;
+}
+.t2g-timeline::-webkit-scrollbar-thumb {
+  background: var(--bord2);
+  border-radius: 99px;
+}
+.t2g-card {
+  flex: 0 0 auto;
+  width: 76px;
+  background: var(--surf);
+  border: 1.5px solid var(--bord);
+  border-radius: var(--r-lg);
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.t2g-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(37,99,235,0.08);
+}
+.t2g-card.active-letter {
+  border-color: var(--primary) !important;
+  background: var(--primary-light) !important;
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 0 15px rgba(37,99,235,0.25);
+  animation: t2gPulse 2s infinite alternate;
+}
+.t2g-card.active-letter.is-num {
+  border-color: var(--secondary) !important;
+  background: var(--secondary-lt) !important;
+  box-shadow: 0 0 15px rgba(20,184,166,0.25);
+  animation: t2gPulseNum 2s infinite alternate;
+}
+@keyframes t2gPulse {
+  0% { box-shadow: 0 0 6px rgba(37,99,235,0.15); }
+  100% { box-shadow: 0 0 16px rgba(37,99,235,0.35); }
+}
+@keyframes t2gPulseNum {
+  0% { box-shadow: 0 0 6px rgba(20,184,166,0.15); }
+  100% { box-shadow: 0 0 16px rgba(20,184,166,0.35); }
+}
+.t2g-preview-box {
+  background: var(--surf);
+  border: 1.5px solid var(--bord);
+  border-radius: 20px;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+  transition: all 0.3s;
+}
+.t2g-preview-box:hover {
+  box-shadow: 0 15px 30px -5px rgba(0,0,0,0.08);
+}
+.xp-fly {
+  position: absolute;
+  color: var(--accent);
+  font-weight: 900;
+  font-size: 16px;
+  pointer-events: none;
+  animation: xpFlyUp 1.2s forwards;
+  z-index: 50;
+}
+@keyframes xpFlyUp {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  20% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+  100% { transform: translateY(-70px) scale(1); opacity: 0; }
+}
+
+
 /* ── Developer mode ── */
 .dev-badge { background: #0f172a; color: #22d3ee; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; padding: 3px 8px; border-radius: 4px; }
 
@@ -287,6 +394,21 @@ canvas { display: block; width: 100%; height: 100%; }
 
 /* ── Confetti particle ── */
 .confetti-p { position: fixed; pointer-events: none; z-index: 9998; width: 8px; height: 8px; border-radius: 2px; animation: confetti 1s ease-out forwards; }
+
+/* ── Game responsive 2-col grid ── */
+@media (min-width: 768px) {
+  .md-game-grid { grid-template-columns: 1.5fr 1fr !important; }
+}
+
+/* ── Game section general ── */
+#tab-game { max-width: 960px; margin: 0 auto; }
+
+/* ── Mobile camera aspect ratio override ── */
+@media (max-width: 767px) {
+  #camWrap, #azCamWrap, #numCamWrap {
+    aspect-ratio: 4/3 !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -311,6 +433,14 @@ canvas { display: block; width: 100%; height: 100%; }
       <div id="navXP" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold" style="background:var(--primary-light);color:var(--primary)">
         ⚡ <span id="navXPVal">0</span> XP
       </div>
+      <!-- Theme toggle -->
+      <button id="btnTheme" onclick="toggleTheme()" title="Ubah Tema" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition btn btn-ghost btn-sm" style="padding:0" aria-label="Toggle dark mode">
+        <span id="themeIcon">🌙</span>
+      </button>
+      <!-- Font size toggle -->
+      <button id="btnFontSize" onclick="toggleFontSize()" title="Ubah Ukuran Teks" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition btn btn-ghost btn-sm" style="padding:0" aria-label="Toggle font size">
+        <span style="font-weight:800;font-size:13px">A<span style="font-size:9px;font-weight:500;margin-left:1px">+</span></span>
+      </button>
       <!-- Dev mode toggle -->
       <button id="btnDevMode" onclick="toggleDevMode()" title="Developer Mode" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm transition" style="background:var(--surf2);border:1px solid var(--bord)" aria-label="Toggle developer mode">
         🛠️
@@ -325,7 +455,7 @@ canvas { display: block; width: 100%; height: 100%; }
 </nav>
 
 <!-- ══ TAB BAR ══ -->
-<div class="fixed z-40 w-full" style="top:52px;background:rgba(255,255,255,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--bord)">
+<div class="fixed z-40 w-full" style="top:52px;background:var(--nav-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--bord)">
   <div id="tabRow" class="flex max-w-7xl mx-auto px-3">
     <button class="tab active" data-tab="gesture">🎯 Gesture</button>
     <button class="tab" data-tab="alphabet">🔤 A–Z</button>
@@ -398,6 +528,9 @@ canvas { display: block; width: 100%; height: 100%; }
         <button id="btnStop" onclick="stopMain()" disabled class="btn btn-danger flex-1">⏹ Stop</button>
         <button id="btnSS" onclick="doScreenshot()" disabled class="btn btn-ghost btn-sm px-3" title="Screenshot">📸</button>
       </div>
+      <button onclick="downloadDatasetMain()" class="btn btn-secondary btn-sm w-full mt-2" style="opacity:.8">
+        📥 Download Dataset Gesture Snapshot
+      </button>
     </div>
 
     <!-- Info Panel -->
@@ -695,7 +828,7 @@ canvas { display: block; width: 100%; height: 100%; }
       </div>
       <div>
         <p class="sec-head mb-2">0–9 Progress</p>
-        <div id="numGrid" class="grid grid-cols-5 gap-2"></div>
+<div id="numGrid" class="grid grid-cols-5 gap-2"></div>
       </div>
       <div class="grid grid-cols-2 gap-2 text-center">
         <div class="rounded-xl p-3" style="background:var(--accent-lt);border:1px solid rgba(245,158,11,.2)">
@@ -717,132 +850,245 @@ canvas { display: block; width: 100%; height: 100%; }
 </section>
 
 <!-- ════════════ TAB: GAME ════════════ -->
-<section id="tab-game" class="hidden space-y-4 fade-up">
-  <div class="grid md:grid-cols-3 gap-4">
-    <div class="md:col-span-2 card p-4 space-y-3">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <h2 class="font-bold" style="color:var(--tx)">🎮 Game & Kuis Interaktif</h2>
-        <div class="flex gap-1.5">
-          <button id="gameModeAZ" onclick="setGameMode('az')" class="btn btn-primary btn-sm">🔤 A–Z</button>
-          <button id="gameModeNum" onclick="setGameMode('num')" class="btn btn-ghost btn-sm">🔢 0–9</button>
-          <button id="gameModeGest" onclick="setGameMode('gest')" class="btn btn-ghost btn-sm">🖐 Gesture</button>
+<section id="tab-game" class="hidden fade-up">
+<style>
+/* ── Game Popup — calm professional palette ── */
+#gamePopup{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.78);backdrop-filter:blur(12px)}
+#gamePopup.gp-show{display:flex}
+.gp-card{background:#fff;border-radius:24px;padding:32px 28px;text-align:center;max-width:420px;width:92%;border:1px solid #e2e8f0;animation:gpIn .35s cubic-bezier(.34,1.56,.64,1) forwards;box-shadow:0 32px 80px rgba(15,23,42,.18),0 8px 24px rgba(15,23,42,.1)}
+@keyframes gpIn{from{transform:scale(.7) translateY(40px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.gp-card.gp-correct{border-color:#bbf7d0;box-shadow:0 0 0 4px rgba(34,197,94,.1),0 24px 60px rgba(15,23,42,.14)}
+.gp-card.gp-wrong  {border-color:#fecaca;box-shadow:0 0 0 4px rgba(239,68,68,.1), 0 24px 60px rgba(15,23,42,.14)}
+.gp-card.gp-bonus  {border-color:#fde68a;box-shadow:0 0 0 4px rgba(245,158,11,.12),0 24px 60px rgba(15,23,42,.14)}
+.gp-card.gp-end    {border-color:#bfdbfe;box-shadow:0 0 0 4px rgba(37,99,235,.1), 0 24px 60px rgba(15,23,42,.14)}
+/* Confetti */
+.cf-p{position:fixed;top:-20px;animation:cfFall 1.9s ease-in forwards;z-index:10000;pointer-events:none}
+@keyframes cfFall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+/* Shake */
+@keyframes gpShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+.gp-shake{animation:gpShake .4s ease}
+/* Streak */
+@keyframes stFire{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.st-fire{animation:stFire .5s ease infinite;display:inline-block}
+/* Progress */
+.gm-prog-track{height:6px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+.gm-prog-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#10b981);transition:width .45s ease}
+/* Mode buttons */
+.gm-btn{padding:6px 13px;border-radius:9px;font-size:12px;font-weight:600;border:1.5px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer;transition:all .18s;white-space:nowrap}
+.gm-btn:hover{background:#f1f5f9;color:#0f172a}
+.gm-all {color:#2563eb!important;background:#eff6ff!important;border-color:#2563eb!important}
+.gm-az  {color:#059669!important;background:#ecfdf5!important;border-color:#059669!important}
+.gm-num {color:#0891b2!important;background:#ecfeff!important;border-color:#0891b2!important}
+.gm-gest{color:#7c3aed!important;background:#f5f3ff!important;border-color:#7c3aed!important}
+/* GP action buttons */
+.gp-btn{padding:11px 0;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s;border:none;flex:1}
+.gp-btn:hover{filter:brightness(1.06)}
+.gp-btn-primary{background:linear-gradient(135deg,#2563eb,#10b981);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.3)}
+.gp-btn-ghost{background:#f1f5f9;border:1.5px solid #e2e8f0!important;color:#475569}
+.gp-btn-bonus{background:#fffbeb;border:1.5px solid #fbbf24!important;color:#d97706}
+.gp-btn-skip{background:#f8fafc;border:1px solid #e2e8f0!important;color:#94a3b8;font-size:12px;padding:8px 18px;border-radius:9px;cursor:pointer}
+/* Score pop */
+@keyframes scPop{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+.sc-pop{animation:scPop .35s cubic-bezier(.34,1.56,.64,1)}
+/* Popup text colors for light card */
+.gp-correct-h{color:#059669} .gp-wrong-h{color:#dc2626} .gp-bonus-h{color:#d97706} .gp-end-h{color:#2563eb}
+.gp-stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px}
+.gp-hint-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:10px 14px;text-align:left;margin:0 0 14px}
+.gp-wrong-list{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px;margin-bottom:12px;text-align:left}
+</style>
+
+<!-- Answer Popup -->
+<div id="gamePopup"><div id="gamePopupCard" class="gp-card"></div></div>
+<!-- Confetti Container -->
+<div id="gameConfetti" style="position:fixed;inset:0;pointer-events:none;z-index:10000;overflow:hidden"></div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+  <!-- Header + Mode + Progress -->
+  <div class="card p-4">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#10b981);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎮</div>
+        <div>
+          <h2 style="font-size:15px;font-weight:800;color:var(--tx);line-height:1.1;margin:0">Game &amp; Kuis Bahasa Isyarat</h2>
+          <p id="gameModeLabel" style="font-size:11px;color:var(--tx3);margin:2px 0 0">Mode: Semua (A–Z + 0–9 + Gesture)</p>
         </div>
       </div>
-      <div id="gameCamWrap" class="aspect-video rounded-xl overflow-hidden relative cam-idle transition-all duration-300" style="background:#f1f5f9">
-        <video id="vidGame" autoplay muted playsinline></video>
-        <canvas id="cvsGame"></canvas>
-        <div id="gamePH" class="absolute inset-0 flex flex-col items-center justify-center gap-3">
-          <div class="text-6xl">🎮</div>
-          <p class="text-lg font-bold" style="color:var(--tx)">Siap Bermain?</p>
-          <p class="text-sm text-center px-6" style="color:var(--tx3)">Tunjukkan gesture yang diminta secepatnya untuk mendapat poin!</p>
-        </div>
-        <div id="gameTargOv" class="hidden absolute top-3 right-3">
-          <div class="rounded-2xl p-3 text-center" style="background:rgba(15,23,42,.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1)">
-            <p class="text-xs mb-1" style="color:#94a3b8">Tunjukkan</p>
-            <p id="gameTargTxt" class="text-5xl font-black font-mono leading-none text-white">A</p>
-          </div>
-        </div>
-        <div id="gameTimerOv" class="hidden absolute top-3 left-3">
-          <div class="relative w-14 h-14">
-            <svg class="w-14 h-14 p-ring" viewBox="0 0 56 56">
-              <circle cx="28" cy="28" r="22" fill="rgba(15,23,42,.8)" stroke="rgba(255,255,255,.1)" stroke-width="4.5"/>
-              <circle id="gameRingPath" cx="28" cy="28" r="22" fill="none" stroke="var(--success)" stroke-width="4.5" stroke-dasharray="138.2" stroke-dashoffset="0" class="p-ring-c"/>
-            </svg>
-            <div class="absolute inset-0 flex items-center justify-center">
-              <span id="gameTimerTxt" class="text-sm font-black font-mono text-white">10</span>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button id="gameModeAll"  onclick="setGameMode('all')"  class="gm-btn gm-all">🌐 Semua</button>
+        <button id="gameModeAZ"   onclick="setGameMode('az')"   class="gm-btn">🔤 A–Z</button>
+        <button id="gameModeNum"  onclick="setGameMode('num')"  class="gm-btn">🔢 0–9</button>
+        <button id="gameModeGest" onclick="setGameMode('gest')" class="gm-btn">🖐 Gesture</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+      <span style="font-size:11px;color:var(--tx3)">Soal <span id="gameQNum">–</span> / <span id="gameQTotal">–</span></span>
+      <span id="gameQBadge" style="font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;padding:3px 10px;border-radius:999px;border:1px solid #bfdbfe">Belum Mulai</span>
+    </div>
+    <div class="gm-prog-track"><div id="gameProgressFill" class="gm-prog-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- Camera + Score -->
+  <div style="display:grid;grid-template-columns:1fr;gap:14px" class="md-game-grid">
+    <!-- Camera column -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card p-3">
+        <!-- Camera wrap -->
+        <div id="gameCamWrap" style="position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3;background:#0f172a;margin-bottom:10px">
+          <video id="vidGame" autoplay muted playsinline style="display:none"></video>
+          <canvas id="cvsGame" style="width:100%;height:100%;object-fit:cover"></canvas>
+          <!-- Placeholder -->
+          <div id="gamePH" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#0f172a,#1e3a5f,#164e63)">
+            <div style="width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#2563eb,#10b981);display:flex;align-items:center;justify-content:center;font-size:36px;box-shadow:0 8px 24px rgba(37,99,235,.4)">🎮</div>
+            <p style="font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px;margin:0">Siap Bermain?</p>
+            <p style="font-size:12px;color:rgba(255,255,255,.55);text-align:center;max-width:240px;line-height:1.55;margin:0">Tekan Mulai Game dan tunjukkan gesture yang diminta!</p>
+            <div style="display:flex;gap:6px;margin-top:2px">
+              <span style="font-size:11px;background:#ecfdf5;color:#059669;padding:3px 10px;border-radius:6px;font-weight:600">A–Z</span>
+              <span style="font-size:11px;background:#ecfeff;color:#0891b2;padding:3px 10px;border-radius:6px;font-weight:600">0–9</span>
+              <span style="font-size:11px;background:#f5f3ff;color:#7c3aed;padding:3px 10px;border-radius:6px;font-weight:600">Gesture</span>
             </div>
           </div>
+          <!-- Target overlay -->
+          <div id="gameTargOv" style="display:none;position:absolute;top:10px;right:10px">
+            <div style="background:rgba(15,23,42,.88);backdrop-filter:blur(12px);border:1.5px solid rgba(37,99,235,.6);border-radius:16px;padding:8px 14px;text-align:center;min-width:64px">
+              <p style="font-size:9px;color:rgba(255,255,255,.55);margin:0 0 2px;font-weight:700;letter-spacing:.08em">TUNJUKKAN</p>
+              <p id="gameTargTxt" style="font-size:38px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#fff;line-height:1;margin:0">A</p>
+            </div>
+          </div>
+          <!-- Timer overlay -->
+          <div id="gameTimerOv" style="display:none;position:absolute;top:12px;left:12px">
+            <div style="position:relative;width:56px;height:56px">
+              <svg width="56" height="56" viewBox="0 0 56 56">
+                <circle cx="28" cy="28" r="22" fill="rgba(10,15,30,.85)" stroke="rgba(255,255,255,.08)" stroke-width="4.5"/>
+                <circle id="gameRingPath" cx="28" cy="28" r="22" fill="none" stroke="#22c55e" stroke-width="4.5" stroke-dasharray="138.2" stroke-dashoffset="0" style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .1s"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+                <span id="gameTimerTxt" style="font-size:14px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#fff">10</span>
+              </div>
+            </div>
+          </div>
+          <!-- Flash overlay -->
+          <div id="gameFlash" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;pointer-events:none">
+            <div id="gameFlashInner" style="font-size:96px" class="score-pop"></div>
+          </div>
+          <!-- Motion badge (J/Z) -->
+          <div id="gameMotionBadge" style="display:none;position:absolute;top:12px;left:76px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);border-radius:8px;padding:4px 12px;font-size:11px;color:#f59e0b;font-weight:700">✋ Gambar di udara...</div>
+          <!-- Hand badge -->
+          <div id="gameHandBadge" class="hidden" style="position:absolute;top:76px;left:12px;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);border-radius:8px;padding:3px 10px;font-size:11px;color:#22c55e;font-weight:700">✋ Terdeteksi</div>
+          <!-- Live badge -->
+          <div style="position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:6px 14px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:600">Terbaca:</span>
+            <span id="gameLive" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#fff">–</span>
+          </div>
         </div>
-        <div id="gameFlash" class="absolute inset-0 hidden items-center justify-center pointer-events-none">
-          <div id="gameFlashInner" class="text-8xl score-pop"></div>
+        <!-- Stability bar -->
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx3);margin-bottom:4px">
+            <span>Hold Stability</span><span id="gameStabLbl" style="font-family:'JetBrains Mono',monospace;font-weight:700">–</span>
+          </div>
+          <div style="height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden">
+            <div id="gameStabBar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#10b981);transition:width .1s"></div>
+          </div>
         </div>
-        <div id="gameHandBadge" class="hidden absolute top-3 left-20 badge badge-success text-xs">✋</div>
-        <div class="live-badge">
-          <span class="text-xs" style="color:var(--tx4)">Terbaca:</span>
-          <span id="gameLive" class="text-2xl font-black font-mono text-white">–</span>
+        <!-- Controls -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="gameBtnStart" onclick="startGame(false)" class="btn btn-success" style="flex:2;min-width:130px;font-weight:700">🎮 Mulai Game</button>
+          <button id="gameBtnPractice" onclick="startGame(true)" class="btn btn-primary" style="flex:2;min-width:130px;font-weight:700">📖 Mode Latihan</button>
+          <button id="gameBtnStop"  onclick="stopGame()"  class="btn btn-danger"  style="flex:1;min-width:70px" disabled>⏹ Stop</button>
+          <button id="gameBtnSkip"  onclick="skipGame()"  class="btn btn-ghost"   style="flex:1;min-width:70px" disabled>⏭ Skip</button>
         </div>
-      </div>
-      <div>
-        <div class="flex justify-between text-xs mb-1" style="color:var(--tx3)"><span>Hold Stability</span><span id="gameStabLbl" class="font-mono">–</span></div>
-        <div class="prog-bar" style="height:10px"><div id="gameStabBar" class="stab-bar prog-fill" style="width:0%;background:linear-gradient(90deg,var(--primary),var(--success))"></div></div>
-      </div>
-      <div class="flex gap-2">
-        <button id="gameBtnStart" onclick="startGame()" class="btn btn-success flex-1">🎮 Mulai Game</button>
-        <button id="gameBtnStop" onclick="stopGame()" disabled class="btn btn-danger flex-1">⏹ Stop</button>
-        <button id="gameBtnSkip" onclick="skipGame()" disabled class="btn btn-ghost flex-1">⏭ Skip</button>
       </div>
     </div>
 
-    <!-- Score Panel -->
-    <div class="card p-5 space-y-4">
-      <div>
-        <p class="sec-head mb-2">Skor</p>
-        <div class="rounded-2xl py-5 text-center" style="background:linear-gradient(135deg,var(--primary),var(--secondary))">
-          <p id="gameScore" class="text-5xl font-black font-mono text-white">0</p>
-          <p class="text-xs text-white/70 mt-1">poin</p>
+    <!-- ── Score panel (right column) ── -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      <!-- Score card -->
+      <div class="card p-4">
+        <p style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin:0 0 8px">Skor Sesi</p>
+        <div style="background:linear-gradient(135deg,#2563eb,#0ea5e9,#10b981);border-radius:16px;padding:18px 12px;text-align:center;margin-bottom:12px;position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background:radial-gradient(circle at 25% 25%,rgba(255,255,255,.18),transparent)"></div>
+          <p id="gameScore" style="font-size:46px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#fff;line-height:1;position:relative;margin:0">0</p>
+          <p style="font-size:11px;color:rgba(255,255,255,.7);margin:2px 0 0;position:relative;font-weight:600">poin</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px;text-align:center">
+            <p style="font-size:10px;color:#059669;font-weight:600;margin:0 0 2px">Benar ✓</p>
+            <p id="gameCorrect" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#059669;margin:0">0</p>
+          </div>
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px;text-align:center">
+            <p style="font-size:10px;color:#dc2626;font-weight:600;margin:0 0 2px">Salah ✗</p>
+            <p id="gameWrong" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#dc2626;margin:0">0</p>
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px;text-align:center">
+            <p style="font-size:10px;color:#d97706;font-weight:600;margin:0 0 2px">Streak 🔥</p>
+            <p id="gameStreak" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#d97706;margin:0">0</p>
+          </div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:8px;text-align:center">
+            <p style="font-size:10px;color:#2563eb;font-weight:600;margin:0 0 2px">Waktu ⏱</p>
+            <p id="gameElapsed" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#2563eb;margin:0">0s</p>
+          </div>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div class="rounded-xl p-2.5 text-center" style="background:var(--success-lt);border:1px solid rgba(34,197,94,.2)">
-          <p class="text-xs" style="color:var(--tx3)">Benar</p>
-          <p id="gameCorrect" class="font-black text-xl font-mono" style="color:var(--success)">0</p>
+
+      <!-- Target card -->
+      <div class="card p-4">
+        <p style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin:0 0 8px">Target Saat Ini</p>
+        <div style="background:linear-gradient(135deg,#eff6ff,#ecfdf5);border:1px solid #bfdbfe;border-radius:14px;padding:14px;text-align:center">
+          <div id="gameCurTgt" style="font-size:42px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#2563eb;line-height:1.1;margin-bottom:6px">–</div>
+          <p id="gameCurHint" style="font-size:11px;color:var(--tx3);line-height:1.5;margin:0">Mulai game dulu</p>
         </div>
-        <div class="rounded-xl p-2.5 text-center" style="background:var(--danger-lt);border:1px solid rgba(239,68,68,.2)">
-          <p class="text-xs" style="color:var(--tx3)">Salah</p>
-          <p id="gameWrong" class="font-black text-xl font-mono" style="color:var(--danger)">0</p>
-        </div>
-        <div class="rounded-xl p-2.5 text-center" style="background:var(--accent-lt);border:1px solid rgba(245,158,11,.2)">
-          <p class="text-xs" style="color:var(--tx3)">Streak</p>
-          <p id="gameStreak" class="font-black text-xl font-mono" style="color:var(--accent)">0</p>
-        </div>
-        <div class="rounded-xl p-2.5 text-center" style="background:var(--primary-light);border:1px solid rgba(37,99,235,.2)">
-          <p class="text-xs" style="color:var(--tx3)">Waktu</p>
-          <p id="gameElapsed" class="font-black text-xl font-mono" style="color:var(--primary)">0s</p>
-        </div>
-      </div>
-      <div class="rounded-xl p-3" style="background:var(--surf2)">
-        <p class="sec-head mb-1">Target</p>
-        <div id="gameCurTgt" class="text-4xl font-black font-mono mb-1" style="color:var(--primary)">–</div>
-        <p id="gameCurHint" class="text-xs" style="color:var(--tx3)">Mulai game dulu</p>
-      </div>
-      <div>
-        <div class="flex justify-between text-xs mb-2" style="color:var(--tx3)">
-          <span>Level</span>
-          <span id="gameLevelTxt" class="font-mono font-bold" style="color:var(--primary)">Pemula</span>
-        </div>
-        <div class="flex gap-1">
-          <div id="lv1" class="lvl-bar flex-1" style="background:var(--success)"></div>
-          <div id="lv2" class="lvl-bar flex-1" style="background:var(--bord2)"></div>
-          <div id="lv3" class="lvl-bar flex-1" style="background:var(--bord2)"></div>
-          <div id="lv4" class="lvl-bar flex-1" style="background:var(--bord2)"></div>
-          <div id="lv5" class="lvl-bar flex-1" style="background:var(--bord2)"></div>
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx3);margin-bottom:4px">
+            <span>Level</span><span id="gameLevelTxt" style="font-weight:700;font-family:'JetBrains Mono',monospace;color:#2563eb">Pemula</span>
+          </div>
+          <div style="display:flex;gap:3px">
+            <div id="lv1" style="height:5px;flex:1;border-radius:999px;background:#10b981"></div>
+            <div id="lv2" style="height:5px;flex:1;border-radius:999px;background:#e2e8f0"></div>
+            <div id="lv3" style="height:5px;flex:1;border-radius:999px;background:#e2e8f0"></div>
+            <div id="lv4" style="height:5px;flex:1;border-radius:999px;background:#e2e8f0"></div>
+            <div id="lv5" style="height:5px;flex:1;border-radius:999px;background:#e2e8f0"></div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+
+      <!-- Tips -->
+      <div style="background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1px solid #bfdbfe;border-radius:14px;padding:13px">
+        <p style="font-size:11px;font-weight:700;color:#2563eb;margin:0 0 6px">💡 Cara Dapat Poin Bonus</p>
+        <ul style="font-size:11px;color:var(--tx3);line-height:1.75;padding-left:14px;margin:0">
+          <li>Jawab cepat = poin bonus waktu</li>
+          <li>Streak 3+ = bonus challenge ⚡</li>
+          <li>Bonus challenge benar = +20 XP &amp; +2 poin</li>
+          <li>J &amp; Z perlu digambar di udara!</li>
+        </ul>
+      </div>
+
+    </div><!-- /score column -->
+  </div><!-- /grid -->
+
 
   <!-- Records -->
   <div class="card p-5">
-    <h3 class="font-bold text-sm mb-4" style="color:var(--tx)">🏆 Rekaman Sesi</h3>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-      <div class="rounded-xl p-3" style="background:var(--primary-light)">
-        <p class="text-xs mb-1" style="color:var(--tx3)">Skor Tertinggi</p>
-        <p id="gameBestScore" class="text-2xl font-black font-mono" style="color:var(--primary)">0</p>
+    <h3 style="font-size:12px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.05em;margin:0 0 12px">🏆 Rekaman Sesi</h3>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+      <div style="background:var(--primary-light);border-radius:12px;padding:10px 6px">
+        <p style="font-size:10px;color:var(--tx3);margin:0 0 4px">Best Skor</p>
+        <p id="gameBestScore" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--primary);margin:0">0</p>
       </div>
-      <div class="rounded-xl p-3" style="background:var(--accent-lt)">
-        <p class="text-xs mb-1" style="color:var(--tx3)">Best Streak</p>
-        <p id="gameBestStreak" class="text-2xl font-black font-mono" style="color:var(--accent)">0</p>
+      <div style="background:var(--accent-lt);border-radius:12px;padding:10px 6px">
+        <p style="font-size:10px;color:var(--tx3);margin:0 0 4px">Best Streak</p>
+        <p id="gameBestStreak" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--accent);margin:0">0</p>
       </div>
-      <div class="rounded-xl p-3" style="background:var(--secondary-lt)">
-        <p class="text-xs mb-1" style="color:var(--tx3)">Total Sesi</p>
-        <p id="gameTotalSess" class="text-2xl font-black font-mono" style="color:var(--secondary)">0</p>
+      <div style="background:var(--secondary-lt);border-radius:12px;padding:10px 6px">
+        <p style="font-size:10px;color:var(--tx3);margin:0 0 4px">Total Sesi</p>
+        <p id="gameTotalSess" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--secondary);margin:0">0</p>
       </div>
-      <div class="rounded-xl p-3" style="background:var(--success-lt)">
-        <p class="text-xs mb-1" style="color:var(--tx3)">Akurasi Avg</p>
-        <p id="gameAvgAcc" class="text-2xl font-black font-mono" style="color:var(--success)">–</p>
+      <div style="background:var(--success-lt);border-radius:12px;padding:10px 6px">
+        <p style="font-size:10px;color:var(--tx3);margin:0 0 4px">Akurasi Avg</p>
+        <p id="gameAvgAcc" style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:var(--success);margin:0">–</p>
       </div>
     </div>
   </div>
+</div>
 </section>
 
 <!-- ════════════ TAB: BELAJAR (Duolingo-style) ════════════ -->
@@ -863,23 +1109,128 @@ canvas { display: block; width: 100%; height: 100%; }
 </section>
 
 <!-- ════════════ TAB: TEXT → GESTURE ════════════ -->
-<section id="tab-text2gest" class="hidden fade-up space-y-4">
-  <div class="card p-5">
-    <h2 class="font-bold text-xl mb-1" style="color:var(--tx)">✏️ Teks → Gestur</h2>
-    <p class="text-sm mb-4" style="color:var(--tx3)">Ketik teks dan lihat visualisasi gesture per huruf</p>
-    <div class="flex gap-2">
-      <input id="t2gInput" type="text" maxlength="20" placeholder="Ketik huruf, misal: HALO" class="flex-1 px-4 py-3 rounded-xl text-base font-medium border outline-none transition" style="border-color:var(--bord);background:var(--surf);color:var(--tx);font-family:inherit" oninput="renderT2G()" />
-      <button onclick="$('t2gInput').value='';renderT2G()" class="btn btn-ghost">✕</button>
+<section id="tab-text2gest" class="hidden fade-up space-y-5">
+  <!-- Layout Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+    
+    <!-- Kolom Kiri: Input Teks & Kontrol Player (lg:col-span-7) -->
+    <div class="lg:col-span-7 space-y-4 flex flex-col justify-between">
+      
+      <!-- Input Card -->
+      <div class="card p-5 relative overflow-hidden">
+        <!-- Floating XP feedback wrapper -->
+        <div id="t2gXpAnchor" class="relative"></div>
+        
+        <h2 class="font-bold text-xl mb-1" style="color:var(--tx)">✏️ Terjemah Teks → Gestur</h2>
+        <p class="text-sm mb-4" style="color:var(--tx3)">Ketik kata atau kalimat untuk divisualisasikan ke bahasa isyarat</p>
+        
+        <div class="flex gap-2 relative">
+          <input id="t2gInput" type="text" maxlength="20" placeholder="Ketik huruf/angka, misal: HALO 5" class="flex-1 px-4 py-3.5 pr-10 rounded-xl text-base font-semibold border outline-none transition" style="border-color:var(--bord);background:var(--surf);color:var(--tx);font-family:inherit" oninput="onT2GInput()" />
+          <button onclick="$('t2gInput').value='';renderT2G()" class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600 transition">✕</button>
+        </div>
+      </div>
+
+      <!-- Player Control Card -->
+      <div class="card p-5 space-y-4">
+        <h3 class="font-bold text-sm" style="color:var(--tx)">🎮 Pengendali Slideshow</h3>
+        
+        <!-- Action Buttons Row -->
+        <div class="flex flex-wrap items-center gap-3">
+          <button onclick="prevT2G()" class="btn btn-outline btn-sm flex items-center justify-center gap-1.5" style="border-radius:12px">
+            ⏮️ <span class="hidden sm:inline">Sebelumnya</span>
+          </button>
+          
+          <button id="t2gPlayBtn" onclick="togglePlayT2G()" class="btn btn-primary btn-sm flex items-center justify-center gap-1.5" style="border-radius:12px; min-width: 90px;">
+            ▶️ Putar
+          </button>
+          
+          <button onclick="nextT2G()" class="btn btn-outline btn-sm flex items-center justify-center gap-1.5" style="border-radius:12px">
+            ⏭️ <span class="hidden sm:inline">Berikutnya</span>
+          </button>
+          
+          <button onclick="resetT2G()" class="btn btn-ghost btn-sm flex items-center justify-center gap-1.5" style="border-radius:12px" title="Ulangi dari Awal">
+            🔄 <span class="hidden sm:inline">Reset</span>
+          </button>
+          
+          <button onclick="exportT2GToImage()" id="t2gExportBtn" class="btn btn-neutral btn-sm ml-auto flex items-center justify-center gap-1.5" style="border-radius:12px; background:var(--surf2); border-color:var(--bord)" title="Unduh gambar barisan gestur">
+            📥 Ekspor PNG
+          </button>
+        </div>
+
+        <!-- Slider Speed & TTS Voice Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t" style="border-color:var(--bord)">
+          <!-- Speed Slider -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center text-xs font-semibold" style="color:var(--tx2)">
+              <span>Tempo Pemutaran</span>
+              <span id="t2gSpeedVal" class="font-mono text-primary">1.0s</span>
+            </div>
+            <input type="range" id="t2gSpeedRange" min="500" max="3000" step="100" value="1000" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updateT2GSpeed(this.value)" />
+          </div>
+          
+          <!-- Audio TTS Option Toggle -->
+          <div class="flex items-center justify-between md:justify-end gap-3 h-full">
+            <span class="text-xs font-semibold" style="color:var(--tx2)">Suara (TTS) Otomatis</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="t2gAudioToggle" class="sr-only peer" checked>
+              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:height-4 after:width-4 after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kolom Kanan: Large Active Preview (lg:col-span-5) -->
+    <div class="lg:col-span-5">
+      <div class="t2g-preview-box p-6 h-full flex flex-col justify-between items-center text-center min-h-[320px]">
+        <!-- Letter & Icon Header -->
+        <div class="w-full flex justify-between items-center mb-4">
+          <span class="badge badge-primary text-xs font-bold px-2.5 py-1" id="t2gBadgeType">Huruf</span>
+          <button id="t2gSpeakBtn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition" title="Suarakan deskripsi">🔊</button>
+        </div>
+        
+        <!-- Large SVG Display -->
+        <div id="t2gLargeSvg" class="w-36 h-36 flex items-center justify-center my-auto transition-transform duration-300 hover:scale-105">
+          <!-- Default placeholder SVG / icon -->
+          <span class="text-6xl text-slate-300">🤟</span>
+        </div>
+        
+        <!-- Active Letter & Description -->
+        <div class="w-full mt-4 pt-4 border-t" style="border-color:var(--bord)">
+          <h3 id="t2gActiveChar" class="text-4xl font-extrabold tracking-wider font-mono mb-2" style="color:var(--primary)">-</h3>
+          <p id="t2gActiveDesc" class="text-sm font-semibold mb-1" style="color:var(--tx)">Masukkan kata untuk memulai</p>
+          <p id="t2gActiveHint" class="text-xs" style="color:var(--tx3)">Deskripsi cara melakukan gerakan akan muncul di sini</p>
+        </div>
+      </div>
     </div>
   </div>
-  <div id="t2gOut" class="flex flex-wrap gap-3"></div>
-  <div class="card p-4 hidden" id="t2gEmpty">
-    <p class="text-center text-sm" style="color:var(--tx3)">Ketik huruf di atas untuk melihat gesture visualnya 👆</p>
+
+  <!-- Timeline Kartu Huruf (Bagian Bawah) -->
+  <div class="card p-5 space-y-3">
+    <div class="flex justify-between items-center">
+      <h3 class="font-bold text-sm" style="color:var(--tx)">🎞️ Urutan Gestur</h3>
+      <span class="text-xs" style="color:var(--tx3)" id="t2gCountText">0 Huruf</span>
+    </div>
+    <div id="t2gOut" class="t2g-timeline"></div>
+    <div class="card p-6 bg-slate-50/50 border-dashed border-2" id="t2gEmpty">
+      <p class="text-center text-sm" style="color:var(--tx3)">Ketik kata di atas, lalu lihat visualisasi dan jalankan slideshow! 👆</p>
+    </div>
   </div>
 </section>
 
 <!-- ════════════ TAB: DASHBOARD ════════════ -->
 <section id="tab-dashboard" class="hidden space-y-4 fade-up">
+  <!-- Header with Export Button -->
+  <div class="card p-5 flex flex-wrap justify-between items-center gap-3">
+    <div>
+      <h2 class="font-bold text-xl" style="color:var(--tx)">📊 Dashboard Belajar</h2>
+      <p class="text-sm" style="color:var(--tx3)">Pantau perkembangan belajar dan pencapaian bahasa isyarat Anda</p>
+    </div>
+    <button onclick="exportProgressPNG()" class="btn btn-primary btn-sm flex items-center gap-1.5 shadow-md">
+      📥 Unduh Laporan Progress (PNG)
+    </button>
+  </div>
+
   <!-- Quick stats -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
     <div class="card p-4">
@@ -939,7 +1290,7 @@ canvas { display: block; width: 100%; height: 100%; }
     <h3 class="font-bold text-sm mb-8" style="color:var(--tx)">🗺️ Roadmap Pengembangan</h3>
     <div class="relative">
       <div class="absolute left-0 right-0 h-0.5 z-0" style="top:28px;background:linear-gradient(90deg,var(--success),var(--primary),var(--secondary),rgba(245,158,11,.4))"></div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-6 relative z-10">
         <div class="text-center">
           <div class="w-5 h-5 rounded-full mx-auto mb-4" style="background:var(--success);box-shadow:0 0 12px rgba(34,197,94,.5)"></div>
           <span class="badge badge-success mb-2">✅ Tahap 1</span>
@@ -964,6 +1315,19 @@ canvas { display: block; width: 100%; height: 100%; }
           <p class="text-xs font-semibold mt-2" style="color:var(--tx)">Beta PWA</p>
           <p class="text-xs mt-1" style="color:var(--tx3)">Multi-device testing</p>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Peringkat Belajar (Leaderboard) -->
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-sm" style="color:var(--tx)">🏆 Peringkat Belajar (Leaderboard)</h3>
+      <span class="badge badge-primary">Liga Utama</span>
+    </div>
+    <div class="space-y-3" id="leaderboardList">
+      <!-- Injected by JS -->
+    </div>
   </div>
 </section>
 
@@ -1407,6 +1771,67 @@ canvas { display: block; width: 100%; height: 100%; }
   </div>
 </section>
 
+  <!-- ONBOARDING MODAL -->
+  <div id="onboardingModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-md hidden">
+    <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl flex flex-col p-6 text-center" style="max-height:92vh;">
+      <!-- Steps Container -->
+      <div id="onboardStep1" class="space-y-4">
+        <div class="text-5xl">🤟</div>
+        <h3 class="font-extrabold text-2xl text-slate-800 dark:text-slate-100">Selamat Datang di GestureFlow!</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          GestureFlow adalah platform edukatif interaktif untuk belajar Bahasa Isyarat Amerika (ASL) langsung menggunakan kamera perangkat Anda dengan deteksi AI real-time.
+        </p>
+        <div class="p-4 bg-blue-50 dark:bg-blue-950/40 rounded-2xl text-xs text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900 text-left">
+          💡 <b>Cara Kerja:</b> AI kami akan mendeteksi titik sendi tangan Anda melalui kamera untuk memberikan umpan balik langsung apakah isyarat Anda benar atau salah.
+        </div>
+      </div>
+
+      <div id="onboardStep2" class="space-y-4 hidden">
+        <div class="text-5xl">📚</div>
+        <h3 class="font-extrabold text-2xl text-slate-800 dark:text-slate-100">Modul Belajar Mandiri</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          Mulailah di tab <b>Belajar</b> atau tab <b>A–Z</b> dan <b>0–9</b>. Anda bisa melihat referensi posisi jari tangan, mendengarkan panduan audio, serta melatih stabilitas isyarat Anda secara bertahap.
+        </p>
+        <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl text-xs text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900 text-left">
+          ✅ <b>TIPS:</b> Tahan posisi tangan Anda selama 0.8 detik hingga bar stabilitas berwarna hijau penuh untuk menyelesaikannya!
+        </div>
+      </div>
+
+      <div id="onboardStep3" class="space-y-4 hidden">
+        <div class="text-5xl">🎮</div>
+        <h3 class="font-extrabold text-2xl text-slate-800 dark:text-slate-100">Uji Kemampuan Anda</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          Di tab <b>Game</b>, tantang diri Anda dalam kuis seru! Anda bisa memilih mode <b>Kuis Berwaktu</b> yang penuh adrenalin, atau <b>Mode Latihan</b> tanpa timer untuk belajar lebih santai.
+        </p>
+        <div class="p-4 bg-amber-50 dark:bg-amber-950/40 rounded-2xl text-xs text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900 text-left">
+          🔥 <b>Baru:</b> Anda bisa bermain mode <b>Semua (Combined)</b> untuk menguji gabungan isyarat kata, huruf A-Z, dan angka 0-9 sekaligus!
+        </div>
+      </div>
+
+      <div id="onboardStep4" class="space-y-4 hidden">
+        <div class="text-5xl">⚙️</div>
+        <h3 class="font-extrabold text-2xl text-slate-800 dark:text-slate-100">Aksesibilitas & Kustomisasi</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          GestureFlow dirancang ramah untuk semua pengguna. Gunakan fitur <b>Pengubah Font Size</b> untuk memperbesar teks, <b>Pembaca Suara (TTS)</b> untuk mendengar isyarat, serta <b>Mode Gelap (Dark Mode)</b> agar mata lebih nyaman.
+        </p>
+        <div class="p-4 bg-purple-50 dark:bg-purple-950/40 rounded-2xl text-xs text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-900 text-left">
+          🌈 <b>Photobooth:</b> Jangan lupa abadikan ekspresi Anda dengan frame retro/neon menarik dan bagikan prestasi belajar Anda ke media sosial!
+        </div>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+        <button id="btnOnboardPrev" onclick="prevOnboard()" class="btn btn-ghost btn-sm text-slate-600 dark:text-slate-300">Kembali</button>
+        <div class="flex gap-1.5">
+          <span id="dot1" class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+          <span id="dot2" class="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700"></span>
+          <span id="dot3" class="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700"></span>
+          <span id="dot4" class="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700"></span>
+        </div>
+        <button id="btnOnboardNext" onclick="nextOnboard()" class="btn btn-primary btn-sm">Lanjut</button>
+      </div>
+    </div>
+  </div>
 </main>
 <script>
 'use strict';
@@ -1777,6 +2202,28 @@ function detectASL(lm) {
   if (t2i < 0.32 && f.M && f.R && f.P && !f.I) return 'F';
 
   // ═══════════════════════════════════════════
+  // GROUP 5b: N & M — index+middle curled over thumb
+  // Separated from GROUP 6 because ring/pinky don't always satisfy tight-curl
+  // requirement for isZeroCurlLetter when showing N/M
+  // ═══════════════════════════════════════════
+  if (f.Ic && f.Mc && !f.R && !f.P) {
+    const dxKnm = lm[17].x - lm[5].x;
+    const dyKnm = lm[17].y - lm[5].y;
+    const lenKnm2 = dxKnm * dxKnm + dyKnm * dyKnm;
+    const tProjNM = lenKnm2 > 0.0001
+      ? ((lm[4].x - lm[5].x) * dxKnm + (lm[4].y - lm[5].y) * dyKnm) / lenKnm2
+      : 0.5;
+    const t2midNM = nd(lm, 4, 9);
+    const t2rngNM = nd(lm, 4, 13);
+    const t2pnkNM = nd(lm, 4, 17);
+    const mOverNflag = t2rngNM < t2midNM - 0.04; // ring notably closer → M
+
+    if (mOverNflag && tProjNM >= 0.35 && tProjNM < 1.35 && t2rngNM < 0.72 && t2pnkNM < 0.76) return 'M';
+    if (!mOverNflag && tProjNM >= 0.22 && tProjNM < 0.72 && t2midNM < 0.70) return 'N';
+    if (tProjNM >= 0.68 && tProjNM < 1.35 && t2rngNM < 0.72) return 'M'; // clear M zone fallback
+  }
+
+  // ═══════════════════════════════════════════
   // GROUP 6: All 4 fingers curled — A / E / O / S / T / N / M
   // ═══════════════════════════════════════════
   const isZeroCurlLetter = (f.Ic && f.Mc && f.Rc) || a4c;
@@ -1802,13 +2249,13 @@ function detectASL(lm) {
     const t2pnkMcp = nd(lm, 4, 17);
 
     // T: thumb tucked between index & middle
-    if (tProj > 0.05 && tProj < 0.38 && t2idxMcp < 0.50 && t2midMcp < 0.50) return 'T';
+    if (tProj > 0.02 && tProj < 0.35 && t2idxMcp < 0.60 && t2midMcp < 0.60) return 'T';
 
-    // N: thumb tucked between middle & ring
-    if (tProj >= 0.38 && tProj < 0.70 && t2midMcp < 0.50 && t2rngMcp < 0.50) return 'N';
-
-    // M: thumb tucked between ring & pinky
-    if (tProj >= 0.70 && tProj < 1.05 && t2rngMcp < 0.55 && t2pnkMcp < 0.55) return 'M';
+    // M vs N inside GROUP 6 (ring IS confirmed curled here)
+    const mOverN = t2rngMcp < t2midMcp - 0.04;
+    if (mOverN && tProj >= 0.35 && tProj < 1.35 && t2rngMcp < 0.72 && t2pnkMcp < 0.76) return 'M';
+    if (!mOverN && tProj >= 0.22 && tProj < 0.72 && t2midMcp < 0.70) return 'N';
+    if (tProj >= 0.68 && tProj < 1.35 && t2rngMcp < 0.72) return 'M';
 
     // A: fist, thumb clearly on the SIDE (lateral)
     if (thumbLat > 0.20 && !f.Tc) return 'A';
@@ -1928,13 +2375,25 @@ function detectNumber(lm) {
 
   const a4c = f.Ic && f.Mc && f.Rc && f.Pc;
 
-  // 5 — all 5 fingers fully open  ✓ easiest
-  if (f.T && f.I && f.M && f.R && f.P) return '5';
-
   // 9 — thumb + index tip pinch (OK sign: middle, ring, pinky extended)
   if (t2i < 0.35 && f.M && f.R && f.P) return '9';
 
-  // 4 — four fingers up, thumb tucked  ✓
+  // 6 — thumb + pinky touching, 3 middle fingers up
+  if (t2p < 0.42 && f.I && f.M && f.R) return '6';
+
+  // 7 — thumb + ring touching, index+middle+pinky up
+  if (t2r < 0.42 && f.I && f.M && f.P) return '7';
+
+  // 8 — thumb + middle touching, index+ring+pinky up
+  if (t2m < 0.42 && f.I && f.R && f.P) return '8';
+
+  // 5 — open hand: all 4 fingers up AND thumb NOT curled
+  // Use !f.Tc (not tucked) instead of f.T (fully extended) because when palm
+  // faces camera, thumb tip vs MCP distance falls in dead-zone (0.55–0.75)
+  // but thumb is clearly NOT tucked — so !f.Tc is the correct condition.
+  if (!f.Tc && f.I && f.M && f.R && f.P) return '5';
+
+  // 4 — four fingers up, thumb explicitly tucked/curled  ✓
   if (f.I && f.M && f.R && f.P && f.Tc) return '4';
 
   // 0 — all fingers curled into O shape  ✓
@@ -1956,24 +2415,15 @@ function detectNumber(lm) {
   // 3 — thumb + index + middle up  ✓
   if (f.T && f.I && f.M && f.Rc && f.Pc) return '3';
 
-  // 6 — thumb + pinky touching, 3 middle fingers up  ✓
-  if (f.I && f.M && f.R && !f.P && t2p < 0.45 && !f.T) return '6';
-
-  // 7 — thumb + ring touching, index+middle+pinky up  ✓
-  if (f.I && f.M && !f.R && f.P && t2r < 0.45 && !f.T) return '7';
-
-  // 8 — thumb + middle touching, index+ring+pinky up  ✓
-  if (f.I && !f.M && f.R && f.P && t2m < 0.45 && !f.T) return '8';
-
   return null;
 }
 
 // ═══════════════════════════════════════════════
 // MEDIAPIPE HELPERS
 // ═══════════════════════════════════════════════
-async function mkHands(cb, complexity = 1) {
+async function mkHands(cb, complexity = 0) {
   const h = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-  h.setOptions({ maxNumHands:1, modelComplexity:complexity, minDetectionConfidence:0.65, minTrackingConfidence:0.65 });
+  h.setOptions({ maxNumHands:1, modelComplexity:complexity, minDetectionConfidence:0.6, minTrackingConfidence:0.55 });
   h.onResults(cb);
   return h;
 }
@@ -2038,13 +2488,30 @@ function drawFrame(ctx, vid, cvs) {
 // ── Shared MediaPipe Hands instance (saves ~24MB RAM) ──
 let _sharedHands = null;
 let _sharedHandsCb = null;   // current active callback
+// Frame throttle — skip if previous frame still processing
+let _processing = false;
 async function getSharedHands() {
   if (_sharedHands) return _sharedHands;
+  // Use complexity 0 (lite model) for better perf; still accurate for A-Z/0-9
   _sharedHands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-  _sharedHands.setOptions({ maxNumHands:1, modelComplexity:1, minDetectionConfidence:0.65, minTrackingConfidence:0.65 });
-  _sharedHands.onResults(res => { if (_sharedHandsCb) _sharedHandsCb(res); });
+  _sharedHands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 0,          // 0 = lite (fast), 1 = full (slow)
+    minDetectionConfidence: 0.6,
+    minTrackingConfidence: 0.55
+  });
+  _sharedHands.onResults(res => {
+    _processing = false;
+    if (_sharedHandsCb) _sharedHandsCb(res);
+  });
   return _sharedHands;
 }
+// Pre-warm: load model in background 2s after page load so camera starts instantly
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    getSharedHands().catch(() => {});
+  }, 2000);
+});
 
 let handsMain = null, camMain = null, detectingMain = false, timerMain = null;
 const HOLD_MS = 800;   // ms to hold gesture for confirmation
@@ -2115,6 +2582,13 @@ function onMain(res) {
         if ($('dSaved')) $('dSaved').textContent = mainSt.hist.length;
         speak(displayName);
         toast(`✅ ${gInfo?.emoji} ${displayName}`, 's');
+
+        // Simpan snapshot untuk dataset kustom (hanya di memori sesi untuk diunduh)
+        try {
+          const snap = cvsMain.toDataURL('image/jpeg', 0.80);
+          if (!window._datasetSnapsMain) window._datasetSnapsMain = {};
+          window._datasetSnapsMain[g.type] = snap;
+        } catch(e){}
       }
     } else {
       $('gDisplay').textContent = '?';
@@ -2140,8 +2614,13 @@ async function startMain() {
     handsMain = await getSharedHands(); _sharedHandsCb = onMain;
     const isMobile = window.innerWidth < 768;
     if (!camMain) camMain = new Camera(vidMain, {
-      onFrame: async () => { if (handsMain && detectingMain) await _sharedHands.send({image: vidMain}); },
-      width: isMobile ? 640 : 1280, height: isMobile ? 480 : 720
+      onFrame: async () => {
+        if (handsMain && detectingMain && !_processing) {
+          _processing = true;
+          await _sharedHands.send({image: vidMain});
+        }
+      },
+      width: isMobile ? 640 : 1280, height: isMobile ? 480 : 720  // HD on desktop, throttle keeps it smooth
     });
     await camMain.start();
     detectingMain = true; mainSt.sessStart = Date.now();
@@ -2182,6 +2661,25 @@ function doScreenshot() {
   a.href = cvsMain.toDataURL('image/png');
   a.click();
   toast('📸 Screenshot tersimpan!', 's');
+}
+
+// ── Custom Snapshot Storage for Main Gestures ────
+window._datasetSnapsMain = {};
+
+function downloadDatasetMain() {
+  const snaps = window._datasetSnapsMain || {};
+  const keys = Object.keys(snaps);
+  if (!keys.length) { toast('Belum ada snapshot. Lakukan pose gestur di depan kamera dulu!', 'w'); return; }
+  keys.forEach((gest, i) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.download = `gesture_main_${gest}_${Date.now()}.jpg`;
+      a.href = snaps[gest];
+      a.click();
+    }, i * 200);
+  });
+  toast(`📥 Download ${keys.length} snapshot gesture!`, 's');
+  speak('Dataset gesture utama berhasil diunduh');
 }
 
 function updateSentBox() {
@@ -2434,22 +2932,36 @@ function toggleAZMode() {
 function skipAZ() { azSt.total++; azSt.streak = 0; updateAZUI(); nextAZ(); }
 
 async function startAZ() {
-  const isMobile = window.innerWidth < 768;
-  $('azBtnStart').disabled = true;
-  handsAZ = await getSharedHands(); _sharedHandsCb = onAZ;
-  if (!azSt.cam) azSt.cam = new Camera(vidAZ, {
-    onFrame: async () => { if (handsAZ && azSt.running) await _sharedHands.send({image: vidAZ}); },
-    width: (window.innerWidth < 768 ? 640 : 1280), height: (window.innerWidth < 768 ? 480 : 720)
-  });
-  await azSt.cam.start();
-  azSt.running = true; azSt.idx = 0; azSt.correct = 0; azSt.total = 0;
-  azSt.streak = 0; azSt.prog = {}; azSt.stable = 0; azSt.held = false;
-  $('azPH').classList.add('hidden');
-  $('azBtnStop').disabled  = false;
-  $('azBtnSkip').disabled  = false;
-  $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-active');
-  updateAZCurrent(); updateAZUI(); renderAZGrid();
-  toast('🔤 A–Z Training dimulai!', 'i');
+  const btn = $('azBtnStart');
+  btn.disabled = true;
+  btn.textContent = '⏳ Memuat...';
+  try {
+    handsAZ = await getSharedHands(); _sharedHandsCb = onAZ;
+    const isMobileAZ = window.innerWidth < 768;
+    if (!azSt.cam) azSt.cam = new Camera(vidAZ, {
+      onFrame: async () => {
+        if (handsAZ && azSt.running && !_processing) {
+          _processing = true;
+          await _sharedHands.send({image: vidAZ});
+        }
+      },
+      width: isMobileAZ ? 640 : 1280, height: isMobileAZ ? 480 : 720
+    });
+    await azSt.cam.start();
+    azSt.running = true; azSt.idx = 0; azSt.correct = 0; azSt.total = 0;
+    azSt.streak = 0; azSt.prog = {}; azSt.stable = 0; azSt.held = false;
+    $('azPH').classList.add('hidden');
+    $('azBtnStop').disabled  = false;
+    $('azBtnSkip').disabled  = false;
+    $('azCamWrap').className = $('azCamWrap').className.replace(/cam-\w+/, 'cam-active');
+    updateAZCurrent(); updateAZUI(); renderAZGrid();
+    btn.textContent = '▶ Mulai';
+    toast('🔤 A–Z Training dimulai!', 'i');
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '▶ Mulai';
+    toast('❌ Gagal memuat kamera: ' + e.message, 'e');
+  }
 }
 
 async function stopAZ() {
@@ -2597,22 +3109,36 @@ function renderNumGrid() {
 function skipNum() { numSt.total++; numSt.streak = 0; updateNumUI(); nextNum(); }
 
 async function startNum() {
-  const isMobile = window.innerWidth < 768;
-  $('numBtnStart').disabled = true;
-  handsNum = await getSharedHands(); _sharedHandsCb = onNum;
-  if (!numSt.cam) numSt.cam = new Camera(vidNum, {
-    onFrame: async () => { if (handsNum && numSt.running) await _sharedHands.send({image: vidNum}); },
-    width: (window.innerWidth < 768 ? 640 : 1280), height: (window.innerWidth < 768 ? 480 : 720)
-  });
-  await numSt.cam.start();
-  numSt.running = true; numSt.idx = 0; numSt.correct = 0; numSt.total = 0;
-  numSt.streak = 0; numSt.prog = {}; numSt.stable = 0; numSt.held = false;
-  $('numPH').classList.add('hidden');
-  $('numBtnStop').disabled  = false;
-  $('numBtnSkip').disabled  = false;
-  $('numCamWrap').className = $('numCamWrap').className.replace(/cam-\w+/, 'cam-active');
-  updateNumCurrent(); updateNumUI(); renderNumGrid();
-  toast('🔢 Latihan angka dimulai!', 'i');
+  const btn = $('numBtnStart');
+  btn.disabled = true;
+  btn.textContent = '⏳ Memuat...';
+  try {
+    handsNum = await getSharedHands(); _sharedHandsCb = onNum;
+    const isMobileNum = window.innerWidth < 768;
+    if (!numSt.cam) numSt.cam = new Camera(vidNum, {
+      onFrame: async () => {
+        if (handsNum && numSt.running && !_processing) {
+          _processing = true;
+          await _sharedHands.send({image: vidNum});
+        }
+      },
+      width: isMobileNum ? 640 : 1280, height: isMobileNum ? 480 : 720
+    });
+    await numSt.cam.start();
+    numSt.running = true; numSt.idx = 0; numSt.correct = 0; numSt.total = 0;
+    numSt.streak = 0; numSt.prog = {}; numSt.stable = 0; numSt.held = false;
+    $('numPH').classList.add('hidden');
+    $('numBtnStop').disabled  = false;
+    $('numBtnSkip').disabled  = false;
+    $('numCamWrap').className = $('numCamWrap').className.replace(/cam-\w+/, 'cam-active');
+    updateNumCurrent(); updateNumUI(); renderNumGrid();
+    btn.textContent = '▶ Mulai';
+    toast('🔢 Latihan angka dimulai!', 'i');
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '▶ Mulai';
+    toast('❌ Gagal memuat kamera: ' + e.message, 'e');
+  }
 }
 
 async function stopNum() {
@@ -2629,7 +3155,7 @@ async function stopNum() {
 }
 
 // ═══════════════════════════════════════════════
-// TAB: GAME & KUIS
+// TAB: GAME & KUIS — Full Quizizz-style engine
 // ═══════════════════════════════════════════════
 let handsGame = null;
 const gameSt = {
@@ -2638,35 +3164,44 @@ const gameSt = {
   totalSess:0, bestScore:0, allAcc:[],
   stableStart:0, held:false, cam:null,
   roundTimer:null, timeLeft:10, TIME_MAX:10,
-  elTimer:null, elapsed:0
+  elTimer:null, elapsed:0,
+  wrongAnswers:[],      // [{target, mode}] for end-of-game review
+  gameMotionBuf:[],     // local motion buffer for J/Z in game
+  bonusActive:false, bonusTarget:null, bonusMode:null,
+  bonusTimeLeft:0, _bonusTimer:null, _bonusCheck:null
 };
 const vidGame = document.getElementById('vidGame');
 const cvsGame = document.getElementById('cvsGame');
 
 function setGameMode(mode) {
+  if (gameSt.running) return;
   gameSt.mode = mode;
-  // Reset button styles
-  ['gameModeAZ','gameModeNum','gameModeGest'].forEach(id => {
-    $$(id).style.color = '#6b7280';
-    $$(id).style.background = 'transparent';
-    $$(id).style.borderColor = 'rgba(255,255,255,.1)';
+  ['gameModeAll','gameModeAZ','gameModeNum','gameModeGest'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.className = 'gm-btn';
   });
-  const map = {az:'gameModeAZ', num:'gameModeNum', gest:'gameModeGest'};
-  const colors = {az:'var(--neon)', num:'var(--neon3)', gest:'var(--neon2)'};
-  const bgs    = {az:'rgba(0,255,136,.1)', num:'rgba(34,211,238,.1)', gest:'rgba(168,85,247,.1)'};
-  const bcs    = {az:'var(--neon)', num:'var(--neon3)', gest:'var(--neon2)'};
-  const el = $$(map[mode]);
-  el.style.color = colors[mode]; el.style.background = bgs[mode]; el.style.borderColor = bcs[mode];
-  const labels = {az:'Mode: A–Z Alfabet', num:'Mode: 0–9 Angka', gest:'Mode: Gesture'};
-  toast(labels[mode], 'i');
+  const map    = {all:'gameModeAll', az:'gameModeAZ', num:'gameModeNum', gest:'gameModeGest'};
+  const actCls = {all:'gm-all', az:'gm-az', num:'gm-num', gest:'gm-gest'};
+  const labels = {all:'Mode: Semua (A–Z + 0–9 + Gesture)', az:'Mode: A–Z Alfabet', num:'Mode: 0–9 Angka', gest:'Mode: Gesture'};
+  const el = document.getElementById(map[mode]);
+  if (el) el.className = 'gm-btn ' + actCls[mode];
+  const ml = document.getElementById('gameModeLabel');
+  if (ml) ml.textContent = labels[mode] || labels.all;
+  toast(labels[mode] || '', 'i');
 }
 
 function buildPool() {
   let arr;
-  if (gameSt.mode === 'az')   arr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  else if (gameSt.mode === 'num') arr = '0123456789'.split('');
-  else arr = Object.keys(GESTURES);
-  // shuffle
+  if      (gameSt.mode === 'az')   arr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  else if (gameSt.mode === 'num')  arr = '0123456789'.split('');
+  else if (gameSt.mode === 'gest') arr = Object.keys(GESTURES);
+  else { // 'all' — combine A-Z + 0-9 + Gestures
+    arr = [
+      ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+      ...'0123456789'.split(''),
+      ...Object.keys(GESTURES)
+    ];
+  }
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -2677,25 +3212,74 @@ function buildPool() {
 function onGame(res) {
   const ctx = cvsGame.getContext('2d');
   drawFrame(ctx, vidGame, cvsGame);
-  if (!gameSt.running) return;
+  if (!gameSt.running || gameSt.bonusActive) return;
 
   if (res.multiHandLandmarks?.length) {
     const lm = res.multiHandLandmarks[0];
     drawSkeleton(ctx, lm, cvsGame, '#059669', '#6ee7b7');
-    $('gameHandBadge').classList.remove('hidden');
+    const hb = document.getElementById('gameHandBadge');
+    if (hb) hb.classList.remove('hidden');
 
-    let rawDet = null;
-    if (gameSt.mode === 'az')   rawDet = detectASL(lm);
-    else if (gameSt.mode === 'num') rawDet = detectNumber(lm);
-    else { const g = detectGesture(lm); rawDet = g ? g.type : null; }
-    smGame.push(rawDet);
-    let det = smGame.get();
-
-    const tgt = gameSt.pool[gameSt.idx];
+    const tgt  = gameSt.pool[gameSt.idx];
     const live = $('gameLive');
-    const dispDet = gameSt.mode === 'gest' ? (GESTURES[det]?.emoji || '–') : (det || '–');
+    const mb   = document.getElementById('gameMotionBadge');
+
+    // ── Motion letters J & Z ──────────────────────────────────
+    if (gameSt.mode === 'az' && MOTION_LETTERS && MOTION_LETTERS.has(tgt)) {
+      if (mb) mb.style.display = 'block';
+      const tip = tgt === 'J' ? lm[20] : lm[8];
+      gameSt.gameMotionBuf.push({ x: tip.x, y: tip.y, t: performance.now() });
+      if (gameSt.gameMotionBuf.length > MOTION_BUF_MAX) gameSt.gameMotionBuf.shift();
+
+      const bufPct = Math.min(100, (gameSt.gameMotionBuf.length / MOTION_BUF_MIN) * 100);
+      $('gameStabBar').style.width = bufPct + '%';
+      $('gameStabLbl').textContent = 'Gambar ' + tgt + '…';
+      live.textContent = gameSt.gameMotionBuf.length >= MOTION_BUF_MIN ? '…' : '→';
+      live.style.color = '#f59e0b';
+
+      if (!_gameDeadZone && !gameSt.held && gameSt.gameMotionBuf.length >= MOTION_BUF_MIN) {
+        // Temporarily swap the shared motionBuf, detect, then restore
+        const savedBuf = motionBuf.splice(0);
+        gameSt.gameMotionBuf.forEach(p => motionBuf.push(p));
+        const ok = detectMotion(tgt);
+        motionBuf.splice(0);
+        savedBuf.forEach(p => motionBuf.push(p));
+        if (ok) {
+          gameSt.held = true;
+          live.textContent = tgt;
+          live.style.color = 'var(--neon)';
+          $('gameStabBar').style.width = '100%';
+          gameHit();
+        }
+      }
+      return;
+    }
+    // Clear motion state for non-motion letters
+    if (mb) mb.style.display = 'none';
+    gameSt.gameMotionBuf = [];
+
+    // ── Static detection ──────────────────────────────────────
+    let rawDet = null;
+    if (gameSt.mode === 'az') {
+      rawDet = detectASL(lm);
+    } else if (gameSt.mode === 'num') {
+      rawDet = detectNumber(lm);
+    } else if (gameSt.mode === 'gest') {
+      const g = detectGesture(lm); rawDet = g ? g.type : null;
+    } else {
+      // 'all' mode — detect based on what type the target item is
+      if (GESTURES[tgt])                    { const g = detectGesture(lm); rawDet = g ? g.type : null; }
+      else if (/^\d$/.test(tgt))            { rawDet = detectNumber(lm); }
+      else                                  { rawDet = detectASL(lm); }
+    }
+    smGame.push(rawDet);
+    const det = smGame.get();
+
+    // Display logic: if target is a gesture key show emoji, otherwise show letter/digit
+    const isGestTgt = gameSt.mode === 'gest' || (gameSt.mode === 'all' && GESTURES[tgt]);
+    const dispDet = isGestTgt ? (GESTURES[det]?.emoji || '–') : (det || '–');
     live.textContent = dispDet;
-    live.style.color = det === tgt ? 'var(--neon)' : det ? '#f87171' : 'var(--neon)';
+    live.style.color = det === tgt ? '#10b981' : det ? '#ef4444' : 'var(--tx3)';
     $('gameStabLbl').textContent = dispDet;
 
     const gNow = performance.now();
@@ -2709,44 +3293,63 @@ function onGame(res) {
       gameHit();
     }
   } else {
-    $('gameHandBadge').classList.add('hidden');
+    const hb = document.getElementById('gameHandBadge');
+    if (hb) hb.classList.add('hidden');
     gameSt.stableStart = 0; gameSt.held = false; smGame.reset();
+    gameSt.gameMotionBuf = [];
     $('gameStabBar').style.width = '0%';
     $('gameStabLbl').textContent = '–';
-    const l = $('gameLive'); l.textContent = '–'; l.style.color = 'var(--neon)';
+    const mb = document.getElementById('gameMotionBadge');
+    if (mb) mb.style.display = 'none';
+    const l = $('gameLive'); l.textContent = '–'; l.style.color = 'var(--tx3)';
   }
 }
 
 function gameHit() {
   clearInterval(gameSt.roundTimer);
-  const bonus = Math.ceil(gameSt.timeLeft * 5);
-  gameSt.score += 10 + bonus;
+  const bonus   = Math.ceil(gameSt.timeLeft * 5);
+  const streak3 = gameSt.streak >= 2;        // next streak will be ≥3
+  const earned  = Math.round((10 + bonus) * (streak3 ? 1.5 : 1));
+  gameSt.score += earned;
   gameSt.correct++; gameSt.streak++;
   if (gameSt.streak > gameSt.bestStreak) gameSt.bestStreak = gameSt.streak;
-  if (gameSt.score > gameSt.bestScore)   gameSt.bestScore  = gameSt.score;
+  if (gameSt.score  > gameSt.bestScore)  gameSt.bestScore  = gameSt.score;
   updateGameUI();
   setGameDeadZone();
-  showGameFlash('✅');
-  speak(gameSt.pool[gameSt.idx] + (gameSt.mode === 'gest' ? (', ' + (GESTURES[gameSt.pool[gameSt.idx]]?.label || '') + ', benar!') : ', benar!'));
-  toast(`+${10+bonus} poin! 🎯`, 's');
-  setTimeout(() => { hideGameFlash(); nextGame(); }, 650);
+  const tgt = gameSt.pool[gameSt.idx];
+  speak((gameSt.mode === 'gest' ? GESTURES[tgt]?.label || tgt : tgt) + ', benar!');
+  gpShowCorrect(tgt, earned);
 }
 
 function gameMiss() {
-  gameSt.wrong++; gameSt.streak = 0;
+  gameSt.wrong++;
+  const tgt = gameSt.pool[gameSt.idx];
+  gameSt.wrongAnswers.push({ target: tgt, mode: gameSt.mode });
+  gameSt.streak = 0;
   updateGameUI();
   setGameDeadZone();
-  showGameFlash('❌');
   speak('Waktu habis!', true);
-  toast('⏰ Waktu habis!', 'w');
-  setTimeout(() => { hideGameFlash(); nextGame(); }, 650);
+  gpShowWrong(tgt);
 }
 
 function nextGame() {
   gameSt.stableStart = 0; gameSt.held = false;
+  gameSt.gameMotionBuf = [];
+  const mb = document.getElementById('gameMotionBadge');
+  if (mb) mb.style.display = 'none';
+  smGame.reset();
   $('gameStabBar').style.width = '0%';
+  $('gameStabLbl').textContent = '–';
+  const l = $('gameLive'); l.textContent = '–'; l.style.color = 'var(--tx3)';
+
   if (gameSt.idx < gameSt.pool.length - 1) {
     gameSt.idx++;
+    // Update progress bar
+    const pct = (gameSt.idx / gameSt.pool.length) * 100;
+    const pf  = document.getElementById('gameProgressFill');
+    if (pf)   pf.style.width = pct + '%';
+    const qn  = document.getElementById('gameQNum');
+    if (qn)   qn.textContent = gameSt.idx + 1;
     startRoundTimer();
     updateGameTarget();
   } else {
@@ -2758,8 +3361,8 @@ function endGame() {
   gameSt.running = false;
   clearInterval(gameSt.roundTimer);
   clearInterval(gameSt.elTimer);
-  const total = gameSt.correct + gameSt.wrong;
-  const acc   = total > 0 ? Math.round((gameSt.correct / total) * 100) : 0;
+  const total  = gameSt.correct + gameSt.wrong;
+  const acc    = total > 0 ? Math.round((gameSt.correct / total) * 100) : 0;
   gameSt.allAcc.push(acc);
   gameSt.totalSess++;
   const avgAcc = Math.round(gameSt.allAcc.reduce((a,b) => a+b,0) / gameSt.allAcc.length);
@@ -2767,14 +3370,20 @@ function endGame() {
   $('gameBestStreak').textContent = gameSt.bestStreak;
   $('gameTotalSess').textContent  = gameSt.totalSess;
   $('gameAvgAcc').textContent     = avgAcc + '%';
-  $('dGame').textContent          = gameSt.bestScore;
-  showGameFlash('🏆');
-  speak(`Game selesai! Skor kamu ${gameSt.score} poin! Akurasi ${acc} persen.`, true);
-  toast(`🏆 Game selesai! Skor: ${gameSt.score}`, 's');
-  setTimeout(() => { hideGameFlash(); stopGame(); }, 2200);
+  try { $('dGame').textContent = gameSt.bestScore; } catch(e){}
+  addXP(Math.floor(gameSt.score / 5));
+  gpShowEnd(acc);
 }
 
 function startRoundTimer() {
+  if (gameSt.isPractice) {
+    clearInterval(gameSt.roundTimer);
+    $('gameTimerTxt').textContent = '∞';
+    $('gameRingPath').style.strokeDashoffset = 0;
+    $('gameRingPath').style.stroke = '#10b981';
+    $('gameTimerTxt').style.color  = '#10b981';
+    return;
+  }
   gameSt.timeLeft = gameSt.TIME_MAX;
   clearInterval(gameSt.roundTimer);
   updateTimerRing(1);
@@ -2784,7 +3393,7 @@ function startRoundTimer() {
     $('gameTimerTxt').textContent = Math.ceil(gameSt.timeLeft);
     if (gameSt.timeLeft <= 0) {
       clearInterval(gameSt.roundTimer);
-      if (gameSt.running) gameMiss();
+      if (gameSt.running && !gameSt.held) gameMiss();
     }
   }, 100);
 }
@@ -2792,27 +3401,29 @@ function startRoundTimer() {
 function updateTimerRing(pct) {
   const offset = 138.2 * (1 - pct);
   $('gameRingPath').style.strokeDashoffset = offset;
-  const col = pct > 0.5 ? 'var(--neon)' : pct > 0.25 ? 'var(--gold)' : '#f87171';
+  const col = pct > 0.5 ? '#22c55e' : pct > 0.25 ? '#f59e0b' : '#ef4444';
   $('gameRingPath').style.stroke = col;
   $('gameTimerTxt').style.color  = col;
 }
 
 function updateGameTarget() {
   const tgt = gameSt.pool[gameSt.idx];
-  let displayTgt = tgt;
-  let hint = '';
-  if (gameSt.mode === 'az') {
-    hint = ASL[tgt]?.hint || '';
-  } else if (gameSt.mode === 'num') {
-    hint = NUMBERS[parseInt(tgt)]?.hint || '';
+  let hint  = '';
+  if      (gameSt.mode === 'az')  hint = ASL[tgt]?.hint || ASL[tgt]?.desc || '';
+  else if (gameSt.mode === 'num') hint = NUMBERS[parseInt(tgt)]?.hint || '';
+  else { hint = GESTURES[tgt]?.desc || ''; }
+
+  if (gameSt.mode === 'gest') {
+    $('gameTargTxt').textContent = GESTURES[tgt]?.emoji || tgt;
+    $('gameCurTgt').textContent  = (GESTURES[tgt]?.emoji || '') + ' ' + (GESTURES[tgt]?.label || tgt);
   } else {
-    // gesture mode — show Indonesian label
-    displayTgt = (GESTURES[tgt]?.emoji || '') + ' ' + (GESTURES[tgt]?.label || tgt);
-    hint = GESTURES[tgt]?.desc || '';
+    $('gameTargTxt').textContent = tgt;
+    $('gameCurTgt').textContent  = tgt;
   }
-  $('gameTargTxt').textContent  = gameSt.mode === 'gest' ? GESTURES[tgt]?.emoji || tgt : tgt;
-  $('gameCurTgt').textContent   = gameSt.mode === 'gest' ? (GESTURES[tgt]?.emoji + ' ' + GESTURES[tgt]?.label) : tgt;
-  $('gameCurHint').textContent  = hint;
+  if (gameSt.mode === 'az' && MOTION_LETTERS && MOTION_LETTERS.has(tgt)) {
+    hint = '✋ Huruf Gerak: ' + hint;
+  }
+  $('gameCurHint').textContent = hint;
   speak('Tunjukkan ' + (gameSt.mode === 'gest' ? GESTURES[tgt]?.label || tgt : tgt));
 }
 
@@ -2821,79 +3432,348 @@ function updateGameUI() {
   $('gameCorrect').textContent = gameSt.correct;
   $('gameWrong').textContent   = gameSt.wrong;
   $('gameStreak').textContent  = gameSt.streak;
-  // Level bars (1 level per 40 pts)
   const lvl = Math.min(5, Math.floor(gameSt.score / 40) + 1);
   const labels = ['Pemula','Menengah','Mahir','Expert','Master'];
   $('gameLevelTxt').textContent = labels[lvl - 1] || 'Pemula';
   for (let i = 1; i <= 5; i++) {
-    $(`lv${i}`).style.background = i <= lvl ? 'var(--neon)' : 'rgba(255,255,255,.07)';
+    $(`lv${i}`).style.background = i <= lvl ? '#10b981' : '#e2e8f0';
   }
+  // Pop the score number
+  const sc = $('gameScore');
+  sc.classList.remove('sc-pop');
+  void sc.offsetWidth;
+  sc.classList.add('sc-pop');
 }
 
 function showGameFlash(em) {
   const fi = $('gameFlashInner');
   fi.textContent = em;
   fi.classList.remove('score-pop');
-  void fi.offsetWidth; // force reflow
+  void fi.offsetWidth;
   fi.classList.add('score-pop');
   $('gameFlash').style.display = 'flex';
 }
 function hideGameFlash() { $('gameFlash').style.display = 'none'; }
 
 function skipGame() {
-  if (!gameSt.running) return;
+  if (!gameSt.running || _gameDeadZone) return;
   clearInterval(gameSt.roundTimer);
+  const tgt = gameSt.pool[gameSt.idx];
+  gameSt.wrongAnswers.push({ target: tgt, mode: gameSt.mode });
   gameSt.wrong++; gameSt.streak = 0;
   updateGameUI(); nextGame();
 }
 
-async function startGame() {
-  const isMobile = window.innerWidth < 768;
-  $('gameBtnStart').disabled = true;
-  handsGame = await getSharedHands(); _sharedHandsCb = onGame;
-  if (!gameSt.cam) gameSt.cam = new Camera(vidGame, {
-    onFrame: async () => { if (handsGame && gameSt.running) await _sharedHands.send({image: vidGame}); },
-    width: (window.innerWidth < 768 ? 640 : 1280), height: (window.innerWidth < 768 ? 480 : 720)
-  });
-  await gameSt.cam.start();
-  gameSt.running = true;
-  gameSt.pool    = buildPool();
-  gameSt.idx     = 0; gameSt.score  = 0;
-  gameSt.correct = 0; gameSt.wrong  = 0;
-  gameSt.streak  = 0; gameSt.stable = 0; gameSt.held = false;
-  gameSt.elapsed = 0;
+async function startGame(isPractice = false) {
+  gameSt.isPractice = isPractice;
+  const btnStart    = $('gameBtnStart');
+  const btnPractice = $('gameBtnPractice');
+  if (btnStart)    { btnStart.disabled = true;    btnStart.textContent    = '⏳ Memuat...'; }
+  if (btnPractice) { btnPractice.disabled = true; btnPractice.textContent = '⏳ Memuat...'; }
+  try {
+    handsGame = await getSharedHands(); _sharedHandsCb = onGame;
+    const isMobileGame = window.innerWidth < 768;
+    if (!gameSt.cam) gameSt.cam = new Camera(vidGame, {
+      onFrame: async () => {
+        if (handsGame && gameSt.running && !_processing) {
+          _processing = true;
+          await _sharedHands.send({image: vidGame});
+        }
+      },
+      width: isMobileGame ? 640 : 1280, height: isMobileGame ? 480 : 720
+    });
+    await gameSt.cam.start();
+    gameSt.running = true;
+    gameSt.pool    = buildPool();
+    gameSt.idx     = 0; gameSt.score  = 0;
+    gameSt.correct = 0; gameSt.wrong  = 0;
+    gameSt.streak  = 0; gameSt.stableStart = 0; gameSt.held = false;
+    gameSt.elapsed = 0; gameSt.wrongAnswers = [];
+    gameSt.gameMotionBuf = [];
 
-  $('gamePH').classList.add('hidden');
-  $('gameTargOv').classList.remove('hidden');
-  $('gameTimerOv').classList.remove('hidden');
-  $('gameBtnStop').disabled  = false;
-  $('gameBtnSkip').disabled  = false;
+    $('gamePH').style.display    = 'none';
+    $('gameTargOv').style.display  = 'block';
+    $('gameTimerOv').style.display = 'block';
+    $('gameBtnStop').disabled  = false;
+    $('gameBtnSkip').disabled  = false;
 
-  updateGameUI(); updateGameTarget(); startRoundTimer();
+    const qt = document.getElementById('gameQTotal');
+    const qn = document.getElementById('gameQNum');
+    const qb = document.getElementById('gameQBadge');
+    if (qt) qt.textContent = gameSt.pool.length;
+    if (qn) qn.textContent = 1;
+    if (qb) {
+      qb.textContent = gameSt.isPractice ? 'Latihan 📖' : 'Sedang Bermain 🎮';
+      qb.style.background = '#ecfdf5';
+      qb.style.color = '#059669';
+      qb.style.borderColor = '#bbf7d0';
+    }
+    const pf = document.getElementById('gameProgressFill');
+    if (pf) pf.style.width = '0%';
 
-  clearInterval(gameSt.elTimer);
-  gameSt.elTimer = setInterval(() => {
-    gameSt.elapsed++;
-    $('gameElapsed').textContent = gameSt.elapsed + 's';
-  }, 1000);
+    if (btnStart)    btnStart.textContent    = '▶ Mulai Game';
+    if (btnPractice) btnPractice.textContent = '📖 Mode Latihan';
 
-  toast('🎮 Game dimulai! Tunjukkan gesture!', 's');
+    updateGameUI(); updateGameTarget(); startRoundTimer();
+    clearInterval(gameSt.elTimer);
+    gameSt.elTimer = setInterval(() => {
+      gameSt.elapsed++;
+      $('gameElapsed').textContent = gameSt.elapsed + 's';
+    }, 1000);
+    toast(gameSt.isPractice ? '📖 Mode Latihan dimulai!' : '🎮 Game dimulai! Tunjukkan gesture!', 's');
+  } catch(e) {
+    if (btnStart)    { btnStart.disabled = false;    btnStart.textContent    = '▶ Mulai Game'; }
+    if (btnPractice) { btnPractice.disabled = false; btnPractice.textContent = '📖 Mode Latihan'; }
+    toast('❌ Gagal memuat kamera: ' + e.message, 'e');
+    console.error(e);
+  }
 }
 
 async function stopGame() {
   gameSt.running = false;
   clearInterval(gameSt.roundTimer); clearInterval(gameSt.elTimer);
+  clearInterval(gameSt._bonusTimer); clearInterval(gameSt._bonusCheck);
+  gameSt.bonusActive = false;
   if (gameSt.cam) { try { await gameSt.cam.stop(); } catch(e){} gameSt.cam = null; }
   $('gameBtnStart').disabled = false;
+  if ($('gameBtnPractice')) $('gameBtnPractice').disabled = false;
   $('gameBtnStop').disabled  = true;
   $('gameBtnSkip').disabled  = true;
-  $('gamePH').classList.remove('hidden');
-  $('gameTargOv').classList.add('hidden');
-  $('gameTimerOv').classList.add('hidden');
-  $('gameHandBadge').classList.add('hidden');
+  $('gamePH').style.display    = '';
+  $('gameTargOv').style.display  = 'none';
+  $('gameTimerOv').style.display = 'none';
+  const hb = document.getElementById('gameHandBadge'); if (hb) hb.classList.add('hidden');
+  const mb = document.getElementById('gameMotionBadge'); if (mb) mb.style.display = 'none';
   $('gameStabBar').style.width = '0%';
+  $('gameStabLbl').textContent = '–';
   cvsGame.getContext('2d').clearRect(0, 0, cvsGame.width, cvsGame.height);
+  const qb = document.getElementById('gameQBadge');
+  if (qb) { qb.textContent = 'Belum Mulai'; qb.style.background = '#eff6ff'; qb.style.color = '#2563eb'; qb.style.borderColor = '#bfdbfe'; }
+  const pf = document.getElementById('gameProgressFill');
+  if (pf) pf.style.width = '0%';
 }
+
+// ── Popup helpers ──────────────────────────────────────────────
+function gpPopup() { return document.getElementById('gamePopup'); }
+function gpCard()  { return document.getElementById('gamePopupCard'); }
+function gpOpen()  { gpPopup().classList.add('gp-show'); }
+function gpClose() { gpPopup().classList.remove('gp-show'); }
+
+function gpShowCorrect(tgt, earned) {
+  const streakMsg = gameSt.streak >= 5 ? `<div class="st-fire" style="font-size:18px;margin:6px 0;color:#d97706">🔥🔥 ${gameSt.streak} Streak!!</div>` :
+                    gameSt.streak >= 3 ? `<div class="st-fire" style="font-size:16px;margin:6px 0;color:#d97706">🔥 ${gameSt.streak} Streak!</div>` : '';
+  const isGest   = gameSt.mode === 'gest' || (gameSt.mode === 'all' && GESTURES[tgt]);
+  const tgtLabel = isGest
+    ? (GESTURES[tgt]?.emoji + '\u00a0' + GESTURES[tgt]?.label)
+    : `<span style="font-family:'JetBrains Mono',monospace;font-size:52px">${tgt}</span>`;
+  const card = gpCard();
+  card.className = 'gp-card gp-correct';
+  card.innerHTML = `
+    <div style="font-size:56px;line-height:1;margin-bottom:6px">✅</div>
+    <h2 style="font-size:22px;font-weight:900;color:#059669;margin:0 0 4px">Benar!</h2>
+    <p style="font-size:44px;font-weight:900;color:#0f172a;margin:6px 0;line-height:1.1">${tgtLabel}</p>
+    ${streakMsg}
+    <div class="gp-stat-box" style="margin:12px 0">
+      <p style="font-size:26px;font-weight:900;color:#059669;margin:0">+${earned} poin</p>
+      <p style="font-size:12px;color:#64748b;margin:2px 0 0">Total: ${gameSt.score} poin</p>
+    </div>
+    <p style="font-size:12px;color:#94a3b8;margin:0">Lanjut ke soal berikutnya…</p>`;
+  gpOpen();
+  spawnConfetti();
+  setTimeout(() => { gpClose(); nextGame(); }, 1500);
+}
+
+function gpShowWrong(tgt) {
+  const isGest   = gameSt.mode === 'gest' || (gameSt.mode === 'all' && GESTURES[tgt]);
+  const isNum    = gameSt.mode === 'num'  || (gameSt.mode === 'all' && /^\d$/.test(tgt) && !GESTURES[tgt]);
+  const tgtLabel = isGest
+    ? (GESTURES[tgt]?.emoji + '\u00a0' + GESTURES[tgt]?.label)
+    : `<span style="font-family:'JetBrains Mono',monospace">${tgt}</span>`;
+  const hint = isGest ? (GESTURES[tgt]?.desc || '') : isNum ? (NUMBERS[parseInt(tgt)]?.hint || '') : (ASL[tgt]?.hint || '');
+  const card = gpCard();
+  card.className = 'gp-card gp-wrong';
+  card.innerHTML = `
+    <div style="font-size:52px;line-height:1;margin-bottom:6px">❌</div>
+    <h2 style="font-size:22px;font-weight:900;color:#dc2626;margin:0 0 4px">Waktu Habis!</h2>
+    <p style="font-size:13px;color:#64748b;margin:0 0 8px">Jawabannya adalah:</p>
+    <p style="font-size:44px;font-weight:900;color:#0f172a;margin:0 0 10px;line-height:1.1">${tgtLabel}</p>
+    ${hint ? `<div class="gp-hint-box">
+      <p style="font-size:11px;font-weight:700;color:#d97706;margin:0 0 4px">💡 Cara melakukannya:</p>
+      <p style="font-size:12px;color:#475569;line-height:1.5;margin:0">${hint}</p>
+    </div>` : ''}
+    <div style="display:flex;gap:8px">
+      <button class="gp-btn gp-btn-bonus" onclick="gpDismissWrongBonus()" style="border:none">⚡ Bonus +20 XP</button>
+      <button class="gp-btn gp-btn-ghost" onclick="gpDismissWrongNext()" style="border:none">▶ Lanjut</button>
+    </div>`;
+  gpOpen();
+  card.classList.remove('gp-shake');
+  void card.offsetWidth;
+  card.classList.add('gp-shake');
+}
+
+function gpDismissWrongNext() {
+  gpClose();
+  setTimeout(nextGame, 200);
+}
+
+function gpDismissWrongBonus() {
+  gpClose();
+  const entry = gameSt.wrongAnswers[gameSt.wrongAnswers.length - 1];
+  setTimeout(() => gpShowBonus(entry), 350);
+}
+
+function gpShowBonus(entry) {
+  if (!entry) { nextGame(); return; }
+  const { target: tgt, mode } = entry;
+  const hint = mode === 'az'  ? (ASL[tgt]?.hint || '')
+             : mode === 'num' ? (NUMBERS[parseInt(tgt)]?.hint || '')
+             : (GESTURES[tgt]?.desc || '');
+  const tgtLabel = mode === 'gest'
+    ? (GESTURES[tgt]?.emoji + ' ' + GESTURES[tgt]?.label)
+    : `<span style="font-family:'JetBrains Mono',monospace;font-size:52px">${tgt}</span>`;
+  const card = gpCard();
+  card.className = 'gp-card gp-bonus';
+  card.innerHTML = `
+    <div style="font-size:44px;line-height:1;margin-bottom:4px">⚡</div>
+    <h2 style="font-size:18px;font-weight:900;color:#f59e0b;margin:0 0 2px">Bonus Challenge!</h2>
+    <p style="font-size:12px;color:rgba(255,255,255,.4);margin:0 0 14px">Jawab dengan benar untuk +20 XP &amp; +2 poin</p>
+    <div style="background:rgba(245,158,11,.07);border:1.5px dashed rgba(245,158,11,.4);border-radius:16px;padding:16px;margin:0 0 12px">
+      <p style="font-size:48px;font-weight:900;color:#f59e0b;margin:0 0 8px;line-height:1">${tgtLabel}</p>
+      <p style="font-size:11px;color:rgba(255,255,255,.45);margin:0;line-height:1.5">${hint}</p>
+    </div>
+    <p style="font-size:12px;color:rgba(255,255,255,.35);margin:0 0 10px">Tunjukkan ke kamera sekarang…</p>
+    <div style="height:6px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden;margin:0 0 12px">
+      <div id="gpBonusBar" style="height:100%;width:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:999px;transition:width .1s"></div>
+    </div>
+    <button class="gp-btn-skip" onclick="gpSkipBonus()">Lewati</button>`;
+  gpOpen();
+  gameSt.bonusActive   = true;
+  gameSt.bonusTarget   = tgt;
+  gameSt.bonusMode     = mode;
+  gameSt.bonusTimeLeft = 8;
+
+  clearInterval(gameSt._bonusTimer);
+  gameSt._bonusTimer = setInterval(() => {
+    gameSt.bonusTimeLeft = Math.max(0, gameSt.bonusTimeLeft - 0.1);
+    const bar = document.getElementById('gpBonusBar');
+    if (bar) bar.style.width = ((gameSt.bonusTimeLeft / 8) * 100) + '%';
+    if (gameSt.bonusTimeLeft <= 0) {
+      clearInterval(gameSt._bonusTimer);
+      clearInterval(gameSt._bonusCheck);
+      gameSt.bonusActive = false;
+      gpClose();
+      setTimeout(nextGame, 200);
+    }
+  }, 100);
+
+  // Watch for correct gesture on live display
+  clearInterval(gameSt._bonusCheck);
+  gameSt._bonusCheck = setInterval(() => {
+    if (!gameSt.bonusActive) return;
+    const liveTxt  = $('gameLive').textContent.trim();
+    const expected = gameSt.bonusMode === 'gest'
+      ? GESTURES[gameSt.bonusTarget]?.emoji
+      : gameSt.bonusTarget;
+    if (liveTxt && liveTxt !== '–' && liveTxt !== '→' && liveTxt !== '…' && liveTxt === expected) {
+      gpBonusCorrect();
+    }
+  }, 300);
+}
+
+function gpBonusCorrect() {
+  clearInterval(gameSt._bonusTimer);
+  clearInterval(gameSt._bonusCheck);
+  gameSt.bonusActive = false;
+  addXP(20);
+  gameSt.score += 2;
+  updateGameUI();
+  const card = gpCard();
+  card.className = 'gp-card gp-correct';
+  card.innerHTML = `
+    <div style="font-size:80px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 0 28px rgba(34,197,94,.6))">🌟</div>
+    <h2 style="font-size:22px;font-weight:900;color:#22c55e;margin:0 0 8px">Bonus Berhasil!</h2>
+    <p style="font-size:36px;font-weight:900;color:#f59e0b;margin:4px 0">+20 XP</p>
+    <p style="font-size:18px;color:#22c55e;margin:4px 0">+2 Poin Bonus!</p>`;
+  spawnConfetti();
+  speak('Bonus berhasil! Plus dua puluh XP!', true);
+  setTimeout(() => { gpClose(); setTimeout(nextGame, 100); }, 1600);
+}
+
+function gpSkipBonus() {
+  clearInterval(gameSt._bonusTimer);
+  clearInterval(gameSt._bonusCheck);
+  gameSt.bonusActive = false;
+  gpClose();
+  setTimeout(nextGame, 200);
+}
+
+function gpShowEnd(acc) {
+  const grade  = acc >= 90 ? 'Sempurna! 🏆' : acc >= 70 ? 'Bagus! 🎉' : acc >= 50 ? 'Lumayan 👍' : 'Tetap semangat! 💪';
+  const wrongList = gameSt.wrongAnswers.slice(-6);
+  const wrongHtml = wrongList.length > 0 ? `
+    <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.14);border-radius:12px;padding:10px;margin-bottom:12px;text-align:left">
+      <p style="font-size:11px;font-weight:700;color:#f87171;margin:0 0 6px">📝 Perlu Diulang (${wrongList.length}):</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${wrongList.map(w => {
+        const lbl = w.mode === 'gest' ? (GESTURES[w.target]?.emoji || w.target) : w.target;
+        return `<span style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:3px 10px;font-size:18px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#f87171">${lbl}</span>`;
+      }).join('')}</div>
+    </div>` : '';
+  const card = gpCard();
+  card.className = 'gp-card gp-end';
+  card.innerHTML = `
+    <div style="font-size:52px;line-height:1;margin-bottom:8px">${acc >= 70 ? '🏆' : '🎮'}</div>
+    <h2 style="font-size:20px;font-weight:900;color:#a855f7;margin:0 0 4px">Game Selesai!</h2>
+    <p style="font-size:16px;font-weight:700;color:#fff;margin:0 0 14px">${grade}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:10px">
+        <p style="font-size:10px;color:rgba(255,255,255,.4);margin:0">Skor Akhir</p>
+        <p style="font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#a855f7;margin:0">${gameSt.score}</p>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:10px">
+        <p style="font-size:10px;color:rgba(255,255,255,.4);margin:0">Akurasi</p>
+        <p style="font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;color:${acc >= 70 ? '#22c55e' : '#f59e0b'};margin:0">${acc}%</p>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:10px">
+        <p style="font-size:10px;color:rgba(255,255,255,.4);margin:0">Benar</p>
+        <p style="font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#22c55e;margin:0">${gameSt.correct}</p>
+      </div>
+      <div style="background:rgba(255,255,255,.05);border-radius:12px;padding:10px">
+        <p style="font-size:10px;color:rgba(255,255,255,.4);margin:0">Best Streak</p>
+        <p style="font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;color:#f59e0b;margin:0">${gameSt.bestStreak}</p>
+      </div>
+    </div>
+    ${wrongHtml}
+    <div style="display:flex;gap:8px">
+      <button class="gp-btn gp-btn-primary" onclick="gpRestartSame()" style="border:none">🔄 Main Lagi</button>
+      <button class="gp-btn gp-btn-ghost"   onclick="gpClose();stopGame();" style="border:none">✓ Selesai</button>
+    </div>`;
+  gpOpen();
+  if (acc >= 70) spawnConfetti();
+  speak(`Game selesai! Skor kamu ${gameSt.score} poin! Akurasi ${acc} persen.`, true);
+}
+
+function gpRestartSame() {
+  gpClose();
+  stopGame().then(() => setTimeout(startGame, 300)).catch(() => setTimeout(startGame, 300));
+}
+
+// ── Confetti ───────────────────────────────────────────────────
+function spawnConfetti() {
+  const container = document.getElementById('gameConfetti');
+  if (!container) return;
+  const colors = ['#22c55e','#a855f7','#f59e0b','#3b82f6','#ec4899','#06b6d4'];
+  for (let i = 0; i < 45; i++) {
+    const el = document.createElement('div');
+    el.className = 'cf-p';
+    el.style.cssText = `left:${Math.random()*100}vw;width:${Math.random()*8+5}px;height:${Math.random()*8+5}px;background:${colors[~~(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-delay:${Math.random()*.5}s;animation-duration:${Math.random()+1.3}s`;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+}
+
+
+
+
 
 // ═══════════════════════════════════════════════
 // SHARED RESULT OVERLAY HELPERS
@@ -3033,13 +3913,13 @@ function renderAZVisualGuide() {
     const info = ASL[l];
     const svg  = svgHand(cfg, l);
     const svgDataUrl = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
-    return `<div class="cursor-pointer rounded-xl p-2 text-center border border-gray-800/50 bg-black/20 hover:border-purple-500/60 transition"
+    return `<div class="card card-hover cursor-pointer p-2.5 text-center flex flex-col justify-between"
                  onclick="speak('Huruf ${l}. ${cfg.note}', true)" title="${info?.desc||''}">
       <div class="mb-1.5 flex items-center justify-center">
-        <img src="../public/assets/img/A-Z/${l}.jpg" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-16 h-16 object-cover rounded-lg mx-auto" />
+        <img src="../public/assets/img/A-Z/${l}.jpg" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-16 h-16 object-cover rounded-lg mx-auto border border-slate-200 dark:border-slate-700" />
       </div>
-      <div class="text-sm font-black nt2">${l}</div>
-      <div class="text-xs text-gray-600 leading-tight mt-0.5" style="font-size:10px">${cfg.note}</div>
+      <div class="text-sm font-black text-slate-800 dark:text-slate-100">${l}</div>
+      <div class="text-slate-500 dark:text-slate-400 leading-tight mt-0.5" style="font-size:10px">${cfg.note}</div>
     </div>`;
   }).join('');
 }
@@ -3048,15 +3928,15 @@ function renderNumVisualGuide() {
   const el = $('numVisualGuide');
   if (!el) return;
   el.innerHTML = Object.entries(NUM_SVG).map(([n, cfg]) => {
-    const svg = svgHand(cfg, n, '#22d3ee');
+    const svg = svgHand(cfg, n, '#10b981');
     const svgDataUrl = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
-    return `<div class="cursor-pointer rounded-xl p-2 text-center border border-gray-800/50 bg-black/20 hover:border-cyan-500/60 transition"
+    return `<div class="card card-hover cursor-pointer p-2.5 text-center flex flex-col justify-between"
                  onclick="speak('Angka ${n}. ${cfg.note}', true)" title="${NUM_SVG[n]?.note||''}">
       <div class="mb-1.5 flex items-center justify-center">
-        <img src="../public/assets/img/0-9/${n}.jpg" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-16 h-16 object-cover rounded-lg mx-auto" />
+        <img src="../public/assets/img/0-9/${n}.jpg" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-16 h-16 object-cover rounded-lg mx-auto border border-slate-200 dark:border-slate-700" />
       </div>
-      <div class="text-2xl font-black nt3 font-mono">${n}</div>
-      <div class="text-xs text-gray-600 leading-tight mt-0.5" style="font-size:10px">${cfg.note}</div>
+      <div class="text-2xl font-black text-slate-800 dark:text-slate-100 font-mono">${n}</div>
+      <div class="text-slate-500 dark:text-slate-400 leading-tight mt-0.5" style="font-size:10px">${cfg.note}</div>
     </div>`;
   }).join('');
 }
@@ -3069,12 +3949,27 @@ const GEST_SVG_CFG = {
   fist:      {T:false,I:false, M:false, R:false, P:false},
   pointing:  {T:false,I:true,  M:false, R:false, P:false},
 };
+
+const GEST_PHOTOS = {
+  open_hand: '../public/assets/img/Gesture/gesture_main_open_hand_1782208124388.jpg',
+  peace:     '../public/assets/img/Gesture/gesture_main_peace_1782208124588.jpg',
+  thumbs_up: '../public/assets/img/Gesture/gesture_main_thumbs_up_1782208124773.jpg',
+  ok:        '../public/assets/img/Gesture/gesture_main_ok_1782208124973.jpg',
+  fist:      '../public/assets/img/Gesture/gesture_main_fist_1782208125173.jpg',
+  pointing:  '../public/assets/img/Gesture/gesture_main_pointing_1782208125374.jpg',
+};
+
 function renderGestRef() {
   $('gestRef').innerHTML = Object.entries(GESTURES).map(([k,g]) => {
     const cfg = GEST_SVG_CFG[k] || {};
     const svg = svgHand(cfg, k, '#a855f7');
+    const svgDataUrl = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    const photo = GEST_PHOTOS[k] || '';
+    
     return `<div class="hov glass text-center p-3 rounded-xl cursor-pointer" onclick="speak('${g.label}. ${g.contoh}', true)" title="${g.desc}">
-      <div class="mb-1 mx-auto" style="max-width:72px">${svg}</div>
+      <div class="mb-1.5 mx-auto flex items-center justify-center" style="max-width:72px; min-height:64px">
+        <img src="${photo}" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-16 h-16 object-cover rounded-lg mx-auto border border-purple-500/30" />
+      </div>
       <div class="text-2xl mb-0.5">${g.emoji}</div>
       <p class="text-xs font-bold text-white">${g.label}</p>
       <p class="text-xs leading-tight mt-0.5" style="color:var(--neon3)">${g.name}</p>
@@ -3082,22 +3977,6 @@ function renderGestRef() {
   }).join('');
 }
 
-function renderLearnCards() {
-  $('learnCards').innerHTML = Object.entries(GESTURES).map(([k,g]) =>
-    `<div class="hov glass rounded-2xl p-5 cursor-pointer" onclick="speak('${g.label}. ${g.contoh}', true)">
-      <div class="text-5xl mb-3">${g.emoji}</div>
-      <div class="flex items-center gap-2 mb-1">
-        <h3 class="font-bold text-base">${g.label}</h3>
-        <span class="text-xs px-1.5 py-0.5 rounded font-mono" style="background:rgba(0,255,136,.1);color:var(--neon);border:1px solid rgba(0,255,136,.2)">${g.name}</span>
-      </div>
-      <p class="text-gray-500 text-sm leading-snug mb-3">${g.desc}</p>
-      <div class="rounded-lg p-2.5 text-sm" style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2)">
-        <span class="text-gray-600 text-xs">Contoh kalimat:</span>
-        <p class="text-gray-300 text-sm mt-0.5 italic">"${g.contoh}"</p>
-      </div>
-      <button class="mt-3 text-xs nt2 hover:underline">🔊 Dengar contoh</button>
-    </div>`).join('');
-}
 
 // Visual finger diagram for each ASL letter
 const ASL_VISUAL = {
@@ -3162,7 +4041,7 @@ function renderBreakdown() {
 // ═══════════════════════════════════════════════
 // TAB SWITCHING
 // ═══════════════════════════════════════════════
-const TABS = ['gesture','alphabet','numeric','game','learn','dashboard','photobooth'];
+const TABS = ['gesture','alphabet','numeric','game','learn','text2gest','dashboard','photobooth'];
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', async () => {
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
@@ -3213,7 +4092,8 @@ let _gameDeadZone = false;
 function setGameDeadZone() {
   _gameDeadZone = true;
   gameSt.stableStart = 0; gameSt.held = false;
-  setTimeout(() => { _gameDeadZone = false; }, 500);
+  gameSt.gameMotionBuf = [];
+  setTimeout(() => { _gameDeadZone = false; }, 1500);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -3260,6 +4140,257 @@ const GFState = {
   dailyDone: new Set(),
 };
 
+function saveGFState() {
+  const data = {
+    xp: GFState.xp,
+    _lastLevel: GFState._lastLevel,
+    streak: GFState.streak,
+    bestStreak: GFState.bestStreak,
+    azMastered: Array.from(GFState.azMastered),
+    numMastered: Array.from(GFState.numMastered),
+    azAttempts: GFState.azAttempts,
+    azCorrectMap: GFState.azCorrectMap,
+    dailyDone: Array.from(GFState.dailyDone),
+    _ach: GFState._ach || {}
+  };
+  localStorage.setItem('gf_state', JSON.stringify(data));
+}
+
+function loadGFState() {
+  try {
+    const raw = localStorage.getItem('gf_state');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data) return;
+    if (data.xp !== undefined) GFState.xp = data.xp;
+    if (data._lastLevel !== undefined) GFState._lastLevel = data._lastLevel;
+    if (data.streak !== undefined) GFState.streak = data.streak;
+    if (data.bestStreak !== undefined) GFState.bestStreak = data.bestStreak;
+    if (data.azMastered) GFState.azMastered = new Set(data.azMastered);
+    if (data.numMastered) GFState.numMastered = new Set(data.numMastered);
+    if (data.azAttempts) GFState.azAttempts = data.azAttempts;
+    if (data.azCorrectMap) GFState.azCorrectMap = data.azCorrectMap;
+    if (data.dailyDone) GFState.dailyDone = new Set(data.dailyDone);
+    if (data._ach) GFState._ach = data._ach;
+  } catch (e) {
+    console.error('Failed to load GFState', e);
+  }
+}
+
+// ── Theme Management ──
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  const theme = isDark ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon = document.getElementById('themeIcon');
+  if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('gf_theme', theme);
+  toast('Tema: ' + (isDark ? 'Gelap 🌙' : 'Terang ☀️'), 'i');
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('gf_theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = '☀️';
+  }
+}
+
+// ── Font Size Management ──
+let currentFontScale = 0; // 0 = 15px, 1 = 18px, 2 = 21px
+function toggleFontSize() {
+  currentFontScale = (currentFontScale + 1) % 3;
+  const sizes = ['15px', '18px', '21px'];
+  const sizeNames = ['Normal', 'Besar', 'Sangat Besar'];
+  document.documentElement.style.fontSize = sizes[currentFontScale];
+  localStorage.setItem('gf_font_scale', currentFontScale);
+  toast('Ukuran teks: ' + sizeNames[currentFontScale], 'i');
+}
+
+function initFontSize() {
+  const savedFontScale = localStorage.getItem('gf_font_scale');
+  if (savedFontScale !== null) {
+    currentFontScale = parseInt(savedFontScale);
+    const sizes = ['15px', '18px', '21px'];
+    document.documentElement.style.fontSize = sizes[currentFontScale];
+  }
+}
+
+// ── Onboarding Management ──
+let currentOnboardStep = 1;
+function showOnboardModal() {
+  const m = document.getElementById('onboardingModal');
+  if (m) m.classList.remove('hidden');
+  currentOnboardStep = 1;
+  updateOnboardUI();
+}
+function hideOnboardModal() {
+  const m = document.getElementById('onboardingModal');
+  if (m) m.classList.add('hidden');
+  localStorage.setItem('gf_onboarded', '1');
+}
+function updateOnboardUI() {
+  for (let i = 1; i <= 4; i++) {
+    const stepEl = document.getElementById('onboardStep' + i);
+    const dotEl = document.getElementById('dot' + i);
+    if (stepEl) {
+      if (i === currentOnboardStep) stepEl.classList.remove('hidden');
+      else stepEl.classList.add('hidden');
+    }
+    if (dotEl) {
+      if (i === currentOnboardStep) dotEl.className = 'w-2.5 h-2.5 rounded-full bg-blue-600';
+      else dotEl.className = 'w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700';
+    }
+  }
+  const prevBtn = document.getElementById('btnOnboardPrev');
+  const nextBtn = document.getElementById('btnOnboardNext');
+  if (prevBtn) prevBtn.disabled = (currentOnboardStep === 1);
+  if (nextBtn) {
+    if (currentOnboardStep === 4) nextBtn.textContent = 'Mulai Belajar! 🚀';
+    else nextBtn.textContent = 'Lanjut';
+  }
+}
+function nextOnboard() {
+  if (currentOnboardStep < 4) {
+    currentOnboardStep++;
+    updateOnboardUI();
+  } else {
+    hideOnboardModal();
+  }
+}
+function prevOnboard() {
+  if (currentOnboardStep > 1) {
+    currentOnboardStep--;
+    updateOnboardUI();
+  }
+}
+
+// ── Leaderboard & Export PNG ──
+function renderLeaderboard() {
+  const userXP = GFState.xp || 0;
+  const mockUsers = [
+    { name: 'Ahmad Syarif', xp: 1850, avatar: '👨‍🎓' },
+    { name: 'Siti Aminah', xp: 1420, avatar: '👩‍🎓' },
+    { name: 'Budi Santoso', xp: 950, avatar: '👨‍💻' },
+    { name: 'Anda (GestureFlow)', xp: userXP, avatar: '⚡', isUser: true },
+    { name: 'Dewi Lestari', xp: 640, avatar: '👩‍💻' }
+  ];
+  mockUsers.sort((a, b) => b.xp - a.xp);
+  const el = document.getElementById('leaderboardList');
+  if (!el) return;
+  el.innerHTML = mockUsers.map((u, idx) => {
+    const rank = idx + 1;
+    const isUser = u.isUser;
+    const bgCls = isUser ? 'bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/50' : 'bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80';
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+    return `<div class="flex items-center justify-between p-3 rounded-xl ${bgCls}">
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-bold w-6 text-center" style="color: ${rank <= 3 ? 'var(--accent)' : 'var(--tx3)'}">${medal}</span>
+        <span class="text-xl">${u.avatar}</span>
+        <div>
+          <p class="text-xs font-bold ${isUser ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}">${u.name}</p>
+          <p class="text-[10px] text-slate-400">Pangkat: ${u.xp > 1500 ? 'Mahir' : u.xp > 500 ? 'Menengah' : 'Pemula'}</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <span class="text-xs font-black text-slate-800 dark:text-slate-200">${u.xp} XP</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function exportProgressPNG() {
+  const currentName = localStorage.getItem('gf_username') || 'Pengguna GestureFlow';
+  const name = prompt('Masukkan nama Anda untuk Laporan Progress:', currentName);
+  if (name === null) return;
+  const finalName = name.trim() || 'Pengguna GestureFlow';
+  localStorage.setItem('gf_username', finalName);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 600;
+  canvas.height = 400;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  const gradient = ctx.createLinearGradient(0, 0, 600, 400);
+  gradient.addColorStop(0, '#2563eb');
+  gradient.addColorStop(1, '#10b981');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 600, 400);
+
+  // Overlay white card
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.roundRect(24, 24, 552, 352, 20);
+  ctx.fill();
+
+  // Header Title
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '900 22px system-ui, -apple-system, sans-serif';
+  ctx.fillText('LAPORAN PROGRESS GESTUREFLOW', 48, 70);
+
+  // Subtitle
+  ctx.fillStyle = '#64748b';
+  ctx.font = '600 12px system-ui, -apple-system, sans-serif';
+  ctx.fillText('Belajar Bahasa Isyarat Amerika (ASL) dengan Deteksi AI', 48, 92);
+
+  // Divider
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(48, 110);
+  ctx.lineTo(552, 110);
+  ctx.stroke();
+
+  // Stats text
+  const levelIdx = getCurLevel();
+  const levelName = LEVELS[levelIdx].name;
+  const levelIcon = LEVELS[levelIdx].icon;
+  const totalXP = GFState.xp;
+  const azCount = GFState.azMastered.size;
+  const numCount = GFState.numMastered.size;
+  const achCount = Object.keys(GFState._ach || {}).length;
+  const bestGame = window._bestGameScore || 0;
+
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+  
+  ctx.fillText(`Nama Pengguna: ${finalName}`, 48, 132);
+  ctx.fillText(`Pangkat Belajar: ${levelIcon} ${levelName}`, 48, 168);
+  ctx.fillText(`Total Pengalaman: ⚡ ${totalXP} XP`, 48, 204);
+  ctx.fillText(`Alphabet A–Z: 🔤 ${azCount} / 26`, 48, 240);
+
+  ctx.fillText(`Angka 0–9 Dikuasai: 🔢 ${numCount} / 10`, 320, 168);
+  ctx.fillText(`Pencapaian (Badges): 🏅 ${achCount} / ${ACHIEVEMENTS.length}`, 320, 204);
+  ctx.fillText(`Skor Kuis Tertinggi: 🎮 ${bestGame} Poin`, 320, 240);
+
+  // Footer Certificate box
+  ctx.fillStyle = '#f8fafc';
+  ctx.beginPath();
+  ctx.roundRect(48, 275, 504, 75, 12);
+  ctx.fill();
+
+  ctx.fillStyle = '#2563eb';
+  ctx.font = '900 14px system-ui, -apple-system, sans-serif';
+  ctx.fillText('MENYALA! TERUS TINGKATKAN PRESTASIMU! 🤟', 68, 308);
+  
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '500 10px system-ui, -apple-system, sans-serif';
+  ctx.fillText('Generated on ' + new Date().toLocaleDateString('id-ID') + ' • GestureFlow Platform', 68, 328);
+
+  // Export to download link
+  const url = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `GestureFlow_Progress_Report_${new Date().toISOString().split('T')[0]}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Laporan progress berhasil diunduh! 📥', 's');
+}
+
 const LEVELS = [
   {min:0,   name:'Pemula',     icon:'🌱'},
   {min:50,  name:'Penjelajah', icon:'🔍'},
@@ -3295,6 +4426,7 @@ function addXP(amount) {
   checkAchievements();
   checkDailyAll();
   updateDashboard();
+  saveGFState();
 }
 
 function getCurLevel() {
@@ -3435,28 +4567,416 @@ function toggleDevMode() {
 }
 
 // ── Text → Gesture ────────────────────────────
+// ── Text → Gesture State & Player ────────────────
+const t2gState = {
+  playing: false,
+  index: 0,
+  intervalId: null,
+  speed: 1000,
+  lastTranslatedWord: "" // Untuk mendeteksi kata baru guna memberikan XP reward
+};
+
+function onT2GInput() {
+  pauseT2G();
+  t2gState.index = 0;
+  renderT2G();
+}
+
+function updateT2GSpeed(val) {
+  t2gState.speed = parseInt(val);
+  const valSec = (t2gState.speed / 1000).toFixed(1) + 's';
+  const valEl = document.getElementById('t2gSpeedVal');
+  if (valEl) valEl.textContent = valSec;
+  
+  if (t2gState.playing) {
+    pauseT2G();
+    playT2G();
+  }
+}
+
+function togglePlayT2G() {
+  if (t2gState.playing) {
+    pauseT2G();
+  } else {
+    playT2G();
+  }
+}
+
+function playT2G() {
+  const val = (document.getElementById('t2gInput')?.value || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '');
+  if (!val.trim()) {
+    toast('Ketik teks terlebih dahulu untuk memutar!', 'w');
+    return;
+  }
+  
+  t2gState.playing = true;
+  const playBtn = document.getElementById('t2gPlayBtn');
+  if (playBtn) playBtn.innerHTML = '⏸️ Jeda';
+  
+  // Baca karakter aktif pertama jika baru dimulai
+  const ttsEnabled = document.getElementById('t2gAudioToggle')?.checked;
+  if (ttsEnabled) {
+    speakActiveChar();
+  }
+  
+  t2gState.intervalId = setInterval(() => {
+    t2gState.index++;
+    if (t2gState.index >= val.length) {
+      t2gState.index = 0; // Mengulang dari awal jika mencapai akhir
+    }
+    renderT2G();
+    if (ttsEnabled) {
+      speakActiveChar();
+    }
+  }, t2gState.speed);
+}
+
+function pauseT2G() {
+  t2gState.playing = false;
+  const playBtn = document.getElementById('t2gPlayBtn');
+  if (playBtn) playBtn.innerHTML = '▶️ Putar';
+  if (t2gState.intervalId) {
+    clearInterval(t2gState.intervalId);
+    t2gState.intervalId = null;
+  }
+}
+
+function nextT2G() {
+  const val = (document.getElementById('t2gInput')?.value || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '');
+  if (!val.trim()) return;
+  
+  pauseT2G();
+  t2gState.index++;
+  if (t2gState.index >= val.length) t2gState.index = 0;
+  renderT2G();
+  speakActiveChar();
+}
+
+function prevT2G() {
+  const val = (document.getElementById('t2gInput')?.value || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '');
+  if (!val.trim()) return;
+  
+  pauseT2G();
+  t2gState.index--;
+  if (t2gState.index < 0) t2gState.index = val.length - 1;
+  renderT2G();
+  speakActiveChar();
+}
+
+function resetT2G() {
+  pauseT2G();
+  t2gState.index = 0;
+  renderT2G();
+  speakActiveChar();
+}
+
+function selectT2GIndex(idx) {
+  pauseT2G();
+  t2gState.index = idx;
+  renderT2G();
+  speakActiveChar();
+}
+
+function speakActiveChar() {
+  const val = (document.getElementById('t2gInput')?.value || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '');
+  if (!val.trim()) return;
+  const ch = val[t2gState.index];
+  if (!ch || ch === ' ') return;
+  
+  const isNum = /[0-9]/.test(ch);
+  const info = isNum ? (typeof NUMBERS !== 'undefined' ? NUMBERS[parseInt(ch)] : null) : (typeof ASL !== 'undefined' ? ASL[ch] : null);
+  const hint = info?.hint || info?.desc || '';
+  
+  speak(`${isNum ? 'Angka' : 'Huruf'} ${ch}. ${hint}`, true);
+}
+
+function awardT2GXP() {
+  if (!window._t2gXpAwardedCount) window._t2gXpAwardedCount = 0;
+  if (window._t2gXpAwardedCount < 5) { // Batasi maksimal 5 kali per sesi (25 XP total)
+    window._t2gXpAwardedCount++;
+    addXP(5);
+    
+    // Munculkan animasi teks melayang "+5 XP" di dekat area input
+    const anchor = document.getElementById('t2gXpAnchor');
+    if (anchor) {
+      const fly = document.createElement('div');
+      fly.className = 'xp-fly';
+      fly.textContent = '+5 XP';
+      fly.style.left = '50%';
+      fly.style.top = '10px';
+      anchor.appendChild(fly);
+      setTimeout(() => fly.remove(), 1200);
+    }
+  }
+}
+
+function exportT2GToImage() {
+  const val = (document.getElementById('t2gInput')?.value || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '');
+  if (!val.trim()) {
+    toast('Ketik teks terlebih dahulu untuk diekspor!', 'w');
+    return;
+  }
+  
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  // Polyfill untuk ctx.roundRect jika tidak didukung browser lama
+  if (typeof ctx.roundRect !== 'function') {
+    ctx.roundRect = function(x, y, w, h, r) {
+      if (w < 2 * r) r = w / 2;
+      if (h < 2 * r) r = h / 2;
+      this.beginPath();
+      this.moveTo(x+r, y);
+      this.arcTo(x+w, y,   x+w, y+h, r);
+      this.arcTo(x+w, y+h, x,   y+h, r);
+      this.arcTo(x,   y+h, x,   y,   r);
+      this.arcTo(x,   y,   x+w, y,   r);
+      this.closePath();
+      return this;
+    };
+  }
+  
+  // Konfigurasi ukuran kartu
+  const cardSize = 100;
+  const padding = 20;
+  const headerHeight = 75;
+  const footerHeight = 45;
+  
+  // Hitung jumlah baris & kolom
+  const maxCols = 8;
+  const cols = Math.min(val.length, maxCols);
+  const rows = Math.ceil(val.length / maxCols);
+  
+  canvas.width = cols * cardSize + padding * 2;
+  canvas.height = rows * cardSize + headerHeight + footerHeight + padding;
+  
+  // Gambar latar belakang gradasi gelap premium
+  const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  grad.addColorStop(0, '#0f172a');
+  grad.addColorStop(1, '#1e1b4b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Teks Header
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('GestureFlow - Terjemahan Isyarat', canvas.width / 2, 35);
+  
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '13px sans-serif';
+  ctx.fillText(`Teks: "${val}"`, canvas.width / 2, 55);
+  
+  let loadedCount = 0;
+  const chars = val.split('');
+  
+  chars.forEach((ch, index) => {
+    const isNum = /[0-9]/.test(ch);
+    const col = index % maxCols;
+    const row = Math.floor(index / maxCols);
+    
+    const x = padding + col * cardSize;
+    const y = headerHeight + row * cardSize;
+    
+    // Bingkai kartu
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.beginPath();
+    ctx.roundRect(x + 5, y + 5, cardSize - 10, cardSize - 10, 10);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Label huruf/angka di bawah kartu
+    ctx.fillStyle = isNum ? '#14b8a6' : '#3b82f6';
+    ctx.font = 'bold 15px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(ch === ' ' ? 'Spasi' : ch, x + cardSize / 2, y + cardSize - 14);
+    
+    if (ch === ' ') {
+      // Tanda spasi
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '22px sans-serif';
+      ctx.fillText('␣', x + cardSize / 2, y + cardSize / 2 + 5);
+      checkFinished();
+      return;
+    }
+    
+    const svgCfg = isNum ? (typeof NUM_SVG !== 'undefined' ? NUM_SVG[ch] : null) : (typeof ASL_SVG !== 'undefined' ? ASL_SVG[ch] : null);
+    const colr = isNum ? '#14b8a6' : '#3b82f6';
+    const svgStr = (svgCfg && typeof svgHand !== 'undefined') ? svgHand(svgCfg, ch, colr) : '';
+    
+    if (svgStr) {
+      const img = new Image();
+      // Konversi SVG string ke data URL
+      const svgDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgStr);
+      img.onload = () => {
+        ctx.drawImage(img, x + 20, y + 10, cardSize - 40, cardSize - 40);
+        checkFinished();
+      };
+      img.src = svgDataUrl;
+    } else {
+      checkFinished();
+    }
+  });
+  
+  function checkFinished() {
+    loadedCount++;
+    if (loadedCount === chars.length) {
+      // Gambar Footer
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Dibuat dengan GestureFlow • Belajar Bahasa Isyarat AI', canvas.width / 2, canvas.height - 15);
+      
+      // Unduh file PNG secara otomatis
+      const link = document.createElement('a');
+      link.download = `gestureflow-${val}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast('Gambar berhasil diekspor! 📥', 's');
+    }
+  }
+}
+
 function renderT2G() {
-  const val = (document.getElementById('t2gInput')?.value||'').toUpperCase().replace(/[^A-Z0-9 ]/g,'');
+  const rawVal = document.getElementById('t2gInput')?.value || '';
+  const val = rawVal.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
   const out = document.getElementById('t2gOut');
   const emp = document.getElementById('t2gEmpty');
+  
+  const largeSvg = document.getElementById('t2gLargeSvg');
+  const activeCharEl = document.getElementById('t2gActiveChar');
+  const activeDescEl = document.getElementById('t2gActiveDesc');
+  const activeHintEl = document.getElementById('t2gActiveHint');
+  const badgeType = document.getElementById('t2gBadgeType');
+  const countText = document.getElementById('t2gCountText');
+  const speakBtn = document.getElementById('t2gSpeakBtn');
+  
   if (!out) return;
-  if (!val.trim()) { out.innerHTML=''; emp?.classList.remove('hidden'); return; }
+  
+  if (!val.trim()) {
+    out.innerHTML = '';
+    emp?.classList.remove('hidden');
+    if (largeSvg) largeSvg.innerHTML = '<span class="text-6xl text-slate-300">🤟</span>';
+    if (activeCharEl) {
+      activeCharEl.textContent = '-';
+      activeCharEl.style.color = 'var(--primary)';
+    }
+    if (activeDescEl) activeDescEl.textContent = 'Masukkan kata untuk memulai';
+    if (activeHintEl) activeHintEl.textContent = 'Deskripsi cara melakukan gerakan akan muncul di sini';
+    if (badgeType) {
+      badgeType.textContent = 'Menunggu';
+      badgeType.className = 'badge text-xs font-bold px-2.5 py-1';
+      badgeType.style.background = '';
+      badgeType.style.color = '';
+    }
+    if (countText) countText.textContent = '0 Huruf';
+    pauseT2G();
+    return;
+  }
+  
   emp?.classList.add('hidden');
-  out.innerHTML = val.split('').map(ch => {
-    if (ch===' ') return `<div style="width:20px;display:flex;align-items:center;justify-content:center;color:var(--tx4)">_</div>`;
+  if (countText) countText.textContent = `${val.length} Karakter`;
+  
+  // Batasi index agar tidak out of bounds
+  if (t2gState.index >= val.length) {
+    t2gState.index = 0;
+  }
+  if (t2gState.index < 0) {
+    t2gState.index = 0;
+  }
+  
+  // Render kartu-kartu kecil timeline horizontal
+  out.innerHTML = val.split('').map((ch, idx) => {
     const isNum = /[0-9]/.test(ch);
-    const info  = isNum ? (typeof NUMBERS!=='undefined'?NUMBERS[parseInt(ch)]:null) : (typeof ASL!=='undefined'?ASL[ch]:null);
-    const svgCfg= isNum ? (typeof NUM_SVG!=='undefined'?NUM_SVG[ch]:null) : (typeof ASL_SVG!=='undefined'?ASL_SVG[ch]:null);
-    const svg   = (svgCfg && typeof svgHand!=='undefined') ? svgHand(svgCfg, ch, isNum?'var(--secondary)':'var(--primary)') : '';
-    const hint  = info?.hint || info?.desc || '';
-    const colr  = isNum ? 'var(--secondary)' : 'var(--primary)';
-    const colrlt= isNum ? 'var(--secondary-lt)' : 'var(--primary-light)';
-    return `<div class="letter-card card-hover" onclick="speak('${isNum?'Angka':'Huruf'} ${ch}. ${hint}', true)" style="border:1.5px solid var(--bord);cursor:pointer">
-      ${svg ? `<div style="max-width:56px;margin:0 auto 4px">${svg}</div>` : ''}
-      <div style="font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;color:${colr};margin-bottom:4px">${ch}</div>
-      <div style="font-size:10px;color:var(--tx3);line-height:1.3">${hint.split(' ').slice(0,5).join(' ')}</div>
+    const isActive = idx === t2gState.index;
+    
+    if (ch === ' ') {
+      return `<div class="t2g-card ${isActive ? 'active-letter' : ''}" onclick="selectT2GIndex(${idx})" style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:84px">
+        <div style="font-size:24px; font-weight:900; color:var(--tx3); line-height:1">␣</div>
+        <div style="font-size:10px; color:var(--tx3); margin-top:4px">Spasi</div>
+      </div>`;
+    }
+    
+    const info = isNum ? (typeof NUMBERS !== 'undefined' ? NUMBERS[parseInt(ch)] : null) : (typeof ASL !== 'undefined' ? ASL[ch] : null);
+    const svgCfg = isNum ? (typeof NUM_SVG !== 'undefined' ? NUM_SVG[ch] : null) : (typeof ASL_SVG !== 'undefined' ? ASL_SVG[ch] : null);
+    const colr = isNum ? 'var(--secondary)' : 'var(--primary)';
+    const svg = (svgCfg && typeof svgHand !== 'undefined') ? svgHand(svgCfg, ch, colr) : '';
+    
+    return `<div id="t2g-card-${idx}" class="t2g-card ${isActive ? 'active-letter' : ''} ${isNum ? 'is-num' : ''}" onclick="selectT2GIndex(${idx})">
+      ${svg ? `<div style="max-width:32px; margin:0 auto 4px">${svg}</div>` : ''}
+      <div class="font-mono" style="font-size:18px; font-weight:900; color:${colr}">${ch}</div>
     </div>`;
   }).join('');
+  
+  // Scroll kartu aktif ke posisi tengah
+  setTimeout(() => {
+    const activeEl = document.getElementById(`t2g-card-${t2gState.index}`);
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, 40);
+  
+  // Perbarui preview besar di sebelah kanan
+  const activeChar = val[t2gState.index];
+  if (activeChar) {
+    const isNum = /[0-9]/.test(activeChar);
+    const isSpace = activeChar === ' ';
+    
+    if (isSpace) {
+      if (badgeType) {
+        badgeType.textContent = 'Spasi';
+        badgeType.className = 'badge text-xs font-bold px-2.5 py-1';
+        badgeType.style.background = 'var(--surf3)';
+        badgeType.style.color = 'var(--tx2)';
+      }
+      if (activeCharEl) {
+        activeCharEl.textContent = 'SPASI';
+        activeCharEl.style.color = 'var(--tx3)';
+      }
+      if (largeSvg) largeSvg.innerHTML = '<span class="text-7xl text-slate-300">␣</span>';
+      if (activeDescEl) activeDescEl.textContent = 'Jeda Spasi';
+      if (activeHintEl) activeHintEl.textContent = 'Memisahkan kata dalam kalimat';
+      if (speakBtn) speakBtn.onclick = () => speak('Spasi', true);
+    } else {
+      const info = isNum ? (typeof NUMBERS !== 'undefined' ? NUMBERS[parseInt(activeChar)] : null) : (typeof ASL !== 'undefined' ? ASL[activeChar] : null);
+      const svgCfg = isNum ? (typeof NUM_SVG !== 'undefined' ? NUM_SVG[activeChar] : null) : (typeof ASL_SVG !== 'undefined' ? ASL_SVG[activeChar] : null);
+      const colr = isNum ? 'var(--secondary)' : 'var(--primary)';
+      const svg = (svgCfg && typeof svgHand !== 'undefined') ? svgHand(svgCfg, activeChar, colr) : '';
+      
+      if (badgeType) {
+        badgeType.textContent = isNum ? 'Angka' : 'Huruf';
+        badgeType.className = isNum ? 'badge badge-secondary text-xs font-bold px-2.5 py-1' : 'badge badge-primary text-xs font-bold px-2.5 py-1';
+        badgeType.style.background = '';
+        badgeType.style.color = '';
+      }
+      if (activeCharEl) {
+        activeCharEl.textContent = activeChar;
+        activeCharEl.style.color = colr;
+      }
+      if (largeSvg) {
+        largeSvg.innerHTML = svg || '<span class="text-6xl text-slate-300">🤟</span>';
+      }
+      
+      const desc = info?.desc || (isNum ? 'Pose Angka' : 'Pose Huruf');
+      const hint = info?.hint || '';
+      
+      if (activeDescEl) activeDescEl.textContent = desc;
+      if (activeHintEl) activeHintEl.textContent = hint;
+      
+      if (speakBtn) {
+        speakBtn.onclick = () => speak(`${isNum ? 'Angka' : 'Huruf'} ${activeChar}. ${hint}`, true);
+      }
+    }
+  }
+  
+  // Cek untuk reward XP jika mengetik kata baru
+  const trimmedWord = val.trim();
+  if (trimmedWord.length >= 3 && trimmedWord !== t2gState.lastTranslatedWord) {
+    t2gState.lastTranslatedWord = trimmedWord;
+    awardT2GXP();
+  }
 }
 
 // ── Learn Mode (Duolingo-style) ───────────────
@@ -3532,11 +5052,16 @@ function renderLearnCards() {
   const mastered = _learnCat==='az' ? GFState.azMastered : _learnCat==='num' ? GFState.numMastered : new Set();
   el.innerHTML = items.map(item => {
     const svg = (item.svgCfg && typeof svgHand!=='undefined') ? svgHand(item.svgCfg, item.key, item.color) : '';
+    const photo = _learnCat === 'gesture' ? (GEST_PHOTOS[item.key] || '') :
+                  _learnCat === 'az' ? `../public/assets/img/A-Z/${item.key}.jpg` :
+                  _learnCat === 'num' ? `../public/assets/img/0-9/${item.key}.jpg` : '';
+    const svgDataUrl = svg ? "data:image/svg+xml;utf8," + encodeURIComponent(svg) : '';
+    const visual = photo ? `<img src="${photo}" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-[60px] h-[60px] object-cover rounded-lg flex-shrink-0 border border-slate-200 dark:border-slate-700" />` : (svg ? `<div style="width:60px;flex-shrink:0">${svg}</div>` : '');
     const ms  = mastered.has(item.key);
     return `<div class="card card-hover p-5 relative overflow-hidden" onclick="speak('${item.label}. ${item.desc}', true)" style="cursor:pointer">
       ${ms ? `<div style="position:absolute;top:12px;right:12px"><span class="badge badge-success" style="font-size:11px">✅ Dikuasai</span></div>` : ''}
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        ${svg ? `<div style="width:60px;flex-shrink:0">${svg}</div>` : ''}
+        ${visual}
         <div>
           <div style="font-size:40px;font-weight:900;font-family:'JetBrains Mono',monospace;color:${item.color};line-height:1">${item.display || item.label}</div>
           <p style="font-size:12px;font-weight:600;color:var(--tx2);margin-top:2px">${item.name}</p>
@@ -3570,6 +5095,8 @@ function updateDashboard() {
   renderDailyChallenges();
   renderBreakdownNew();
   renderAZAccuracy();
+  renderLeaderboard();
+  saveGFState();
 }
 
 function renderBreakdownNew() {
@@ -3658,8 +5185,12 @@ function reRenderGestRef() {
   el.innerHTML = Object.entries(GESTURES).map(([k,g]) => {
     const cfg = GEST_SVG_CFG[k]||{};
     const svg = svgHand(cfg, k, 'var(--primary)');
+    const svgDataUrl = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    const photo = (typeof GEST_PHOTOS !== 'undefined' ? GEST_PHOTOS[k] : '') || '';
     return `<div class="card card-hover text-center p-4" onclick="speak('${g.label}. ${g.contoh}', true)" style="cursor:pointer">
-      <div style="max-width:60px;margin:0 auto 8px">${svg}</div>
+      <div class="mb-2 mx-auto flex items-center justify-center" style="max-width:60px; min-height:56px">
+        <img src="${photo}" onerror="this.onerror=null; this.src='${svgDataUrl}'" class="w-14 h-14 object-cover rounded-lg mx-auto border border-slate-200 dark:border-slate-700" />
+      </div>
       <div style="font-size:22px;margin-bottom:4px">${g.emoji}</div>
       <p style="font-size:12px;font-weight:700;color:var(--tx)">${g.label}</p>
       <p style="font-size:11px;color:var(--tx3);margin-top:2px">${g.name}</p>
@@ -3712,6 +5243,12 @@ const _xpInterval = setInterval(() => {
 
 // ── Init ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Load State, Theme and Font Size immediately
+  loadGFState();
+  initTheme();
+  initFontSize();
+  window._bestGameScore = parseInt(localStorage.getItem('gf_best_score') || '0');
+
   setTimeout(() => {
     patchCoreFunctions();
     reRenderGestRef();
@@ -3722,6 +5259,12 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDailyChallenges();
     updateDashboard();
     renderLearnCards();
+    
+    // Show Onboarding Modal if not completed
+    if (!localStorage.getItem('gf_onboarded')) {
+      showOnboardModal();
+    }
+    
     // Show T2G hint
     const emp = document.getElementById('t2gEmpty');
     if (emp) emp.classList.remove('hidden');
@@ -3735,8 +5278,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (t==='learn')     setTimeout(renderLearnCards, 80);
       if (t==='dashboard') setTimeout(updateDashboard, 80);
       if (t==='text2gest') {
-        const emp = document.getElementById('t2gEmpty');
-        if (emp) emp.classList.remove('hidden');
+        renderT2G();
       }
     });
   });

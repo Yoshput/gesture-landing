@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sign Language AI — Gesture Detector</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080808;--surface:#111;--border:rgba(255,255,255,0.07);
+  --text:#f0f0f0;--muted:#666;
+  --green:#22c55e;--blue:#3b82f6;--amber:#f59e0b;--red:#ef4444;--purple:#a78bfa;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;}
+
+/* ── HEADER ── */
+.hdr{text-align:center;padding:2rem 1rem 1.2rem}
+.hdr h1{font-size:clamp(1.4rem,3.5vw,2.2rem);font-weight:700;letter-spacing:-.02em;
+  color:#fff;line-height:1.25}
+.hdr p{font-size:.85rem;color:var(--muted);margin-top:.4rem}
+
+/* ── BTN ── */
+.btn{display:inline-flex;align-items:center;gap:8px;
+  padding:11px 28px;border:none;border-radius:999px;font-size:.9rem;font-weight:600;
+  cursor:pointer;transition:all .15s;letter-spacing:-.01em}
+.btn-start{background:#fff;color:#000}
+.btn-start:hover{opacity:.85}
+.btn-stop{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.btn-stop:hover{background:rgba(239,68,68,.2)}
+.btn-center{display:flex;justify-content:center;margin-bottom:1rem}
+
+/* ── MAIN LAYOUT ── */
+.main{display:flex;gap:12px;padding:0 1.2rem;max-width:1120px;margin:0 auto;width:100%}
+
+/* ── VIDEO WRAP ── */
+.video-wrap{
+  position:relative;flex:1;background:#000;
+  border-radius:18px;overflow:hidden;
+  border:1px solid var(--border);
+  aspect-ratio:4/3;min-height:300px;
+}
+#vid{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;transform:scaleX(-1)}
+#cvs{position:absolute;inset:0;width:100%;height:100%;
+  transform:scaleX(-1)}
+
+/* overlay tags (top-left like TikTok) */
+.tag-bar{
+  position:absolute;top:12px;left:12px;
+  display:flex;gap:6px;flex-wrap:wrap;
+  pointer-events:none;
+}
+.tag{
+  padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;
+  display:flex;align-items:center;gap:5px;
+}
+.tag-dot{width:6px;height:6px;border-radius:50%}
+.tag-hand{background:rgba(34,197,94,.18);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.tag-face{background:rgba(59,130,246,.18);color:var(--blue);border:1px solid rgba(59,130,246,.3)}
+.tag-word{background:rgba(167,139,250,.18);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+.tag-off{opacity:.3}
+
+/* emotion badge top-right */
+.emotion-badge{
+  position:absolute;top:12px;right:12px;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1);
+  backdrop-filter:blur(12px);border-radius:8px;
+  padding:5px 11px;font-size:.78rem;font-weight:600;
+  display:flex;align-items:center;gap:6px;pointer-events:none;
+}
+.e-dot{width:8px;height:8px;border-radius:50%}
+
+/* word overlay bottom-center */
+.word-box{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(14px);border-radius:14px;
+  padding:10px 24px;text-align:center;min-width:180px;pointer-events:none;
+}
+.word-main{font-size:1.5rem;font-weight:700;color:#fff;letter-spacing:.06em}
+.word-sub{font-size:.7rem;color:var(--green);margin-top:3px;letter-spacing:.02em}
+
+/* placeholder */
+.placeholder{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;color:var(--muted);
+}
+.ph-circle{width:56px;height:56px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center}
+
+/* ── SIDE ── */
+.side{width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
+.card-title{font-size:.64rem;font-weight:600;letter-spacing:.08em;
+  color:var(--muted);text-transform:uppercase;margin-bottom:11px}
+
+/* toggles */
+.trow{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.trow:last-child{margin-bottom:0}
+.tlabel{font-size:.82rem;font-weight:500}
+.tlabel small{display:block;font-size:.68rem;color:var(--muted);margin-top:1px;font-weight:400}
+.sw{position:relative;display:inline-block;width:38px;height:21px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw-track{
+  position:absolute;inset:0;background:rgba(255,255,255,.1);
+  border-radius:999px;cursor:pointer;transition:background .2s;
+}
+.sw-track::before{
+  content:'';position:absolute;
+  width:15px;height:15px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:transform .2s;
+}
+.sw input:checked+.sw-track{background:var(--green)}
+.sw input:checked+.sw-track::before{transform:translateX(17px)}
+
+/* emotion bars */
+.emo-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:.78rem}
+.emo-row:last-child{margin-bottom:0}
+.emo-name{width:72px;color:var(--muted)}
+.emo-bar-bg{flex:1;height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.emo-bar-fill{height:100%;border-radius:2px;transition:width .4s ease}
+.emo-pct{width:30px;text-align:right;color:var(--muted);font-size:.68rem}
+
+/* history */
+.hist-list{display:flex;flex-direction:column;gap:5px;max-height:140px;overflow-y:auto}
+.hist-item{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.78rem;padding:5px 8px;
+  background:rgba(255,255,255,.04);border-radius:7px;
+}
+.hist-time{font-size:.65rem;color:var(--muted)}
+
+/* ── PIPELINE ── */
+.pipe{
+  display:flex;align-items:center;justify-content:center;
+  gap:0;padding:.9rem 1.2rem 2rem;
+  max-width:1120px;margin:0 auto;width:100%;
+}
+.pstep{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:10px 14px;border-radius:12px;
+  border:1px solid var(--border);background:var(--surface);
+  min-width:90px;transition:all .3s;
+}
+.pstep.on{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.07)}
+.pstep.dim{opacity:.28}
+.pico{font-size:1.1rem}
+.pname{font-size:.74rem;font-weight:600;text-align:center}
+.psub{font-size:.6rem;color:var(--muted);text-align:center}
+.parr{font-size:.9rem;color:rgba(255,255,255,.15);padding:0 3px;flex-shrink:0}
+
+@media(max-width:700px){
+  .main{flex-direction:column}
+  .side{width:100%;flex-direction:row;flex-wrap:wrap}
+  .card{flex:1;min-width:130px}
+  .pipe{overflow-x:auto;justify-content:flex-start;padding:.7rem}
+  .pstep{min-width:72px;padding:8px 8px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>What if AI could translate<br>sign language into voice?</h1>
+  <p>Real-time hand tracking &amp; emotion detection — powered by MediaPipe</p>
+</div>
+
+<div class="btn-center">
+  <button class="btn btn-start" id="btnMain" onclick="toggleCam()">▶ Mulai Kamera</button>
+</div>
+
+<div class="main">
+
+  <!-- VIDEO -->
+  <div class="video-wrap" id="videoWrap">
+    <video id="vid" autoplay playsinline muted></video>
+    <canvas id="cvs"></canvas>
+
+    <!-- tag bar -->
+    <div class="tag-bar" id="tagBar" style="display:none">
+      <div class="tag tag-hand tag-off" id="tagHand">
+        <span class="tag-dot" style="background:var(--green)"></span>HAND TRACKING
+      </div>
+      <div class="tag tag-face tag-off" id="tagFace">
+        <span class="tag-dot" style="background:var(--blue)"></span>EMOTION
+      </div>
+      <div class="tag tag-word tag-off" id="tagWord">
+        <span class="tag-dot" style="background:var(--purple)"></span><span id="tagWordText">—</span>
+      </div>
+    </div>
+
+    <!-- emotion badge -->
+    <div class="emotion-badge" id="emoBadge" style="display:none">
+      <div class="e-dot" id="eDot" style="background:var(--muted)"></div>
+      <span id="eLabel">Neutral</span>
+    </div>
+
+    <!-- word -->
+    <div class="word-box" id="wordBox" style="display:none">
+      <div class="word-main" id="wordMain">—</div>
+      <div class="word-sub" id="wordSub">Mendeteksi...</div>
+    </div>
+
+    <!-- placeholder -->
+    <div class="placeholder" id="ph">
+      <div class="ph-circle">
+        <svg width="26" height="26" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24" opacity=".35">
+          <path d="M15 10l4.553-2.277A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14
+            M4 8h8a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4a2 2 0 012-2z"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <p style="font-size:.8rem">Klik tombol untuk memulai deteksi</p>
+    </div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side">
+
+    <div class="card">
+      <div class="card-title">Fitur Aktif</div>
+
+      <div class="trow">
+        <div class="tlabel">Hand Tracking<small>Deteksi jari &amp; tangan</small></div>
+        <label class="sw"><input type="checkbox" id="togHand" checked onchange="onTog()">
+          <span class="sw-track"></span></label>
+      </div>
+      <div class="trow">
+        <div class="tlabel">Emotion Detection<small>Ekspresi wajah</small></div>
+        <label class="sw"><input type="checkbox" id="togEmo" checked onchange="onTog()">
+          <span class="sw-track"></span></label>
+      </div>
+      <div class="trow">
+        <div class="tlabel">LLM Interpretation<small>Terjemah makna</small></div>
+        <label class="sw"><input type="checkbox" id="togLLM" onchange="onTog()">
+          <span class="sw-track"></span></label>
+      </div>
+      <div class="trow">
+        <div class="tlabel">Voice Output<small>Text-to-speech</small></div>
+        <label class="sw"><input type="checkbox" id="togVoice" onchange="onTog()">
+          <span class="sw-track"></span></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Emosi Terdeteksi</div>
+      <div id="emoBars"></div>
+    </div>
+
+    <div class="card" style="flex:1">
+      <div class="card-title">Riwayat Gestur</div>
+      <div class="hist-list" id="histList">
+        <div style="font-size:.74rem;color:var(--muted)">Belum ada gestur</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<div class="pipe">
+  <div class="pstep dim" id="ps0"><span class="pico">📷</span><span class="pname">Kamera</span><span class="psub">Input video</span></div>
+  <span class="parr">→</span>
+  <div class="pstep dim" id="ps1"><span class="pico">🖐</span><span class="pname">Hand Tracking</span><span class="psub">21 landmark</span></div>
+  <span class="parr">→</span>
+  <div class="pstep dim" id="ps2"><span class="pico">😊</span><span class="pname">Emotion</span><span class="psub">Face mesh</span></div>
+  <span class="parr">→</span>
+  <div class="pstep dim" id="ps3"><span class="pico">🧠</span><span class="pname">LLM</span><span class="psub">Interpretasi</span></div>
+  <span class="parr">→</span>
+  <div class="pstep dim" id="ps4"><span class="pico">🔊</span><span class="pname">Voice</span><span class="psub">TTS</span></div>
+</div>
+
+<!-- MediaPipe (defer to not block render) -->
+<script>
+// ─── CONFIG ───
+const EMOTIONS=[
+  {key:'happy',   name:'Happy',      col:'#22c55e'},
+  {key:'sad',     name:'Sad',        col:'#3b82f6'},
+  {key:'neutral', name:'Neutral',    col:'#94a3b8'},
+  {key:'angry',   name:'Angry',      col:'#ef4444'},
+  {key:'quest',   name:'Questioning',col:'#f59e0b'},
+  {key:'skept',   name:'Skeptical',  col:'#a78bfa'},
+];
+let scores={happy:0,sad:0,neutral:100,angry:0,quest:0,skept:0};
+
+// ─── INIT BARS ───
+function initBars(){
+  const c=document.getElementById('emoBars');
+  c.innerHTML=EMOTIONS.map(e=>`
+    <div class="emo-row">
+      <div class="emo-name">${e.name}</div>
+      <div class="emo-bar-bg"><div class="emo-bar-fill" id="ef-${e.key}" style="width:${scores[e.key]}%;background:${e.col}"></div></div>
+      <div class="emo-pct" id="ep-${e.key}">${scores[e.key]}%</div>
+    </div>`).join('');
+}
+initBars();
+
+// ─── PIPELINE ───
+function setPipe(n){
+  for(let i=0;i<=4;i++){
+    const el=document.getElementById('ps'+i);
+    el.classList.remove('on','dim');
+    el.classList.add(i<=n?'on':'dim');
+  }
+}
+
+// ─── STATE ───
+let running=false, stream=null, hands=null, face=null, raf=null;
+let lastWord='', lastWordTs=0, histArr=[];
+
+// ─── TOGGLE CAM ───
+async function toggleCam(){
+  if(running) stopCam(); else await startCam();
+}
+
+async function startCam(){
+  const btn=document.getElementById('btnMain');
+  btn.textContent='Memuat...'; btn.disabled=true;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{width:1280,height:720,facingMode:'user'}});
+    const v=document.getElementById('vid');
+    v.srcObject=stream;
+    await v.play();
+
+    // resize canvas
+    v.addEventListener('loadedmetadata',()=>{
+      const c=document.getElementById('cvs');
+      c.width=v.videoWidth; c.height=v.videoHeight;
+    },{once:true});
+
+    document.getElementById('ph').style.display='none';
+    document.getElementById('tagBar').style.display='flex';
+    document.getElementById('wordBox').style.display='block';
+    document.getElementById('emoBadge').style.display='flex';
+
+    await loadMediaPipe();
+
+    running=true;
+    btn.textContent='⏹ Stop Kamera';
+    btn.className='btn btn-stop';
+    btn.disabled=false;
+    setPipe(0);
+    loop();
+  }catch(e){
+    alert('Kamera tidak bisa diakses: '+e.message);
+    btn.textContent='▶ Mulai Kamera'; btn.className='btn btn-start'; btn.disabled=false;
+  }
+}
+
+function stopCam(){
+  running=false;
+  if(raf){cancelAnimationFrame(raf);raf=null;}
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  const v=document.getElementById('vid'); v.srcObject=null;
+  const c=document.getElementById('cvs'),ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  document.getElementById('ph').style.display='flex';
+  document.getElementById('tagBar').style.display='none';
+  document.getElementById('wordBox').style.display='none';
+  document.getElementById('emoBadge').style.display='none';
+  const btn=document.getElementById('btnMain');
+  btn.textContent='▶ Mulai Kamera'; btn.className='btn btn-start';
+  for(let i=0;i<=4;i++) document.getElementById('ps'+i).classList.replace('on','dim')||
+    document.getElementById('ps'+i).classList.add('dim');
+}
+
+// ─── LOAD MEDIAPIPE ───
+async function loadMediaPipe(){
+  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js');
+  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
+  await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js');
+
+  hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+  hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:.6,minTrackingConfidence:.5});
+  hands.onResults(onHands);
+
+  face=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+  face.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:.5,minTrackingConfidence:.5});
+  face.onResults(onFace);
+}
+
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');
+    s.src=src; s.crossOrigin='anonymous';
+    s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+
+// ─── LOOP ───
+async function loop(){
+  if(!running) return;
+  const v=document.getElementById('vid');
+  if(v.readyState>=2){
+    if(document.getElementById('togHand').checked && hands) await hands.send({image:v});
+    if(document.getElementById('togEmo').checked && face)  await face.send({image:v});
+  }
+  raf=requestAnimationFrame(loop);
+}
+
+// ─── HAND RESULTS ───
+function onHands(r){
+  const c=document.getElementById('cvs'),ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+
+  const tag=document.getElementById('tagHand');
+  if(r.multiHandLandmarks && r.multiHandLandmarks.length>0){
+    tag.classList.remove('tag-off');
+    setPipe(1);
+
+    r.multiHandLandmarks.forEach(lm=>{
+      // Connection lines — glowing white
+      drawConnectors(ctx,lm,HAND_CONNECTIONS,{color:'rgba(255,255,255,0.35)',lineWidth:1.5});
+      // Landmark dots
+      drawLandmarks(ctx,lm,{color:'rgba(255,255,255,0.9)',fillColor:'rgba(255,255,255,0.6)',radius:3.5});
+    });
+
+    classifyGesture(r.multiHandLandmarks);
+  } else {
+    tag.classList.add('tag-off');
+    setWord('—','Mendeteksi...');
+    document.getElementById('tagWordText').textContent='—';
+    document.getElementById('tagWord').classList.add('tag-off');
+  }
+}
+
+// ─── FACE RESULTS ───
+function onFace(r){
+  if(!document.getElementById('togEmo').checked) return;
+  const tag=document.getElementById('tagFace');
+  if(r.multiFaceLandmarks && r.multiFaceLandmarks.length>0){
+    tag.classList.remove('tag-off');
+    setPipe(2);
+    const lm=r.multiFaceLandmarks[0];
+    const c=document.getElementById('cvs'),ctx=c.getContext('2d');
+    // subtle tesselation
+    drawConnectors(ctx,lm,FACEMESH_TESSELATION,{color:'rgba(255,255,255,0.03)',lineWidth:.5});
+    drawConnectors(ctx,lm,FACEMESH_RIGHT_EYE,{color:'rgba(255,100,100,.45)',lineWidth:.8});
+    drawConnectors(ctx,lm,FACEMESH_LEFT_EYE, {color:'rgba(100,200,255,.45)',lineWidth:.8});
+    drawConnectors(ctx,lm,FACEMESH_LIPS,     {color:'rgba(255,180,80,.35)',lineWidth:.8});
+    estimateEmo(lm);
+  } else {
+    tag.classList.add('tag-off');
+  }
+}
+
+// ─── GESTURE CLASSIFIER ───
+function classifyGesture(multi){
+  const lm=multi[0];
+  const ext=extFingers(lm);
+  const sprd=spread(lm);
+  const thu=thumbUp(lm);
+  const bothHands=multi.length===2;
+
+  let word,conf;
+  if(bothHands)                         {word='TERIMA KASIH';conf=91;}
+  else if(thu && ext===0)               {word='BAIK';        conf=94;}
+  else if(ext===5 && sprd>.22)          {word='HALO';        conf=89;}
+  else if(ext===2 && sprd<.12)          {word='HIDUP';       conf=86;}
+  else if(ext===0)                      {word='SETUJU';      conf=80;}
+  else if(ext===3)                      {word='BELAJAR';     conf=82;}
+  else if(ext===4)                      {word='TEKNOLOGI';   conf=84;}
+  else if(ext===1)                      {word='SATU';        conf=78;}
+  else                                  {word=lastWord||'HALO';conf=65;}
+
+  const now=Date.now();
+  if(word!==lastWord && now-lastWordTs>700){
+    lastWord=word; lastWordTs=now;
+    setWord(word,conf+'% — locking in...');
+    addHist(word);
+    document.getElementById('tagWordText').textContent=word;
+    document.getElementById('tagWord').classList.remove('tag-off');
+    setPipe(3);
+    if(document.getElementById('togVoice').checked) speak(word);
+  } else {
+    setWord(lastWord||'—',lastWord?(conf+'% — locking in...'):'Mendeteksi...');
+  }
+}
+
+function extFingers(lm){
+  const tips=[8,12,16,20],mcp=[6,10,14,18];
+  return tips.reduce((n,t,i)=>n+(lm[t].y<lm[mcp[i]].y?1:0),0);
+}
+function spread(lm){const d=lm[8].x-lm[20].x,dy=lm[8].y-lm[20].y;return Math.sqrt(d*d+dy*dy);}
+function thumbUp(lm){return lm[4].y<lm[3].y && lm[4].y<lm[2].y;}
+
+// ─── EMOTION ESTIMATOR ───
+function estimateEmo(lm){
+  const mTop=lm[13],mBot=lm[14],mL=lm[61],mR=lm[291];
+  const eL=lm[159],eLb=lm[145],bL=lm[66];
+  const mOpen=Math.abs(mTop.y-mBot.y);
+  const mWide=Math.abs(mL.x-mR.x);
+  const smileR=mWide/(mOpen+.001);
+  const eyeH=Math.abs(eL.y-eLb.y);
+  const browDiff=bL.y-eL.y;
+
+  let happy   =clamp(Math.round((smileR-2.5)*30),0,100);
+  let angry   =clamp(Math.round((-browDiff+.015)*2000),0,100);
+  let sad     =clamp(Math.round((.04-smileR*.007)*600),0,100);
+  let quest   =clamp(Math.round((eyeH-.025)*2000),0,100);
+  let skept   =clamp(Math.round(angry*.35+(100-happy)*.15),0,100);
+  const tot=happy+angry+sad+quest+skept||1;
+  happy =Math.round(happy/tot*100);
+  angry =Math.round(angry/tot*100);
+  sad   =Math.round(sad/tot*100);
+  quest =Math.round(quest/tot*100);
+  skept =Math.round(skept/tot*100);
+  const neutral=Math.max(0,100-happy-angry-sad-quest-skept);
+  scores={happy,sad,neutral,angry,quest,skept};
+  updateEmoUI();
+}
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+function updateEmoUI(){
+  let topKey='neutral',topVal=0;
+  EMOTIONS.forEach(e=>{
+    const v=scores[e.key]||0;
+    const bar=document.getElementById('ef-'+e.key);
+    const pct=document.getElementById('ep-'+e.key);
+    if(bar) bar.style.width=v+'%';
+    if(pct) pct.textContent=v+'%';
+    if(v>topVal){topVal=v;topKey=e.key;}
+  });
+  const top=EMOTIONS.find(e=>e.key===topKey);
+  if(top){
+    document.getElementById('eLabel').textContent=top.name;
+    document.getElementById('eDot').style.background=top.col;
+  }
+}
+
+// ─── WORD DISPLAY ───
+function setWord(w,sub){
+  document.getElementById('wordMain').textContent=w;
+  document.getElementById('wordSub').textContent=sub||'';
+}
+
+// ─── HISTORY ───
+function addHist(w){
+  const t=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  histArr.unshift({w,t});
+  if(histArr.length>12) histArr.pop();
+  document.getElementById('histList').innerHTML=histArr.map(h=>`
+    <div class="hist-item">
+      <span style="font-weight:600;font-size:.8rem">${h.w}</span>
+      <span class="hist-time">${h.t}</span>
+    </div>`).join('');
+}
+
+// ─── VOICE ───
+function speak(txt){
+  if(!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(txt.toLowerCase());
+  u.lang='id-ID'; u.rate=.85;
+  speechSynthesis.speak(u);
+  setPipe(4);
+}
+
+// ─── TOGGLE CHANGE ───
+function onTog(){
+  if(!running) return;
+  const h=document.getElementById('togHand').checked;
+  const e=document.getElementById('togEmo').checked;
+  const l=document.getElementById('togLLM').checked;
+  const v=document.getElementById('togVoice').checked;
+  // visual only
+  ['ps1','ps2','ps3','ps4'].forEach((id,i)=>{
+    const flags=[h,e,l,v];
+    const el=document.getElementById(id);
+    el.classList.toggle('dim',!flags[i]);
+    el.classList.toggle('on', flags[i]);
+  });
+}
+</script>
+
+</body>
+</html>
