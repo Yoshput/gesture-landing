@@ -2409,11 +2409,14 @@ function detectNumber(lm) {
   // 1 — only index finger up  ✓
   if (f.I && f.Mc && f.Rc && f.Pc && !f.T) return '1';
 
-  // 2 — index + middle up  ✓
-  if (f.I && f.M && f.Rc && f.Pc && !f.T) return '2';
+  // 2 — index + middle up, thumb harus tucked (curl) agar tidak bentrok dengan 3
+  if (f.I && f.M && f.Rc && f.Pc && f.Tc) return '2';
 
-  // 3 — thumb + index + middle up  ✓
-  if (f.T && f.I && f.M && f.Rc && f.Pc) return '3';
+  // 3 — thumb + index + middle up
+  // Gunakan !f.Tc (thumb tidak tucked) karena saat telapak menghadap kamera,
+  // jarak lateral thumb sering jatuh di dead-zone (tidak terbaca f.T).
+  // Strategi sama dengan angka 5. Ring & pinky harus curl.
+  if (!f.Tc && f.I && f.M && f.Rc && f.Pc) return '3';
 
   return null;
 }
